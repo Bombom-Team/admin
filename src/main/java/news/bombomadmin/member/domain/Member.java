@@ -80,4 +80,8 @@ public class Member extends BaseEntity implements Serializable {
         this.gender = gender;
         this.roleId = roleId;
     }
+
+    public void updateRole(Long roleId) {
+        this.roleId = roleId;
+    }
 }
