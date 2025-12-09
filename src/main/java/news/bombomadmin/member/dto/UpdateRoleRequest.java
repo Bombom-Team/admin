@@ -8,4 +8,3 @@ public record UpdateRoleRequest(
         String authority
 ) {
 }
-

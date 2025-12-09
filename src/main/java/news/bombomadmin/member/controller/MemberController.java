@@ -1,11 +1,19 @@
 package news.bombomadmin.member.controller;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import news.bombomadmin.member.dto.GetMemberResponse;
+import news.bombomadmin.member.dto.MembersOptionsRequest;
 import news.bombomadmin.member.dto.UpdateRoleRequest;
 import news.bombomadmin.member.service.MemberService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,6 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class MemberController {
 
     private final MemberService memberService;
+
+    @GetMapping
+    public Page<GetMemberResponse> getMembers(
+            @Valid @ModelAttribute MembersOptionsRequest query,
+            @PageableDefault(size = 20, sort = "id") Pageable pageable
+    ) {
+        return memberService.getMembers(query, pageable);
+    }
 
     @PatchMapping("/{id}/role")
     @ResponseStatus(HttpStatus.NO_CONTENT)
