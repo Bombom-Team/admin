@@ -2,12 +2,12 @@ package news.bombomadmin.member.controller;
 
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import jakarta.validation.constraints.NotBlank;
+import news.bombomadmin.member.dto.UpdateRoleRequest;
 import news.bombomadmin.member.service.MemberService;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -21,12 +21,12 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    @PostMapping("/{id}")
+    @PutMapping("/{id}/role")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateRole(
-            @PathVariable @Positive(message = "id는 1 이상이어야 합니다.") Long id, 
-            @RequestBody @NotBlank(message = "role은 비어 있을 수 없습니다.") String role
+            @PathVariable @Positive(message = "id는 1 이상이어야 합니다.") Long id,
+            @RequestBody @Validated UpdateRoleRequest request
     ) {
-        memberService.updateRole(id, role);
+        memberService.updateRole(id, request);
     }
 }
