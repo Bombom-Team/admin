@@ -63,11 +63,14 @@ public class MemberRepositoryImpl implements CustomMemberRepository {
     }
 
     private Long findTotal(BooleanExpression predicate) {
-        return queryFactory
+        var query = queryFactory
                 .select(member.count())
                 .from(member)
-                .where(predicate)
-                .fetchOne();
+                .join(role).on(member.roleId.eq(role.id));
+        if (predicate != null) {
+            query.where(predicate);
+        }
+        return query.fetchOne();
     }
 
     private OrderSpecifier<?>[] applySort(Sort sort) {
