@@ -60,8 +60,7 @@ dependencies {
     // test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.testcontainers:testcontainers")
-    testImplementation("org.testcontainers:mysql")
+    testImplementation("com.h2database:h2")
     testImplementation("org.testcontainers:junit-jupiter")
 
     // db
