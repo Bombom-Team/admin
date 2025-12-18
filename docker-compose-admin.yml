@@ -13,8 +13,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       LOGGING_FILE_NAME: /logs/bombom-prod.log
 
-      # Apple p8 (ENV로 주입)
-      OAUTH2_APPLE_PRIVATE_KEY: ${OAUTH2_APPLE_PRIVATE_KEY}
 
       #### --------------------------------------
       #### OpenTelemetry (전체 주석 처리)
