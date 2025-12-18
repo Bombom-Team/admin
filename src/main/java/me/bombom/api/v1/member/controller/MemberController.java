@@ -1,7 +1,5 @@
 package me.bombom.api.v1.member.controller;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.member.dto.GetMemberResponse;
 import me.bombom.api.v1.member.dto.MembersOptionsRequest;
@@ -32,7 +30,7 @@ public class MemberController implements MemberControllerApi {
     @Override
     @GetMapping
     public Page<GetMemberResponse> getMembers(
-            @Valid @ModelAttribute MembersOptionsRequest query,
+            @ModelAttribute MembersOptionsRequest query,
             @PageableDefault(size = 20, sort = "id") Pageable pageable) {
         return memberService.getMembers(query, pageable);
     }
@@ -41,8 +39,8 @@ public class MemberController implements MemberControllerApi {
     @PatchMapping("/{id}/role")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateRole(
-            @PathVariable @Positive(message = "id는 1 이상이어야 합니다.") Long id,
-            @RequestBody @Validated UpdateRoleRequest request) {
+            @PathVariable Long id,
+            @RequestBody UpdateRoleRequest request) {
         memberService.updateRole(id, request);
     }
 }
