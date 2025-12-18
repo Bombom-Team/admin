@@ -24,10 +24,12 @@ jobs:
         shell: bash
         env:
           APPLICATION_PROD_PROPERTIES: ${{ secrets.APPLICATION_ADMIN_PROPERTIES }}
+          APPLICATION_TEST_PROPERTIES: ${{ secrets.APPLICATION_ADMIN_TEST_PROPERTIES }}
         run: |
-          mkdir -p src/main/resources
+          mkdir -p src/main/resources src/test/resources
           # Admin은 보통 Prod 프로필을 사용하므로 해당 시크릿을 주입
           printf '%s' "${APPLICATION_PROD_PROPERTIES:-}" > src/main/resources/application.yml
+          printf '%s' "${APPLICATION_TEST_PROPERTIES:-}" > src/test/resources/application.yml
 
       - name: 빌드 (테스트 포함)
         shell: bash
