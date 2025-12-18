@@ -3,18 +3,20 @@ package news.bombomadmin.notice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import news.bombomadmin.common.config.QuerydslConfig;
 import news.bombomadmin.notice.domain.Notice;
 import news.bombomadmin.notice.domain.NoticeCategory;
 import news.bombomadmin.notice.dto.CreateNoticeRequest;
-import news.bombomadmin.common.support.RepositoryTestSupport;
 import news.bombomadmin.notice.repository.NoticeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
-@Import(NoticeService.class)
-class NoticeServiceTest extends RepositoryTestSupport {
+@DataJpaTest
+@Import({NoticeService.class, QuerydslConfig.class})
+class NoticeServiceTest {
 
     @Autowired
     private NoticeService noticeService;
