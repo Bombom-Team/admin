@@ -3,8 +3,7 @@ name: Admin Server Deploy
 on:
   push:
     branches:
-      - main
-      - master
+      - server
 
 jobs:
   build:
