@@ -6,16 +6,15 @@ import java.util.List;
 import news.bombomadmin.notice.domain.Notice;
 import news.bombomadmin.notice.domain.NoticeCategory;
 import news.bombomadmin.notice.dto.CreateNoticeRequest;
+import news.bombomadmin.common.support.RepositoryTestSupport;
 import news.bombomadmin.notice.repository.NoticeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
-@DataJpaTest
 @Import(NoticeService.class)
-class NoticeServiceTest {
+class NoticeServiceTest extends RepositoryTestSupport {
 
     @Autowired
     private NoticeService noticeService;
