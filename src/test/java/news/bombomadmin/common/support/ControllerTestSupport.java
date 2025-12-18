@@ -12,7 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest
 @Import(SecurityConfig.class)
-@WithMockUser
+@WithMockUser(roles = "2")
 public abstract class ControllerTestSupport {
 
     @Autowired

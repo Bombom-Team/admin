@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/members")
+@RequestMapping("/admin/api/v1/members")
 public class MemberController {
 
     private final MemberService memberService;
@@ -32,8 +32,7 @@ public class MemberController {
     @GetMapping
     public Page<GetMemberResponse> getMembers(
             @Valid @ModelAttribute MembersOptionsRequest query,
-            @PageableDefault(size = 20, sort = "id") Pageable pageable
-    ) {
+            @PageableDefault(size = 20, sort = "id") Pageable pageable) {
         return memberService.getMembers(query, pageable);
     }
 
@@ -41,8 +40,7 @@ public class MemberController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateRole(
             @PathVariable @Positive(message = "id는 1 이상이어야 합니다.") Long id,
-            @RequestBody @Validated UpdateRoleRequest request
-    ) {
+            @RequestBody @Validated UpdateRoleRequest request) {
         memberService.updateRole(id, request);
     }
 }

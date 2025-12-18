@@ -33,9 +33,9 @@ class NoticeControllerTest extends ControllerTestSupport {
                 """;
 
         // when & then
-        mockMvc.perform(post("/api/v1/notices")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+        mockMvc.perform(post("/admin/api/v1/notices")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody))
                 .andExpect(status().isOk());
 
         verify(noticeService).createNotice(any(CreateNoticeRequest.class));

@@ -32,62 +32,59 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc(addFilters = false)
 class MemberControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockitoBean
-    private MemberService memberService;
+        @MockitoBean
+        private MemberService memberService;
 
-    @MockitoBean
-    private JpaMetamodelMappingContext jpaMappingContext;
+        @MockitoBean
+        private JpaMetamodelMappingContext jpaMappingContext;
 
-    @Test
-    void 회원_목록_조회_name_role_필터_페이징_적용() throws Exception {
-        // given
-        String name = "kim";
-        String email = "kim@email.com";
-        String role = "ADMIN";
-        PageRequest pageRequest = PageRequest.of(0, 2);
-        Page<GetMemberResponse> page = new PageImpl<>(
-                List.of(new GetMemberResponse(1L, name, email, role)),
-                pageRequest,
-                1
-        );
+        @Test
+        void 회원_목록_조회_name_role_필터_페이징_적용() throws Exception {
+                // given
+                String name = "kim";
+                String email = "kim@email.com";
+                String role = "ADMIN";
+                PageRequest pageRequest = PageRequest.of(0, 2);
+                Page<GetMemberResponse> page = new PageImpl<>(
+                                List.of(new GetMemberResponse(1L, name, email, role)),
+                                pageRequest,
+                                1);
 
-        given(memberService.getMembers(
-                argThat(req -> req.name().equals(name) && req.role().equals(role)),
-                any(PageRequest.class)
-        )).willReturn(page);
+                given(memberService.getMembers(
+                                argThat(req -> req.name().equals(name) && req.role().equals(role)),
+                                any(PageRequest.class))).willReturn(page);
 
-        // when, then
-        mockMvc.perform(get("/admin/members")
-                        .param("name", name)
-                        .param("role", role)
-                        .param("page", "0")
-                        .param("size", "2"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].nickname").value(name))
-                .andExpect(jsonPath("$.content[0].role").value(role));
+                // when, then
+                mockMvc.perform(get("/admin/api/v1/members")
+                                .param("name", name)
+                                .param("role", role)
+                                .param("page", "0")
+                                .param("size", "2"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.content[0].nickname").value(name))
+                                .andExpect(jsonPath("$.content[0].role").value(role));
 
-        verify(memberService).getMembers(any(MembersOptionsRequest.class), any(PageRequest.class));
-    }
+                verify(memberService).getMembers(any(MembersOptionsRequest.class), any(PageRequest.class));
+        }
 
-    @Test
-    void 회원_역할_변경() throws Exception {
-        // given
-        Long memberId = 10L;
-        String authority = "ADMIN";
-        String body = """
-                {"authority":"%s"}
-                """.formatted(authority);
+        @Test
+        void 회원_역할_변경() throws Exception {
+                // given
+                Long memberId = 10L;
+                String authority = "ADMIN";
+                String body = """
+                                {"authority":"%s"}
+                                """.formatted(authority);
 
-        // when, then
-        mockMvc.perform(patch("/admin/members/{id}/role", memberId)
-                        .contentType("application/json")
-                        .content(body))
-                .andExpect(status().isNoContent());
+                // when, then
+                mockMvc.perform(patch("/admin/api/v1/members/{id}/role", memberId)
+                                .contentType("application/json")
+                                .content(body))
+                                .andExpect(status().isNoContent());
 
-        verify(memberService).updateRole(eq(memberId), any(UpdateRoleRequest.class));
-    }
+                verify(memberService).updateRole(eq(memberId), any(UpdateRoleRequest.class));
+        }
 }
-
