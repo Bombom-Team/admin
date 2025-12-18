@@ -1,5 +1,6 @@
 package me.bombom.api.v1.common.resolver;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.bombom.api.v1.auth.dto.CustomOAuth2User;
 import me.bombom.api.v1.common.exception.ErrorDetail;
@@ -15,7 +16,10 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 @Slf4j
+@RequiredArgsConstructor
 public class LoginMemberArgumentResolver implements HandlerMethodArgumentResolver {
+
+    private final String activeProfile;
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -32,7 +36,21 @@ public class LoginMemberArgumentResolver implements HandlerMethodArgumentResolve
         LoginMember loginMember = parameter.getParameterAnnotation(LoginMember.class);
         boolean isAnonymousAllowed = loginMember != null && loginMember.anonymous();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         if (isAnonymous(authentication)) {
+            if ("local".equalsIgnoreCase(activeProfile)) {
+                log.info("LOCAL Profile: allowing anonymous access as ADMIN");
+                return Member.builder()
+                        .id(1L)
+                        .email("local-admin@bombom.me")
+                        .nickname("LocalAdmin")
+                        .provider("local")
+                        .providerId("local")
+                        .gender(me.bombom.api.v1.member.enums.Gender.MALE)
+                        .roleId(2L) // ADMIN
+                        .build();
+            }
+
             if (isAnonymousAllowed) {
                 return null;
             }

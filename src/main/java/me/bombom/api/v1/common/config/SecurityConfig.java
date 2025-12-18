@@ -15,6 +15,9 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Value("${spring.profiles.active}")
+    private String activeProfile;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -22,12 +25,17 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/actuator/health").permitAll()
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/actuator/health").permitAll();
+
+                    if ("local".equalsIgnoreCase(activeProfile)) {
+                        auth.requestMatchers("/admin/**").permitAll();
+                    } else {
                         // ROLE_2로 넘어옴 hasAnyRole("2"). Spring Security가 알아서 ROLE_을 붙여서 검사함.
-                        .requestMatchers("/admin/**").hasAnyRole("2")
-                        .anyRequest().authenticated()
-                );
+                        auth.requestMatchers("/admin/**").hasAnyRole("2");
+                    }
+                    auth.anyRequest().authenticated();
+                });
         return http.build();
     }
 
