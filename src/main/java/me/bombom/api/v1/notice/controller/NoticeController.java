@@ -11,10 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/api/v1/notices")
-public class NoticeController {
+public class NoticeController implements NoticeControllerApi {
 
     private final NoticeService noticeService;
 
+    @Override
     @PostMapping
     public void createNotice(@RequestBody CreateNoticeRequest request) {
         noticeService.createNotice(request);

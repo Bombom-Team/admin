@@ -23,15 +23,11 @@ public class SwaggerConfig {
 
     // 프로파일 상수
     private static final String PROD_PROFILE = "prod";
-    private static final String DEV_PROFILE = "dev";
 
     private static final String SECURITY_SCHEME_NAME = "googleOAuth";
 
     @Value("${swagger.url.prod}")
     private String prodUrl;
-
-    @Value("${swagger.url.dev}")
-    private String devUrl;
 
     @Value("${swagger.url.local}")
     private String localUrl;
@@ -48,17 +44,13 @@ public class SwaggerConfig {
                 .info(createInfo())
                 .servers(setApiServer())
                 .components(new Components()
-                        .addSecuritySchemes(SECURITY_SCHEME_NAME, createOAuth2Scheme())
-                )
+                        .addSecuritySchemes(SECURITY_SCHEME_NAME, createOAuth2Scheme()))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME));
     }
 
     private List<Server> setApiServer() {
         if (isProfileActive(PROD_PROFILE)) {
-            return List.of(createServer(prodUrl, "봄봄 Production API"));
-        }
-        if (isProfileActive(DEV_PROFILE)) {
-            return List.of(createServer(devUrl, "봄봄 Development API"));
+            return List.of(createServer(prodUrl, "봄봄 Admin Server"));
         }
         return List.of(createServer(localUrl.concat(serverPort), "봄봄 Local API"));
     }
@@ -79,7 +71,7 @@ public class SwaggerConfig {
         String description = getApiDescription();
 
         return new Info()
-                .title("봄봄 Server API")
+                .title("봄봄 Admin API")
                 .version(version)
                 .description(description);
     }
@@ -88,24 +80,16 @@ public class SwaggerConfig {
         if (isProfileActive(PROD_PROFILE)) {
             return "v1.0.0";
         }
-        if (isProfileActive(DEV_PROFILE)) {
-            return "v1.0.0-dev";
-        }
         return "v1.0.0-local";
     }
 
     private String getApiDescription() {
         StringBuilder description = new StringBuilder();
-        description.append("봄봄 서비스 공식 API 서버입니다.");
+        description.append("봄봄 서비스 관리자 전용 API입니다.");
 
         if (isProfileActive(PROD_PROFILE)) {
             description.append("\n\n**운영 환경**");
-            description.append("\n- 실제 서비스용 API입니다.");
-            description.append("\n- 모든 기능이 활성화되어 있습니다.");
-        } else if (isProfileActive(DEV_PROFILE)) {
-            description.append("\n\n**개발 환경**");
-            description.append("\n- 개발 및 테스트용 API입니다.");
-            description.append("\n- 일부 기능이 제한될 수 있습니다.");
+            description.append("\n- 실제 서비스용 Admin API입니다.");
         } else {
             description.append("\n\n**로컬 환경**");
             description.append("\n- 로컬 개발용 API입니다.");
@@ -113,6 +97,7 @@ public class SwaggerConfig {
         }
 
         description.append("\n\n**인증 방식**: Google OAuth2 + Session Cookie (JSESSIONID)");
+        description.append("\n- 관리자 권한(`ROLE_2`)이 필요합니다.");
 
         return description.toString();
     }
@@ -133,10 +118,7 @@ public class SwaggerConfig {
                                 .scopes(new Scopes()
                                         .addString("openid", "OpenID Connect scope")
                                         .addString("profile", "사용자 프로필 정보")
-                                        .addString("email", "사용자 이메일 정보")
-                                )
-                        )
-                );
+                                        .addString("email", "사용자 이메일 정보"))));
     }
 
     private String getOAuthAuthorizationUrl() {
@@ -148,22 +130,12 @@ public class SwaggerConfig {
     }
 
     private String getSecurityDescription() {
-        StringBuilder desc = new StringBuilder();
-        desc.append("Google OAuth2를 통한 인증입니다. ");
+        return """
+                Google/Apple OAuth2를 통한 인증입니다.
 
-        if (isProfileActive(PROD_PROFILE)) {
-            desc.append("운영환경에서는 HTTPS를 통해서만 접근 가능합니다.");
-        } else if (isProfileActive(DEV_PROFILE)) {
-            desc.append("개발환경에서 테스트용으로 사용됩니다.");
-        } else {
-            desc.append("로컬환경에서는 HTTP로도 접근 가능합니다.");
-        }
-
-        desc.append("\n\n**사용법**:");
-        desc.append("\n1. 'Authorize' 버튼을 클릭하여 Google 로그인을 진행합니다.");
-        desc.append("\n2. 로그인 성공 후 JSESSIONID 쿠키가 자동으로 설정됩니다.");
-        desc.append("\n3. 이후 모든 API 요청에서 자동으로 인증이 처리됩니다.");
-
-        return desc.toString();
+                **사용법**:
+                1. '로그인' 버튼을 클릭하여 Google/Apple 로그인을 진행합니다.
+                2. 로그인 성공 후 JSESSIONID 쿠키가 설정되며 자동으로 인증됩니다.
+                """;
     }
 }
