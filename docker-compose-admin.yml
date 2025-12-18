@@ -12,6 +12,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       LOGGING_FILE_NAME: /logs/bombom-prod.log
+      JAVA_TOOL_OPTIONS: "-Xms384m -Xmx384m -XX:MaxMetaspaceSize=128m"
 
 
       #### --------------------------------------
@@ -34,3 +35,14 @@ services:
 
     # 컨테이너 graceful shutdown 대기 시간
     stop_grace_period: 40s
+
+    deploy:
+      restart_policy:
+        condition: on-failure
+        # 5s 간격으로 재시작 시도 5번. 실패하면 그냥 꺼짐
+        max_attempts: 5
+        delay: 5s
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
