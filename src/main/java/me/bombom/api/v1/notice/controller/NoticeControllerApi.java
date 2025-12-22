@@ -12,6 +12,13 @@ import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import me.bombom.api.v1.notice.dto.GetNoticesRequest;
+import me.bombom.api.v1.notice.dto.GetNoticeResponse;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 @Tag(name = "Notice", description = "공지사항 관리 API")
 @ApiResponses({
@@ -19,6 +26,15 @@ import org.springframework.web.bind.annotation.RequestBody;
                 @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content)
 })
 public interface NoticeControllerApi {
+
+        @Operation(summary = "공지사항 목록 조회", description = "공지사항 목록을 조회합니다. (검색어, 카테고리 필터링 지원)")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "목록 조회 성공")
+        })
+        Page<GetNoticeResponse> getNotices(
+                        @ParameterObject @ModelAttribute GetNoticesRequest request,
+                        @ParameterObject @PageableDefault Pageable pageable
+        );
 
         @Operation(summary = "공지사항 생성", description = "새로운 공지사항 또는 이벤트를 등록합니다.")
         @ApiResponses({
