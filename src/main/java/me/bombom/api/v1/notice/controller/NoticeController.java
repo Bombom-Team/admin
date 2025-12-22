@@ -43,6 +43,7 @@ public class NoticeController implements NoticeControllerApi {
 
     @Override
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public void createNotice(@Valid @RequestBody CreateNoticeRequest request) {
         noticeService.createNotice(request);
     }

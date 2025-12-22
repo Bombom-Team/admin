@@ -38,7 +38,7 @@ public interface NoticeControllerApi {
 
         @Operation(summary = "공지사항 생성", description = "새로운 공지사항 또는 이벤트를 등록합니다.")
         @ApiResponses({
-                        @ApiResponse(responseCode = "200", description = "공지사항 생성 성공"),
+                        @ApiResponse(responseCode = "201", description = "공지사항 생성 성공"),
                         @ApiResponse(responseCode = "400", description = "잘못된 요청 값", content = @Content)
         })
         void createNotice(
