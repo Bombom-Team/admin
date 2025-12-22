@@ -17,6 +17,7 @@ import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -33,8 +34,7 @@ public interface NoticeControllerApi {
         })
         Page<GetNoticeResponse> getNotices(
                         @ParameterObject @ModelAttribute GetNoticesRequest request,
-                        @ParameterObject @PageableDefault Pageable pageable
-        );
+                        @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable);
 
         @Operation(summary = "공지사항 생성", description = "새로운 공지사항 또는 이벤트를 등록합니다.")
         @ApiResponses({
@@ -51,8 +51,7 @@ public interface NoticeControllerApi {
         })
         void updateNotice(
                         @Parameter(description = "수정할 공지사항 ID") @PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long id,
-                        @RequestBody UpdateNoticeRequest request
-        );
+                        @RequestBody UpdateNoticeRequest request);
 
         @Operation(summary = "공지사항 삭제", description = "기존 공지사항을 삭제합니다.")
         @ApiResponses({
