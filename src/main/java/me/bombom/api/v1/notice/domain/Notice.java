@@ -45,4 +45,16 @@ public class Notice extends BaseEntity {
         this.content = content;
         this.noticeCategory = noticeCategory;
     }
+
+    public void update(String title, String content, NoticeCategory noticeCategory) {
+        if (title != null) {
+            this.title = title;
+        }
+        if (content != null) {
+            this.content = content;
+        }
+        if (noticeCategory != null) {
+            this.noticeCategory = noticeCategory;
+        }
+    }
 }

@@ -1,8 +1,13 @@
 package me.bombom.api.v1.notice.service;
 
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
+import me.bombom.api.v1.common.exception.ErrorContextKeys;
+import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,5 +27,24 @@ public class NoticeService {
                 .noticeCategory(request.noticeCategory())
                 .build();
         noticeRepository.save(notice);
+    }
+
+    @Transactional
+    public void updateNotice(Long id, UpdateNoticeRequest request) {
+        Notice notice = noticeRepository.findById(id)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "notice")
+                        .addContext(ErrorContextKeys.OPERATION, "updateNotice"));
+        notice.update(request.title(), request.content(), request.noticeCategory());
+    }
+
+    @Transactional
+    public void deleteNotice(@Positive(message = "id는 1 이상의 값이어야 합니다.") Long id) {
+        if (!noticeRepository.existsById(id)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "notice")
+                    .addContext(ErrorContextKeys.OPERATION, "deleteNotice");
+        }
+        noticeRepository.deleteById(id);
     }
 }
