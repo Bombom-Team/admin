@@ -2,24 +2,28 @@ package me.bombom.api.v1.notice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.SoftAssertions.*;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import java.util.List;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
 import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.GetNoticeResponse;
+import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
-import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @DataJpaTest
-@Import({ NoticeService.class, QuerydslConfig.class })
+@Import({NoticeService.class, QuerydslConfig.class})
 class NoticeServiceTest {
 
     @Autowired
@@ -108,6 +112,35 @@ class NoticeServiceTest {
         // then
         List<Notice> notices = noticeRepository.findAll();
         assertThat(notices).isEmpty();
+    }
+
+    @Test
+    @DisplayName("공지사항 목록을 조회한다.")
+    void getNotices() {
+        // given
+        noticeRepository.save(Notice.builder()
+                .title("공지 제목")
+                .content("공지 내용")
+                .noticeCategory(NoticeCategory.NOTICE)
+                .build());
+
+        noticeRepository.save(Notice.builder()
+                .title("이벤트 제목")
+                .content("이벤트 내용")
+                .noticeCategory(NoticeCategory.EVENT)
+                .build());
+
+        GetNoticesRequest request = new GetNoticesRequest("공지", null);
+        Pageable pageRequest = PageRequest.of(0, 10);
+
+        // when
+        Page<GetNoticeResponse> result = noticeService.getNotices(request, pageRequest);
+
+        // then
+        assertSoftly(softly -> {
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().getFirst().noticeCategory()).isEqualTo(NoticeCategory.NOTICE.getValue());
+        });
     }
 
     @Test
