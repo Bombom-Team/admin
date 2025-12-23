@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
@@ -39,6 +40,12 @@ public class NoticeController implements NoticeControllerApi {
             @ModelAttribute GetNoticesRequest request,
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return noticeService.getNotices(request, pageable);
+    }
+
+    @Override
+    @GetMapping("/{id}")
+    public GetNoticeDetailResponse getNotice(@PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long id) {
+        return noticeService.getNotice(id);
     }
 
     @Override

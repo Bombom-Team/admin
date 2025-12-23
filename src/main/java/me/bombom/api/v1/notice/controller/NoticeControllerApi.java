@@ -1,25 +1,27 @@
 package me.bombom.api.v1.notice.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
-import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import me.bombom.api.v1.notice.dto.GetNoticesRequest;
+import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
+import me.bombom.api.v1.notice.dto.GetNoticesRequest;
+import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Notice", description = "공지사항 관리 API")
 @ApiResponses({
@@ -35,6 +37,15 @@ public interface NoticeControllerApi {
         Page<GetNoticeResponse> getNotices(
                         @ParameterObject @ModelAttribute GetNoticesRequest request,
                         @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable);
+
+        @Operation(summary = "공지사항 상세 조회", description = "공지사항 상세 정보를 조회합니다.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "상세 조회 성공"),
+                        @ApiResponse(responseCode = "404", description = "존재하지 않는 공지사항", content = @Content)
+        })
+        @GetMapping("/{id}")
+        GetNoticeDetailResponse getNotice(
+                        @Parameter(description = "조회할 공지사항 ID") @PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long id);
 
         @Operation(summary = "공지사항 생성", description = "새로운 공지사항 또는 이벤트를 등록합니다.")
         @ApiResponses({

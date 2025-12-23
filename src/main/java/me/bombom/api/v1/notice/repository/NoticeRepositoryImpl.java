@@ -2,7 +2,6 @@ package me.bombom.api.v1.notice.repository;
 
 import static me.bombom.api.v1.notice.domain.QNotice.notice;
 
-import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -38,7 +37,8 @@ public class NoticeRepositoryImpl implements CustomNoticeRepository {
                                 notice.id,
                                 notice.title,
                                 notice.content,
-                                notice.noticeCategory.stringValue()))
+                                notice.noticeCategory.stringValue(),
+                                notice.createdAt))
                 .from(notice)
                 .where(
                         titleOrContentContains(request.keyword()),
