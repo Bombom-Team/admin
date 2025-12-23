@@ -22,6 +22,7 @@ public class NewsletterService {
     private final NewsletterRepository newsletterRepository;
     private final NewsletterDetailRepository newsletterDetailRepository;
     private final NewsletterPreviousPolicyRepository newsletterPreviousPolicyRepository;
+    private final NewsletterSubscriptionCountRepository newsletterSubscriptionCountRepository;
     private final CategoryRepository categoryRepository;
 
     @Transactional
@@ -40,5 +41,7 @@ public class NewsletterService {
                 .recentCount(0)
                 .exposureRatio(0)
                 .build());
+
+        newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(newsletter.getId()));
     }
 }
