@@ -29,7 +29,6 @@ public record CreateNewsletterRequest(
                 .previousNewsletterUrl(previousNewsletterUrl)
                 .previousAllowed(false)
                 .subscribeMethod(subscribeMethod)
-                .subscribeCount(0)
                 .build();
     }
 
