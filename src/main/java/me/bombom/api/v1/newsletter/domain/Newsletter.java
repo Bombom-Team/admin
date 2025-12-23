@@ -18,7 +18,7 @@ import me.bombom.api.v1.common.BaseEntity;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(uniqueConstraints = {
-        @UniqueConstraint(name = "uk_newsletter_detail_id", columnNames = {"detail_id"})
+        @UniqueConstraint(name = "uk_newsletter_detail_id", columnNames = { "detail_id" })
 })
 public class Newsletter extends BaseEntity {
 
@@ -52,8 +52,7 @@ public class Newsletter extends BaseEntity {
             @NonNull String imageUrl,
             @NonNull String email,
             @NonNull Long categoryId,
-            @NonNull Long detailId
-    ) {
+            @NonNull Long detailId) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -61,5 +60,18 @@ public class Newsletter extends BaseEntity {
         this.email = email;
         this.categoryId = categoryId;
         this.detailId = detailId;
+    }
+
+    public void update(String name, String description, String imageUrl, String email, Long categoryId) {
+        if (name != null)
+            this.name = name;
+        if (description != null)
+            this.description = description;
+        if (imageUrl != null)
+            this.imageUrl = imageUrl;
+        if (email != null)
+            this.email = email;
+        if (categoryId != null)
+            this.categoryId = categoryId;
     }
 }

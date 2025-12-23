@@ -11,6 +11,7 @@ import me.bombom.api.v1.newsletter.dto.CreateNewsletterRequest;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
+import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,4 +42,18 @@ public interface NewsletterControllerApi {
                         @ApiResponse(responseCode = "404", description = "뉴스레터를 찾을 수 없음", content = @Content)
         })
         GetNewsletterResponse getNewsletterDetail(@PathVariable Long id);
+
+        @Operation(summary = "뉴스레터 수정", description = "뉴스레터 정보를 수정합니다.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "수정 성공"),
+                        @ApiResponse(responseCode = "404", description = "뉴스레터를 찾을 수 없음", content = @Content)
+        })
+        void updateNewsletter(@PathVariable Long id, @RequestBody UpdateNewsletterRequest request);
+
+        @Operation(summary = "뉴스레터 삭제", description = "뉴스레터를 삭제합니다.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "삭제 성공"),
+                        @ApiResponse(responseCode = "404", description = "뉴스레터를 찾을 수 없음", content = @Content)
+        })
+        void deleteNewsletter(@PathVariable Long id);
 }

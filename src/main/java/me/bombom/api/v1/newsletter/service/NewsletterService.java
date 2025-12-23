@@ -14,6 +14,7 @@ import me.bombom.api.v1.newsletter.dto.CreateNewsletterRequest;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
+import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
 import me.bombom.api.v1.newsletter.repository.CategoryRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterDetailRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterPreviousPolicyRepository;
@@ -28,41 +29,98 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class NewsletterService {
 
-    private final NewsletterRepository newsletterRepository;
-    private final NewsletterDetailRepository newsletterDetailRepository;
-    private final NewsletterPreviousPolicyRepository newsletterPreviousPolicyRepository;
-    private final NewsletterSubscriptionCountRepository newsletterSubscriptionCountRepository;
-    private final CategoryRepository categoryRepository;
+        private final NewsletterRepository newsletterRepository;
+        private final NewsletterDetailRepository newsletterDetailRepository;
+        private final NewsletterPreviousPolicyRepository newsletterPreviousPolicyRepository;
+        private final NewsletterSubscriptionCountRepository newsletterSubscriptionCountRepository;
+        private final CategoryRepository categoryRepository;
 
-    @Transactional
-    public void create(CreateNewsletterRequest request) {
-        Category category = categoryRepository.findByName(request.category())
-                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
-                        .addContext("category", request.category()));
+        @Transactional
+        public void create(CreateNewsletterRequest request) {
+                Category category = categoryRepository.findByName(request.category())
+                                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                                                .addContext("category", request.category()));
+                NewsletterDetail newsletterDetail = newsletterDetailRepository.save(request.toDetailEntity());
 
-        NewsletterDetail newsletterDetail = newsletterDetailRepository.save(request.toDetailEntity());
+                Newsletter newsletter = newsletterRepository
+                                .save(request.toNewsletterEntity(newsletterDetail.getId(), category.getId()));
+                newsletterPreviousPolicyRepository.save(NewsletterPreviousPolicy.builder()
+                                .newsletterId(newsletter.getId())
+                                .strategy(NewsletterPreviousStrategy.INACTIVE)
+                                .fixedCount(0)
+                                .recentCount(0)
+                                .exposureRatio(0)
+                                .build());
+                newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(newsletter.getId()));
+        }
 
-        Newsletter newsletter = newsletterRepository.save(request.toNewsletterEntity(newsletterDetail.getId(), category.getId()));
+        public List<GetNewsletterSummaryResponse> getNewsletters(GetNewslettersRequest request) {
+                return newsletterRepository.findNewsletters(request);
+        }
 
-        newsletterPreviousPolicyRepository.save(NewsletterPreviousPolicy.builder()
-                .newsletterId(newsletter.getId())
-                .strategy(NewsletterPreviousStrategy.INACTIVE)
-                .fixedCount(0)
-                .recentCount(0)
-                .exposureRatio(0)
-                .build());
+        public GetNewsletterResponse getNewsletterDetail(Long id) {
+                return newsletterRepository.findNewsletter(id)
+                                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                                                .addContext(ErrorContextKeys.ENTITY_TYPE, "newsletter")
+                                                .addContext(ErrorContextKeys.OPERATION, "getNewsletter"));
+        }
 
-        newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(newsletter.getId()));
-    }
+        @Transactional
+        public void update(Long id, UpdateNewsletterRequest request) {
+                Newsletter newsletter = findNewsletter(id);
+                NewsletterDetail newsletterDetail = findNewsletterDetail(newsletter.getDetailId());
 
-    public List<GetNewsletterSummaryResponse> getNewsletters(GetNewslettersRequest request) {
-        return newsletterRepository.findNewsletters(request);
-    }
+                Long categoryId = resolveCategoryId(request.category());
 
-    public GetNewsletterResponse getNewsletterDetail(Long id) {
-        return newsletterRepository.findNewsletter(id)
-                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
-                        .addContext(ErrorContextKeys.ENTITY_TYPE, "newsletter")
-                        .addContext(ErrorContextKeys.OPERATION, "getNewsletter"));
-    }
+                newsletter.update(
+                                request.name(),
+                                request.description(),
+                                request.imageUrl(),
+                                request.email(),
+                                categoryId
+                );
+
+                newsletterDetail.update(
+                                request.mainPageUrl(),
+                                request.subscribeUrl(),
+                                request.issueCycle(),
+                                request.sender(),
+                                request.previousNewsletterUrl(),
+                                request.previousAllowed(),
+                                request.subscribeMethod()
+                );
+        }
+
+        // TODO: 추후에 휴재, 폐간 처리로 해야할 듯
+        @Transactional
+        public void delete(Long id) {
+                Newsletter newsletter = findNewsletter(id);
+
+                newsletterSubscriptionCountRepository.deleteByNewsletterId(id);
+                newsletterPreviousPolicyRepository.deleteByNewsletterId(id);
+                newsletterRepository.delete(newsletter);
+                newsletterDetailRepository.deleteById(newsletter.getDetailId());
+        }
+
+        private Newsletter findNewsletter(Long id) {
+                return newsletterRepository.findById(id)
+                                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                                                .addContext("newsletterId", id));
+        }
+
+        private NewsletterDetail findNewsletterDetail(Long id) {
+                return newsletterDetailRepository.findById(id)
+                                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                                                .addContext("detailId", id));
+        }
+
+        private Long resolveCategoryId(String categoryName) {
+                if (categoryName == null) {
+                        return null;
+                }
+                return categoryRepository.findByName(categoryName)
+                                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                                                .addContext("category", categoryName))
+                                .getId();
+        }
 }

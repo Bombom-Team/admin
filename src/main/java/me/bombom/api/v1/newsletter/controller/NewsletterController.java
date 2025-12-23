@@ -7,9 +7,12 @@ import me.bombom.api.v1.newsletter.dto.CreateNewsletterRequest;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
+import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
 import me.bombom.api.v1.newsletter.service.NewsletterService;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,5 +44,18 @@ public class NewsletterController implements NewsletterControllerApi {
     @GetMapping("/{id}")
     public GetNewsletterResponse getNewsletterDetail(@PathVariable Long id) {
         return newsletterService.getNewsletterDetail(id);
+    }
+
+    @Override
+    @PatchMapping("/{id}")
+    public void updateNewsletter(@PathVariable Long id, @RequestBody UpdateNewsletterRequest request) {
+        newsletterService.update(id, request);
+    }
+
+    @Override
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteNewsletter(@PathVariable Long id) {
+        newsletterService.delete(id);
     }
 }

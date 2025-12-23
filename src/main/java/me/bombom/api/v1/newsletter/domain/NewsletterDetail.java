@@ -65,4 +65,28 @@ public class NewsletterDetail {
         this.previousAllowed = previousAllowed;
         this.subscribeMethod = subscribeMethod;
     }
+
+    public void update(
+            String mainPageUrl,
+            String subscribeUrl,
+            String issueCycle,
+            String sender,
+            String previousNewsletterUrl,
+            Boolean previousAllowed,
+            String subscribeMethod) {
+        if (mainPageUrl != null)
+            this.mainPageUrl = mainPageUrl;
+        if (subscribeUrl != null)
+            this.subscribeUrl = subscribeUrl;
+        if (issueCycle != null)
+            this.issueCycle = issueCycle;
+        if (sender != null)
+            this.sender = sender;
+        if (previousNewsletterUrl != null)
+            this.previousNewsletterUrl = previousNewsletterUrl;
+        if (previousAllowed != null)
+            this.previousAllowed = previousAllowed;
+        if (subscribeMethod != null)
+            this.subscribeMethod = subscribeMethod;
+    }
 }
