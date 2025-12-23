@@ -23,7 +23,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 @DataJpaTest
-@Import({NoticeService.class, QuerydslConfig.class})
+@Import({ NoticeService.class, QuerydslConfig.class })
+@org.springframework.data.jpa.repository.config.EnableJpaAuditing
+@org.springframework.test.context.TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class NoticeServiceTest {
 
     @Autowired
@@ -148,6 +150,36 @@ class NoticeServiceTest {
     void deleteNotice_exception() {
         // when & then
         assertThatThrownBy(() -> noticeService.deleteNotice(999L))
+                .isInstanceOf(me.bombom.api.v1.common.exception.CIllegalArgumentException.class)
+                .hasMessage(me.bombom.api.v1.common.exception.ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    @DisplayName("공지사항 상세 정보를 조회한다.")
+    void getNotice() {
+        // given
+        Notice notice = noticeRepository.save(Notice.builder()
+                .title("제목")
+                .content("내용")
+                .noticeCategory(NoticeCategory.NOTICE)
+                .build());
+
+        // when
+        me.bombom.api.v1.notice.dto.GetNoticeDetailResponse response = noticeService.getNotice(notice.getId());
+
+        // then
+        assertSoftly(softly -> {
+            assertThat(response.title()).isEqualTo("제목");
+            assertThat(response.content()).isEqualTo("내용");
+            assertThat(response.noticeCategory()).isEqualTo(NoticeCategory.NOTICE);
+        });
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 공지사항 조회 시 예외가 발생한다.")
+    void getNotice_exception() {
+        // when & then
+        assertThatThrownBy(() -> noticeService.getNotice(999L))
                 .isInstanceOf(me.bombom.api.v1.common.exception.CIllegalArgumentException.class)
                 .hasMessage(me.bombom.api.v1.common.exception.ErrorDetail.ENTITY_NOT_FOUND.getMessage());
     }
