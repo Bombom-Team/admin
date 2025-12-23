@@ -14,6 +14,7 @@ import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
 import me.bombom.api.v1.newsletter.dto.NewsletterSortType;
+import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
 import me.bombom.api.v1.newsletter.repository.CategoryRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterDetailRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterPreviousPolicyRepository;
@@ -141,7 +142,6 @@ class NewsletterServiceTest {
                 List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
 
                 // then
-                // then
                 assertSoftly(softly -> {
                         softly.assertThat(result).hasSize(30);
                         // Default sort desc by createdAt
@@ -167,7 +167,6 @@ class NewsletterServiceTest {
                 // when
                 List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
 
-                // then
                 // then
                 assertSoftly(softly -> {
                         softly.assertThat(result).hasSize(3);
@@ -264,6 +263,116 @@ class NewsletterServiceTest {
                 // when & then
                 assertThatThrownBy(() -> newsletterService.getNewsletterDetail(999L))
                                 .isInstanceOf(CIllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("뉴스레터 정보를 수정한다.")
+        void updateNewsletter() {
+                // given
+                Category category = categoryRepository.save(Category.builder().name("테크").build());
+                Category newCategory = categoryRepository.save(Category.builder().name("경제").build());
+
+                NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
+                                .mainPageUrl("old.com")
+                                .subscribeUrl("old-sub.com")
+                                .issueCycle("weekly")
+                                .sender("sender")
+                                .previousAllowed(true)
+                                .build());
+
+                Newsletter newsletter = newsletterRepository.save(Newsletter.builder()
+                                .name("Old Name")
+                                .description("Old Desc")
+                                .imageUrl("old.img")
+                                .email("old@email.com")
+                                .detailId(detail.getId())
+                                .categoryId(category.getId())
+                                .build());
+
+                UpdateNewsletterRequest request = new UpdateNewsletterRequest(
+                                "New Name",
+                                "New Desc",
+                                "new.img",
+                                "new@email.com",
+                                "경제",
+                                "new.com",
+                                "new-sub.com",
+                                "monthly",
+                                "new sender",
+                                "new-prev.com",
+                                false,
+                                "kakao");
+
+                // when
+                newsletterService.update(newsletter.getId(), request);
+
+                // then
+                Newsletter updatedNewsletter = newsletterRepository.findById(newsletter.getId()).orElseThrow();
+                NewsletterDetail updatedDetail = newsletterDetailRepository.findById(detail.getId()).orElseThrow();
+
+                assertSoftly(softly -> {
+                        softly.assertThat(updatedNewsletter.getName()).isEqualTo("New Name");
+                        softly.assertThat(updatedNewsletter.getDescription()).isEqualTo("New Desc");
+                        softly.assertThat(updatedNewsletter.getCategoryId()).isEqualTo(newCategory.getId());
+                        softly.assertThat(updatedDetail.getMainPageUrl()).isEqualTo("new.com");
+                        softly.assertThat(updatedDetail.getSubscribeMethod()).isEqualTo("kakao");
+                });
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 뉴스레터 수정 시 예외가 발생한다.")
+        void updateNewsletter_notFound() {
+                // given
+                UpdateNewsletterRequest request = new UpdateNewsletterRequest(
+                                "New Name", null, null, null, null, null, null, null, null, null, null, null);
+
+                // when & then
+                assertThatThrownBy(() -> newsletterService.update(999L, request))
+                                .isInstanceOf(CIllegalArgumentException.class)
+                                .hasMessage("존재하지 않는 데이터입니다.");
+        }
+
+        @Test
+        @DisplayName("뉴스레터를 삭제한다.")
+        void deleteNewsletter() {
+                // given
+                Category category = categoryRepository.save(Category.builder().name("테크").build());
+                NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
+                                .mainPageUrl("url")
+                                .subscribeUrl("sub")
+                                .issueCycle("weekly")
+                                .sender("sender")
+                                .build());
+
+                Newsletter newsletter = newsletterRepository.save(Newsletter.builder()
+                                .name("Delete Me")
+                                .description("desc")
+                                .imageUrl("img")
+                                .email("email")
+                                .detailId(detail.getId())
+                                .categoryId(category.getId())
+                                .build());
+
+                newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(newsletter.getId()));
+
+                // when
+                newsletterService.delete(newsletter.getId());
+
+                // then
+                assertSoftly(softly -> {
+                        softly.assertThat(newsletterRepository.existsById(newsletter.getId())).isFalse();
+                        softly.assertThat(newsletterDetailRepository.existsById(detail.getId())).isFalse();
+                        softly.assertThat(newsletterSubscriptionCountRepository.findByNewsletterId(newsletter.getId())).isEmpty();
+                });
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 뉴스레터 삭제 시 예외가 발생한다.")
+        void deleteNewsletter_notFound() {
+                // when & then
+                assertThatThrownBy(() -> newsletterService.delete(0L))
+                                .isInstanceOf(CIllegalArgumentException.class)
+                                .hasMessage("존재하지 않는 데이터입니다.");
         }
 
         private void createNewsletterWithCategory(Category category, String name, String issueCycle) {

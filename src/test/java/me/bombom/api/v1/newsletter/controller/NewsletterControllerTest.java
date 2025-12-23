@@ -4,7 +4,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -18,6 +20,7 @@ import me.bombom.api.v1.newsletter.dto.CreateNewsletterRequest;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
+import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
 import me.bombom.api.v1.newsletter.service.NewsletterService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -128,8 +131,7 @@ class NewsletterControllerTest extends ControllerTestSupport {
                                 "sender",
                                 "prevUrl",
                                 true,
-                                "email"
-                );
+                                "email");
 
                 given(newsletterService.getNewsletterDetail(1L))
                                 .willReturn(response);
@@ -157,5 +159,45 @@ class NewsletterControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isNotFound())
                                 .andExpect(jsonPath("$.code").value("M003"))
                                 .andExpect(jsonPath("$.message").value("존재하지 않는 데이터입니다."));
+        }
+
+        @Test
+        @DisplayName("뉴스레터 수정 성공")
+        void updateNewsletter_success() throws Exception {
+                // given
+                UpdateNewsletterRequest request = new UpdateNewsletterRequest(
+                                "수정된 이름",
+                                "수정된 설명",
+                                "http://updated.image",
+                                "updated@email.com",
+                                "경제",
+                                "http://updated.main",
+                                "http://updated.sub",
+                                "매월",
+                                "수정된 발송자",
+                                "http://updated.prev",
+                                false,
+                                "카카오톡");
+
+                doNothing().when(newsletterService).update(1L, request);
+
+                // when & then
+                mockMvc.perform(patch("/admin/api/v1/newsletters/{id}", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andDo(print())
+                                .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("뉴스레터 삭제 성공")
+        void deleteNewsletter_success() throws Exception {
+                // given
+                doNothing().when(newsletterService).delete(1L);
+
+                // when & then
+                mockMvc.perform(delete("/admin/api/v1/newsletters/{id}", 1L))
+                                .andDo(print())
+                                .andExpect(status().isNoContent());
         }
 }
