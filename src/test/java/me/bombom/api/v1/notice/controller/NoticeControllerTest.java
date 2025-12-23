@@ -109,7 +109,7 @@ class NoticeControllerTest extends ControllerTestSupport {
         @DisplayName("공지사항 목록을 조회한다.")
         void getNotices() throws Exception {
                 // given
-                GetNoticeResponse response = new GetNoticeResponse(1L, "제목", "내용", "NOTICE", java.time.LocalDate.now());
+                GetNoticeResponse response = new GetNoticeResponse(1L, "제목", "NOTICE", java.time.LocalDate.now());
                 PageImpl<GetNoticeResponse> result = new PageImpl<>(List.of(response), PageRequest.of(0, 10), 1);
 
                 given(noticeService.getNotices(any(GetNoticesRequest.class), any(Pageable.class)))
