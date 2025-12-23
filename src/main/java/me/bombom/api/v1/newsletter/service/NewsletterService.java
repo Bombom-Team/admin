@@ -1,16 +1,25 @@
 package me.bombom.api.v1.newsletter.service;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
+import me.bombom.api.v1.common.exception.ErrorContextKeys;
+import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.newsletter.domain.Category;
 import me.bombom.api.v1.newsletter.domain.Newsletter;
 import me.bombom.api.v1.newsletter.domain.NewsletterDetail;
 import me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy;
 import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
 import me.bombom.api.v1.newsletter.dto.CreateNewsletterRequest;
+import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
+import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
+import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
 import me.bombom.api.v1.newsletter.repository.CategoryRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterDetailRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterPreviousPolicyRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterRepository;
+import me.bombom.api.v1.newsletter.repository.NewsletterSubscriptionCountRepository;
+import me.bombom.api.v1.subscribe.domain.NewsletterSubscriptionCount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,5 +52,16 @@ public class NewsletterService {
                 .build());
 
         newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(newsletter.getId()));
+    }
+
+    public List<GetNewsletterSummaryResponse> getNewsletters(GetNewslettersRequest request) {
+        return newsletterRepository.findNewsletters(request);
+    }
+
+    public GetNewsletterResponse getNewsletterDetail(Long id) {
+        return newsletterRepository.findNewsletter(id)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "newsletter")
+                        .addContext(ErrorContextKeys.OPERATION, "getNewsletter"));
     }
 }
