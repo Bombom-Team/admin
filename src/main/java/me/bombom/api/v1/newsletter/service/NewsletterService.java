@@ -37,7 +37,8 @@ public class NewsletterService {
     @Transactional
     public void create(CreateNewsletterRequest request) {
         Category category = categoryRepository.findByName(request.category())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext("category", request.category()));
 
         NewsletterDetail newsletterDetail = newsletterDetailRepository.save(request.toDetailEntity());
 
