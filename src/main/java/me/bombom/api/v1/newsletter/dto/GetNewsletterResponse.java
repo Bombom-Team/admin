@@ -18,8 +18,13 @@ public record GetNewsletterResponse(
         String sender,
         String previousNewsletterUrl,
         boolean previousAllowed,
-        String subscribeMethod
-) {
+        String subscribeMethod,
+
+        // Previous Policy fields
+        String previousStrategy,
+        int previousFixedCount,
+        int previousRecentCount,
+        int previousExposureRatio) {
 
     @QueryProjection
     public GetNewsletterResponse {

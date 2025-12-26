@@ -3,6 +3,7 @@ package me.bombom.api.v1.newsletter.repository;
 import static me.bombom.api.v1.newsletter.domain.QCategory.category;
 import static me.bombom.api.v1.newsletter.domain.QNewsletter.newsletter;
 import static me.bombom.api.v1.newsletter.domain.QNewsletterDetail.newsletterDetail;
+import static me.bombom.api.v1.newsletter.domain.QNewsletterPreviousPolicy.newsletterPreviousPolicy;
 import static me.bombom.api.v1.subscribe.domain.QNewsletterSubscriptionCount.newsletterSubscriptionCount;
 
 import com.querydsl.core.types.OrderSpecifier;
@@ -63,9 +64,15 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
                         newsletterDetail.sender,
                         newsletterDetail.previousNewsletterUrl,
                         newsletterDetail.previousAllowed,
-                        newsletterDetail.subscribeMethod))
+                        newsletterDetail.subscribeMethod,
+
+                        newsletterPreviousPolicy.strategy.stringValue(),
+                        newsletterPreviousPolicy.fixedCount,
+                        newsletterPreviousPolicy.recentCount,
+                        newsletterPreviousPolicy.exposureRatio))
                 .from(newsletter)
                 .join(newsletterDetail).on(newsletter.detailId.eq(newsletterDetail.id))
+                .leftJoin(newsletterPreviousPolicy).on(newsletter.id.eq(newsletterPreviousPolicy.newsletterId))
                 .leftJoin(newsletterSubscriptionCount).on(newsletter.id.eq(newsletterSubscriptionCount.newsletterId))
                 .join(category).on(newsletter.categoryId.eq(category.id))
                 .where(newsletter.id.eq(id))

@@ -131,7 +131,11 @@ class NewsletterControllerTest extends ControllerTestSupport {
                                 "sender",
                                 "prevUrl",
                                 true,
-                                "email");
+                                "email",
+                                "INACTIVE",
+                                0,
+                                0,
+                                0);
 
                 given(newsletterService.getNewsletterDetail(1L))
                                 .willReturn(response);
