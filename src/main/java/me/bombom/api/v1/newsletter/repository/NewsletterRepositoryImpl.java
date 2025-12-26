@@ -12,6 +12,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
@@ -43,7 +44,8 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
                 .leftJoin(newsletterSubscriptionCount).on(newsletter.id.eq(newsletterSubscriptionCount.newsletterId))
                 .where(
                         keywordContains(request.keyword()),
-                        categoryNameEq(request.category()))
+                        categoryNameEq(request.category()),
+                        previousStrategyEq(request.previousStrategy()))
                 .orderBy(getOrderSpecifier(request.sort()))
                 .fetch();
     }
@@ -105,5 +107,12 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
             return null;
         }
         return category.name.eq(categoryName);
+    }
+
+    private BooleanExpression previousStrategyEq(NewsletterPreviousStrategy strategy) {
+        if (strategy == null) {
+            return null;
+        }
+        return newsletterPreviousPolicy.strategy.eq(strategy);
     }
 }

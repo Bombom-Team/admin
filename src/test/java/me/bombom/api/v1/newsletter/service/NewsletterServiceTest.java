@@ -136,7 +136,7 @@ class NewsletterServiceTest {
                                         .build());
                 }
 
-                GetNewslettersRequest request = new GetNewslettersRequest(null, null, null);
+                GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, null);
 
                 // when
                 List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
@@ -162,7 +162,7 @@ class NewsletterServiceTest {
                 createNewsletterWithSubscriberCount(category, "뉴스레터 2", 300);
                 createNewsletterWithSubscriberCount(category, "뉴스레터 3", 200);
 
-                GetNewslettersRequest request = new GetNewslettersRequest(null, null, NewsletterSortType.POPULAR);
+                GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, NewsletterSortType.POPULAR);
 
                 // when
                 List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
@@ -186,7 +186,7 @@ class NewsletterServiceTest {
                 createNewsletterWithCategory(tech, "테크 뉴스레터", "매주 월요일");
                 createNewsletterWithCategory(economy, "경제 뉴스레터", "매주 화요일");
 
-                GetNewslettersRequest request = new GetNewslettersRequest(null, "테크", null);
+                GetNewslettersRequest request = new GetNewslettersRequest(null, "테크", null, null);
 
                 // when
                 List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
@@ -207,7 +207,77 @@ class NewsletterServiceTest {
                 createNewsletterWithCategory(tech, "월요 뉴스레터", "매주 월요일");
                 createNewsletterWithCategory(tech, "화요 뉴스레터", "매주 화요일");
 
-                GetNewslettersRequest request = new GetNewslettersRequest("월요일", null, null);
+                GetNewslettersRequest request = new GetNewslettersRequest("월요일", null, null, null);
+
+                // when
+                List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
+
+                // then
+                assertSoftly(softly -> {
+                        softly.assertThat(result.getFirst().issueCycle()).isEqualTo("매주 월요일");
+                });
+        }
+
+        @Test
+        @DisplayName("뉴스레터 목록을 지난 뉴스레터 전략으로 필터링한다.")
+        void getNewsletters_filterByPreviousStrategy() {
+                // given
+                Category category = categoryRepository.save(Category.builder().name("테크").build());
+                NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
+                                .mainPageUrl("url")
+                                .subscribeUrl("sub")
+                                .issueCycle("weekly")
+                                .sender("sender")
+                                .build());
+
+                // Newsletter 1: INACTIVE (default)
+                Newsletter n1 = newsletterRepository.save(Newsletter.builder()
+                                .name("n1")
+                                .description("desc")
+                                .imageUrl("img")
+                                .email("email1")
+                                .detailId(detail.getId())
+                                .categoryId(category.getId())
+                                .build());
+                newsletterPreviousPolicyRepository.save(me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy
+                                .builder()
+                                .newsletterId(n1.getId())
+                                .strategy(me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.INACTIVE)
+                                .fixedCount(0)
+                                .recentCount(0)
+                                .exposureRatio(0)
+                                .build());
+
+                NewsletterDetail detail2 = newsletterDetailRepository.save(NewsletterDetail.builder()
+                                .mainPageUrl("url2")
+                                .subscribeUrl("sub2")
+                                .issueCycle("weekly")
+                                .sender("sender2")
+                                .build());
+
+                // Newsletter 2: RECENT_ONLY
+                Newsletter n2 = newsletterRepository.save(Newsletter.builder()
+                                .name("n2")
+                                .description("desc")
+                                .imageUrl("img")
+                                .email("email2")
+                                .detailId(detail2.getId())
+                                .categoryId(category.getId())
+                                .build());
+                newsletterPreviousPolicyRepository.save(me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy
+                                .builder()
+                                .newsletterId(n2.getId())
+                                .strategy(me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.RECENT_ONLY)
+                                .fixedCount(0)
+                                .recentCount(5)
+                                .exposureRatio(0)
+                                .build());
+
+                newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(n1.getId()));
+                newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(n2.getId()));
+
+                GetNewslettersRequest request = new GetNewslettersRequest(null, null,
+                                me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.RECENT_ONLY, null);
 
                 // when
                 List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
@@ -215,7 +285,8 @@ class NewsletterServiceTest {
                 // then
                 assertSoftly(softly -> {
                         softly.assertThat(result).hasSize(1);
-                        softly.assertThat(result.getFirst().issueCycle()).isEqualTo("매주 월요일");
+                        softly.assertThat(result.getFirst().name()).isEqualTo("n2");
+                        softly.assertThat(result.getFirst().previousStrategy()).isEqualTo("RECENT_ONLY");
                 });
         }
 
@@ -362,7 +433,8 @@ class NewsletterServiceTest {
                 assertSoftly(softly -> {
                         softly.assertThat(newsletterRepository.existsById(newsletter.getId())).isFalse();
                         softly.assertThat(newsletterDetailRepository.existsById(detail.getId())).isFalse();
-                        softly.assertThat(newsletterSubscriptionCountRepository.findByNewsletterId(newsletter.getId())).isEmpty();
+                        softly.assertThat(newsletterSubscriptionCountRepository.findByNewsletterId(newsletter.getId()))
+                                        .isEmpty();
                 });
         }
 
