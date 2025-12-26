@@ -1,5 +1,7 @@
 package me.bombom.api.v1.newsletter.dto;
 
+import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
+
 public record UpdateNewsletterRequest(
 
         String name,
@@ -14,6 +16,11 @@ public record UpdateNewsletterRequest(
         String sender,
         String previousNewsletterUrl,
         Boolean previousAllowed,
-        String subscribeMethod
+        String subscribeMethod,
+
+        NewsletterPreviousStrategy previousStrategy,
+        Integer previousFixedCount,
+        Integer previousRecentCount,
+        Integer previousExposureRatio
 ) {
 }

@@ -359,6 +359,14 @@ class NewsletterServiceTest {
                                 .detailId(detail.getId())
                                 .categoryId(category.getId())
                                 .build());
+                newsletterPreviousPolicyRepository.save(me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy
+                                .builder()
+                                .newsletterId(newsletter.getId())
+                                .strategy(me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.INACTIVE)
+                                .fixedCount(0)
+                                .recentCount(0)
+                                .exposureRatio(0)
+                                .build());
 
                 UpdateNewsletterRequest request = new UpdateNewsletterRequest(
                                 "New Name",
@@ -372,7 +380,11 @@ class NewsletterServiceTest {
                                 "new sender",
                                 "new-prev.com",
                                 false,
-                                "kakao");
+                                "kakao",
+                                me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.FIXED_ONLY,
+                                10,
+                                null,
+                                null);
 
                 // when
                 newsletterService.update(newsletter.getId(), request);
@@ -380,6 +392,8 @@ class NewsletterServiceTest {
                 // then
                 Newsletter updatedNewsletter = newsletterRepository.findById(newsletter.getId()).orElseThrow();
                 NewsletterDetail updatedDetail = newsletterDetailRepository.findById(detail.getId()).orElseThrow();
+                me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy updatedPolicy = newsletterPreviousPolicyRepository
+                                .findByNewsletterId(newsletter.getId()).orElseThrow();
 
                 assertSoftly(softly -> {
                         softly.assertThat(updatedNewsletter.getName()).isEqualTo("New Name");
@@ -387,6 +401,9 @@ class NewsletterServiceTest {
                         softly.assertThat(updatedNewsletter.getCategoryId()).isEqualTo(newCategory.getId());
                         softly.assertThat(updatedDetail.getMainPageUrl()).isEqualTo("new.com");
                         softly.assertThat(updatedDetail.getSubscribeMethod()).isEqualTo("kakao");
+                        softly.assertThat(updatedPolicy.getStrategy()).isEqualTo(
+                                        me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.FIXED_ONLY);
+                        softly.assertThat(updatedPolicy.getFixedCount()).isEqualTo(10);
                 });
         }
 
@@ -395,7 +412,8 @@ class NewsletterServiceTest {
         void updateNewsletter_notFound() {
                 // given
                 UpdateNewsletterRequest request = new UpdateNewsletterRequest(
-                                "New Name", null, null, null, null, null, null, null, null, null, null, null);
+                                "New Name", null, null, null, null, null, null, null, null, null, null, null, null,
+                                null, null, null);
 
                 // when & then
                 assertThatThrownBy(() -> newsletterService.update(999L, request))

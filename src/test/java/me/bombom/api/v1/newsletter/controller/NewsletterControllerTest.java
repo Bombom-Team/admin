@@ -131,8 +131,8 @@ class NewsletterControllerTest extends ControllerTestSupport {
                                 "sender",
                                 "prevUrl",
                                 true,
-                                "email",
-                                "INACTIVE",
+                                "kakao",
+                                null,
                                 0,
                                 0,
                                 0);
@@ -181,7 +181,11 @@ class NewsletterControllerTest extends ControllerTestSupport {
                                 "수정된 발송자",
                                 "http://updated.prev",
                                 false,
-                                "카카오톡");
+                                "카카오톡",
+                                null,
+                                null,
+                                null,
+                                null);
 
                 doNothing().when(newsletterService).update(1L, request);
 

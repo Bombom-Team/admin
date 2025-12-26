@@ -52,13 +52,32 @@ public class NewsletterPreviousPolicy extends BaseEntity {
             @NonNull NewsletterPreviousStrategy strategy,
             int fixedCount,
             int recentCount,
-            int exposureRatio
-    ) {
+            int exposureRatio) {
         this.id = id;
         this.newsletterId = newsletterId;
         this.strategy = strategy;
         this.fixedCount = fixedCount;
         this.recentCount = recentCount;
         this.exposureRatio = exposureRatio;
+    }
+
+    public void update(
+            NewsletterPreviousStrategy strategy,
+            Integer fixedCount,
+            Integer recentCount,
+            Integer exposureRatio
+    ) {
+        if (strategy != null) {
+            this.strategy = strategy;
+        }
+        if (fixedCount != null) {
+            this.fixedCount = fixedCount;
+        }
+        if (recentCount != null) {
+            this.recentCount = recentCount;
+        }
+        if (exposureRatio != null) {
+            this.exposureRatio = exposureRatio;
+        }
     }
 }

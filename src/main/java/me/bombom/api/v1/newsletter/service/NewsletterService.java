@@ -89,6 +89,14 @@ public class NewsletterService {
                                 request.previousAllowed(),
                                 request.subscribeMethod()
                 );
+
+                NewsletterPreviousPolicy policy = findNewsletterPreviousPolicy(newsletter.getId());
+                policy.update(
+                                request.previousStrategy(),
+                                request.previousFixedCount(),
+                                request.previousRecentCount(),
+                                request.previousExposureRatio()
+                );
         }
 
         // TODO: 추후에 휴재, 폐간 처리로 해야할 듯
@@ -112,6 +120,12 @@ public class NewsletterService {
                 return newsletterDetailRepository.findById(id)
                                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                                                 .addContext("detailId", id));
+        }
+
+        private NewsletterPreviousPolicy findNewsletterPreviousPolicy(Long newsletterId) {
+                return newsletterPreviousPolicyRepository.findByNewsletterId(newsletterId)
+                                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                                                .addContext("newsletterId", newsletterId));
         }
 
         private Long resolveCategoryId(String categoryName) {
