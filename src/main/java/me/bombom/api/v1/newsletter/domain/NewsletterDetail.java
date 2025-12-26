@@ -20,10 +20,10 @@ public class NewsletterDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length=512)
+    @Column(nullable = false, length = 512)
     private String mainPageUrl;
 
-    @Column(nullable = false, length=512)
+    @Column(nullable = false, length = 512)
     private String subscribeUrl;
 
     @Column(nullable = false)
@@ -35,13 +35,13 @@ public class NewsletterDetail {
     @Column(nullable = false, length = 100)
     private String sender;
 
-    @Column(length=512)
+    @Column(length = 512)
     private String previousNewsletterUrl;
 
     @Column(nullable = false)
     private boolean previousAllowed;
 
-    @Column(length=512)
+    @Column(length = 512)
     private String subscribeMethod;
 
     @Builder
@@ -54,16 +54,39 @@ public class NewsletterDetail {
             @NonNull String sender,
             String previousNewsletterUrl,
             boolean previousAllowed,
-            String subscribeMethod
-    ) {
+            String subscribeMethod) {
         this.id = id;
         this.mainPageUrl = mainPageUrl;
         this.subscribeUrl = subscribeUrl;
         this.issueCycle = issueCycle;
-        this.subscribeCount = subscribeCount;
         this.sender = sender;
+        this.subscribeCount = 0;
         this.previousNewsletterUrl = previousNewsletterUrl;
         this.previousAllowed = previousAllowed;
         this.subscribeMethod = subscribeMethod;
+    }
+
+    public void update(
+            String mainPageUrl,
+            String subscribeUrl,
+            String issueCycle,
+            String sender,
+            String previousNewsletterUrl,
+            Boolean previousAllowed,
+            String subscribeMethod) {
+        if (mainPageUrl != null)
+            this.mainPageUrl = mainPageUrl;
+        if (subscribeUrl != null)
+            this.subscribeUrl = subscribeUrl;
+        if (issueCycle != null)
+            this.issueCycle = issueCycle;
+        if (sender != null)
+            this.sender = sender;
+        if (previousNewsletterUrl != null)
+            this.previousNewsletterUrl = previousNewsletterUrl;
+        if (previousAllowed != null)
+            this.previousAllowed = previousAllowed;
+        if (subscribeMethod != null)
+            this.subscribeMethod = subscribeMethod;
     }
 }

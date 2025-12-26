@@ -1,0 +1,27 @@
+package me.bombom.api.v1.newsletter.dto;
+
+import com.querydsl.core.annotations.QueryProjection;
+
+public record GetNewsletterResponse(
+        Long id,
+        String name,
+        String description,
+        String imageUrl,
+        String email,
+        String categoryName,
+
+        // Detail fields
+        String mainPageUrl,
+        String subscribeUrl,
+        String issueCycle,
+        int subscribeCount,
+        String sender,
+        String previousNewsletterUrl,
+        boolean previousAllowed,
+        String subscribeMethod
+) {
+
+    @QueryProjection
+    public GetNewsletterResponse {
+    }
+}
