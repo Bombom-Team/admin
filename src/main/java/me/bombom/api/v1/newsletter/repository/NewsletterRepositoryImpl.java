@@ -33,7 +33,7 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
                         newsletter.imageUrl,
                         category.name,
                         newsletterDetail.issueCycle,
-                        newsletter.description))
+                        newsletterSubscriptionCount.total))
                 .from(newsletter)
                 .join(newsletterDetail).on(newsletter.detailId.eq(newsletterDetail.id))
                 .join(category).on(newsletter.categoryId.eq(category.id))

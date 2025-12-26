@@ -97,9 +97,9 @@ class NewsletterControllerTest extends ControllerTestSupport {
         void getNewsletters_success() throws Exception {
                 // given
                 GetNewsletterSummaryResponse response1 = new GetNewsletterSummaryResponse(
-                                1L, "뉴스레터1", "img1", "테크", "매주", "설명1");
+                                1L, "뉴스레터1", "img1", "테크", "매주", 10);
                 GetNewsletterSummaryResponse response2 = new GetNewsletterSummaryResponse(
-                                2L, "뉴스레터2", "img2", "경제", "격주", "설명2");
+                                2L, "뉴스레터2", "img2", "경제", "격주", 20);
 
                 given(newsletterService.getNewsletters(any(GetNewslettersRequest.class)))
                                 .willReturn(List.of(response1, response2));
