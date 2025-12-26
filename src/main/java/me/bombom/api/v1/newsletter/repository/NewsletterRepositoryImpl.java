@@ -34,10 +34,12 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
                         newsletter.imageUrl,
                         category.name,
                         newsletterDetail.issueCycle,
-                        newsletterSubscriptionCount.total))
+                        newsletterSubscriptionCount.total,
+                        newsletterPreviousPolicy.strategy.stringValue()))
                 .from(newsletter)
                 .join(newsletterDetail).on(newsletter.detailId.eq(newsletterDetail.id))
                 .join(category).on(newsletter.categoryId.eq(category.id))
+                .leftJoin(newsletterPreviousPolicy).on(newsletter.id.eq(newsletterPreviousPolicy.newsletterId))
                 .leftJoin(newsletterSubscriptionCount).on(newsletter.id.eq(newsletterSubscriptionCount.newsletterId))
                 .where(
                         keywordContains(request.keyword()),

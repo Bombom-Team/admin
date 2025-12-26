@@ -8,8 +8,8 @@ public record GetNewsletterSummaryResponse(
         String imageUrl,
         String categoryName,
         String issueCycle,
-        int subscriptionCount
-) {
+        int subscriptionCount,
+        String previousStrategy) {
 
     @QueryProjection
     public GetNewsletterSummaryResponse {
