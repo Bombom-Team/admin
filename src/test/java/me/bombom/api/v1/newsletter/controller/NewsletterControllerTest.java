@@ -142,7 +142,7 @@ class NewsletterControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.id").value(1L))
                                 .andExpect(jsonPath("$.name").value("뉴스레터1"))
-                                .andExpect(jsonPath("$.subscribeCount").value(100L));
+                                .andExpect(jsonPath("$.subscriptionCount").value(100L));
         }
 
         @Test

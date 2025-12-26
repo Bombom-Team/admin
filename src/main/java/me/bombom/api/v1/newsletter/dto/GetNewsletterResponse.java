@@ -14,7 +14,7 @@ public record GetNewsletterResponse(
         String mainPageUrl,
         String subscribeUrl,
         String issueCycle,
-        int subscribeCount,
+        int subscriptionCount,
         String sender,
         String previousNewsletterUrl,
         boolean previousAllowed,

@@ -253,7 +253,7 @@ class NewsletterServiceTest {
                         softly.assertThat(response.name()).isEqualTo("테크 뉴스레터");
                         softly.assertThat(response.categoryName()).isEqualTo("테크");
                         softly.assertThat(response.sender()).isEqualTo("sender");
-                        softly.assertThat(response.subscribeCount()).isEqualTo(100);
+                        softly.assertThat(response.subscriptionCount()).isEqualTo(100);
                 });
         }
 
