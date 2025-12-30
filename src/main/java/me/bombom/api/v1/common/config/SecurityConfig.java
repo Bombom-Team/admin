@@ -1,12 +1,12 @@
 package me.bombom.api.v1.common.config;
 
 import java.time.Duration;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.session.web.http.CookieSerializer;
@@ -23,6 +23,15 @@ public class SecurityConfig {
     private String activeProfile;
 
     @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return web -> web.ignoring()
+                .requestMatchers(
+                        "/swagger-ui/**", "/v3/api-docs/**", "/actuator/health",
+                        "/admin/v3/api-docs/**", "/admin/swagger-ui/**", "/admin/swagger-ui.html",
+                        "/admin/api-docs/**");
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -30,8 +39,6 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/actuator/health").permitAll();
-
                     if ("local".equalsIgnoreCase(activeProfile)) {
                         auth.requestMatchers("/admin/**").permitAll();
                     } else {
