@@ -1,0 +1,18 @@
+package me.bombom.api.v1.challenge.dto;
+
+import com.querydsl.core.annotations.QueryProjection;
+import lombok.Builder;
+
+@Builder
+public record GetChallengeParticipantResponse(
+                Long memberId,
+                String nickname,
+                Long challengeTeamId,
+                int completedDays,
+                boolean isSurvived
+) {
+
+        @QueryProjection
+        public GetChallengeParticipantResponse {
+        }
+}
