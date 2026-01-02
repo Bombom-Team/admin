@@ -5,6 +5,7 @@ import static me.bombom.api.v1.challenge.domain.QChallenge.challenge;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.challenge.domain.ChallengeStatus;
@@ -30,11 +31,11 @@ public class CustomChallengeRepositoryImpl implements CustomChallengeRepository 
                                                 challenge.name,
                                                 challenge.generation,
                                                 challenge.startDate,
-                                                challenge.endDate)
-                                ).where(filterByStatus(request.status()))
+                                                challenge.endDate))
+                                .where(filterByStatus(request.status()))
                                 .offset(pageable.getOffset())
                                 .limit(pageable.getPageSize())
-                                .orderBy(challenge.id.desc())
+                                .orderBy(challenge.id.asc())
                                 .fetch();
 
                 JPAQuery<Long> countQuery = queryFactory
@@ -50,7 +51,7 @@ public class CustomChallengeRepositoryImpl implements CustomChallengeRepository 
                         return null;
                 }
 
-                java.time.LocalDate now = java.time.LocalDate.now();
+                LocalDate now = LocalDate.now();
 
                 return switch (status) {
                         case BEFORE_START -> challenge.startDate.after(now);

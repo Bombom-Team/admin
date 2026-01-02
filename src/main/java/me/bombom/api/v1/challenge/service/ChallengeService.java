@@ -27,7 +27,8 @@ public class ChallengeService {
     public Page<GetChallengeParticipantResponse> getChallengeParticipants(
             Long challengeId,
             GetChallengeParticipantsRequest request,
-            Pageable pageable) {
+            Pageable pageable
+    ) {
         return challengeParticipantRepository.getChallengeParticipants(challengeId, request, pageable);
     }
 }
