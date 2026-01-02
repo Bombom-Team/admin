@@ -68,8 +68,7 @@ class ChallengeControllerTest extends ControllerTestSupport {
 
                 // when // then
                 mockMvc.perform(get("/admin/api/v1/challenges/1"))
-                                .andExpect(status().isNotFound()); // Expecting 404, need to ensure exception handler
-                                                                   // handles this
+                                .andExpect(status().isNotFound());
         }
 
         @Test
