@@ -52,4 +52,15 @@ public interface ChallengeControllerApi {
                         @PathVariable Long challengeId,
                         @ParameterObject @ModelAttribute GetChallengeParticipantsRequest request,
                         @ParameterObject @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable);
+
+        @Operation(summary = "챌린지 팀 자동 배정", description = """
+                        챌린지 참여자를 대상으로 팀을 자동으로 배정합니다.
+                        - 목표 팀원 수: 15명
+                        - 전체 참여자를 무작위로 섞은 후, 균등하게 배분합니다.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "배정 성공"),
+                        @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지")
+        })
+        void assignTeams(@PathVariable Long challengeId);
 }

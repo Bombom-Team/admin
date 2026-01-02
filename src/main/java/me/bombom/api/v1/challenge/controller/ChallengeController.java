@@ -13,6 +13,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,5 +45,11 @@ public class ChallengeController implements ChallengeControllerApi {
             @ModelAttribute GetChallengeParticipantsRequest request,
             @PageableDefault(sort = "id", direction = Direction.ASC) Pageable pageable) {
         return challengeService.getChallengeParticipants(challengeId, request, pageable);
+    }
+
+    @Override
+    @PostMapping("/{challengeId}/teams/assignment")
+    public void assignTeams(@PathVariable Long challengeId) {
+        challengeService.assignTeams(challengeId);
     }
 }

@@ -82,4 +82,8 @@ public class ChallengeParticipant extends BaseEntity {
     public void markAsFailed() {
         this.isSurvived = false;
     }
+
+    public void assignTeam(Long challengeTeamId) {
+        this.challengeTeamId = challengeTeamId;
+    }
 }
