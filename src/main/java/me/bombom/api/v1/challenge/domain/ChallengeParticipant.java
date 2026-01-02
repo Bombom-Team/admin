@@ -34,13 +34,13 @@ public class ChallengeParticipant extends BaseEntity {
 
     private Long challengeTeamId;
 
-    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    @Column(nullable = false)
     private int completedDays = 0;
 
-    @Column(nullable = false, columnDefinition = "TINYINT(1) DEFAULT 1")
+    @Column(nullable = false)
     private boolean isSurvived = true;
 
-    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    @Column(nullable = false)
     private int shield = 0;
 
     @Builder

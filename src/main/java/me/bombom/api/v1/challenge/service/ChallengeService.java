@@ -70,8 +70,8 @@ public class ChallengeService {
     }
 
     private int calculateTeamCount(int totalParticipants) {
-        int targetTeamSize = 15;
-        return Math.max(1, (int) Math.round((double) totalParticipants / targetTeamSize));
+        int maxTeamSize = 15;
+        return Math.max(1, (int) Math.ceil((double) totalParticipants / maxTeamSize));
     }
 
     private List<ChallengeTeam> createTeams(Long challengeId, int teamCount) {
