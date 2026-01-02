@@ -9,6 +9,8 @@ import java.util.List;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
 import me.bombom.api.v1.challenge.service.ChallengeService;
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
+import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.common.support.ControllerTestSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -66,12 +68,11 @@ class ChallengeControllerTest extends ControllerTestSupport {
         void getChallengeNotFound() throws Exception {
                 // given
                 given(challengeService.getChallenge(any()))
-                                .willThrow(new java.util.NoSuchElementException("Challenge not found"));
+                                .willThrow(new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND));
 
                 // when // then
                 mockMvc.perform(get("/admin/api/v1/challenges/1"))
-                                .andExpect(status().isNotFound()); // Expecting 404, need to ensure exception handler
-                                                                   // handles this
+                                .andExpect(status().isNotFound());
         }
 
         @DisplayName("챌린지 참여자 목록을 조회한다.")
