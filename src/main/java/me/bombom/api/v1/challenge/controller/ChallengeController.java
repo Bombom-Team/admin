@@ -27,9 +27,14 @@ public class ChallengeController implements ChallengeControllerApi {
     @GetMapping
     public Page<GetChallengeResponse> getChallenges(
             @ModelAttribute GetChallengesRequest request,
-            @PageableDefault(sort = "id", direction = Direction.ASC) Pageable pageable
-    ) {
+            @PageableDefault(sort = "id", direction = Direction.ASC) Pageable pageable) {
         return challengeService.getChallenges(request, pageable);
+    }
+
+    @Override
+    @GetMapping("/{challengeId}")
+    public me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse getChallenge(@PathVariable Long challengeId) {
+        return challengeService.getChallenge(challengeId);
     }
 
     @Override
@@ -37,8 +42,7 @@ public class ChallengeController implements ChallengeControllerApi {
     public Page<GetChallengeParticipantResponse> getChallengeParticipants(
             @PathVariable Long challengeId,
             @ModelAttribute GetChallengeParticipantsRequest request,
-            @PageableDefault(sort = "id", direction = Direction.ASC) Pageable pageable
-    ) {
+            @PageableDefault(sort = "id", direction = Direction.ASC) Pageable pageable) {
         return challengeService.getChallengeParticipants(challengeId, request, pageable);
     }
 }

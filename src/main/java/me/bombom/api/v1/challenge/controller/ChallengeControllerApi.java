@@ -36,6 +36,14 @@ public interface ChallengeControllerApi {
                         @ParameterObject @ModelAttribute GetChallengesRequest request,
                         @ParameterObject @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable);
 
+        @Operation(summary = "챌린지 단건 조회", description = "챌린지 상세 정보를 조회합니다.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "조회 성공"),
+                        @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지")
+        })
+        me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse getChallenge(
+                        @PathVariable Long challengeId);
+
         @Operation(summary = "챌린지 참여자 목록 조회", description = "챌린지 별 참여자 목록을 조회합니다. (팀별 필터링, 팀 미배정자 조회 지원)")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "목록 조회 성공")

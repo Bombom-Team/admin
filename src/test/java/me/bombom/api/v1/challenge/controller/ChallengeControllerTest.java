@@ -48,6 +48,32 @@ class ChallengeControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isOk());
         }
 
+        @DisplayName("챌린지 단건 상세 정보를 조회한다.")
+        @Test
+        void getChallenge() throws Exception {
+                // given
+                given(challengeService.getChallenge(any()))
+                                .willReturn(me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse.builder()
+                                                .build());
+
+                // when // then
+                mockMvc.perform(get("/admin/api/v1/challenges/1"))
+                                .andExpect(status().isOk());
+        }
+
+        @DisplayName("존재하지 않는 챌린지 상세 정보를 조회할 수 없다.")
+        @Test
+        void getChallengeNotFound() throws Exception {
+                // given
+                given(challengeService.getChallenge(any()))
+                                .willThrow(new java.util.NoSuchElementException("Challenge not found"));
+
+                // when // then
+                mockMvc.perform(get("/admin/api/v1/challenges/1"))
+                                .andExpect(status().isNotFound()); // Expecting 404, need to ensure exception handler
+                                                                   // handles this
+        }
+
         @DisplayName("챌린지 참여자 목록을 조회한다.")
         @Test
         void getChallengeParticipants() throws Exception {
