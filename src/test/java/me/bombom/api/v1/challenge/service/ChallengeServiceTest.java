@@ -1,6 +1,7 @@
 package me.bombom.api.v1.challenge.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import java.util.ArrayList;
@@ -8,24 +9,20 @@ import java.util.List;
 import me.bombom.api.v1.challenge.domain.Challenge;
 import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
+import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
+import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
 import me.bombom.api.v1.common.config.QuerydslConfig;
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
-import org.springframework.test.context.TestPropertySource;
 
 @DataJpaTest
-@EnableJpaAuditing
 @Import({ ChallengeService.class, QuerydslConfig.class })
-@TestPropertySource(properties = {
-        "spring.main.allow-bean-definition-overriding=true",
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
-})
 class ChallengeServiceTest {
 
     @Autowired
@@ -184,5 +181,70 @@ class ChallengeServiceTest {
                     .build());
         }
         challengeParticipantRepository.saveAll(participants);
+    }
+
+    @Test
+    void 챌린지_팀_목록_조회_성공() {
+        // given
+        Challenge challenge = createChallenge();
+        createParticipants(challenge.getId(), 15);
+        challengeService.assignTeams(challenge.getId());
+
+        // when
+        List<GetChallengeTeamResponse> responses = challengeService.getChallengeTeams(challenge.getId());
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(responses).isNotEmpty();
+            softly.assertThat(responses).extracting("challengeId").containsOnly(challenge.getId());
+            softly.assertThat(responses).hasSize(1);
+        });
+    }
+
+    @Test
+    void 참여자_팀_수동_변경_성공() {
+        // given
+        Challenge challenge = createChallenge();
+        createParticipants(challenge.getId(), 5);
+        challengeService.assignTeams(challenge.getId());
+
+        List<ChallengeTeam> teams = challengeTeamRepository.findByChallengeId(challenge.getId());
+        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge.getId())
+                .get(0);
+
+        // 1개 팀뿐이면 같은 팀으로 변경(실질적 변경 없음)도 허용되므로 첫번째 팀 선택 로직 단순화
+        ChallengeTeam newTeam = teams.get(0);
+
+        // when
+        challengeService.updateParticipantTeam(challenge.getId(), participant.getMemberId(),
+                new UpdateParticipantTeamRequest(newTeam.getId()));
+
+        // then
+        ChallengeParticipant updatedParticipant = challengeParticipantRepository
+                .findByChallengeIdAndMemberId(challenge.getId(), participant.getMemberId()).orElseThrow();
+
+        assertThat(updatedParticipant.getChallengeTeamId()).isEqualTo(newTeam.getId());
+    }
+
+    @Test
+    void 참여자_팀_수동_변경_실패_다른_챌린지_팀() {
+        // given
+        Challenge challenge1 = createChallenge();
+        Challenge challenge2 = createChallenge();
+        createParticipants(challenge1.getId(), 5);
+        createParticipants(challenge2.getId(), 5);
+        challengeService.assignTeams(challenge1.getId());
+        challengeService.assignTeams(challenge2.getId());
+
+        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge1.getId())
+                .get(0);
+        ChallengeTeam otherChallengeTeam = challengeTeamRepository.findByChallengeId(challenge2.getId()).get(0);
+
+        UpdateParticipantTeamRequest request = new UpdateParticipantTeamRequest(otherChallengeTeam.getId());
+
+        // when & then
+        assertThatThrownBy(
+                () -> challengeService.updateParticipantTeam(challenge1.getId(), participant.getMemberId(), request))
+                .isInstanceOf(CIllegalArgumentException.class);
     }
 }
