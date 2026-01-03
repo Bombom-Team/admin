@@ -209,11 +209,10 @@ class ChallengeServiceTest {
         challengeService.assignTeams(challenge.getId());
 
         List<ChallengeTeam> teams = challengeTeamRepository.findByChallengeId(challenge.getId());
-        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge.getId())
-                .get(0);
+        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge.getId()).getFirst();
 
         // 1개 팀뿐이면 같은 팀으로 변경(실질적 변경 없음)도 허용되므로 첫번째 팀 선택 로직 단순화
-        ChallengeTeam newTeam = teams.get(0);
+        ChallengeTeam newTeam = teams.getFirst();
 
         // when
         challengeService.updateParticipantTeam(challenge.getId(), participant.getMemberId(),
@@ -236,9 +235,8 @@ class ChallengeServiceTest {
         challengeService.assignTeams(challenge1.getId());
         challengeService.assignTeams(challenge2.getId());
 
-        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge1.getId())
-                .get(0);
-        ChallengeTeam otherChallengeTeam = challengeTeamRepository.findByChallengeId(challenge2.getId()).get(0);
+        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge1.getId()).getFirst();
+        ChallengeTeam otherChallengeTeam = challengeTeamRepository.findByChallengeId(challenge2.getId()).getFirst();
 
         UpdateParticipantTeamRequest request = new UpdateParticipantTeamRequest(otherChallengeTeam.getId());
 
