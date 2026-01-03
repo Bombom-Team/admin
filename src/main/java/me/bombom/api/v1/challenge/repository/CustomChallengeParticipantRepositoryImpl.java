@@ -28,7 +28,7 @@ public class CustomChallengeParticipantRepositoryImpl implements CustomChallenge
             GetChallengeParticipantsRequest request, Pageable pageable) {
         List<GetChallengeParticipantResponse> content = queryFactory
                 .select(new QGetChallengeParticipantResponse(
-                        member.id,
+                        challengeParticipant.id,
                         member.nickname,
                         challengeTeam.id,
                         challengeParticipant.completedDays,
@@ -49,8 +49,7 @@ public class CustomChallengeParticipantRepositoryImpl implements CustomChallenge
         JPAQuery<Long> countQuery = queryFactory
                 .select(challengeParticipant.count())
                 .from(challengeParticipant)
-                .where(
-                        challengeParticipant.challengeId.eq(challengeId),
+                .where(challengeParticipant.challengeId.eq(challengeId),
                         eqChallengeTeamId(request.challengeTeamId()),
                         filterHasTeam(request.hasTeam()));
 

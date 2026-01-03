@@ -6,18 +6,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
 import me.bombom.api.v1.challenge.service.ChallengeService;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.common.support.ControllerTestSupport;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @WebMvcTest(controllers = ChallengeController.class)
 class ChallengeControllerTest extends ControllerTestSupport {
@@ -25,9 +26,8 @@ class ChallengeControllerTest extends ControllerTestSupport {
         @MockitoBean
         private ChallengeService challengeService;
 
-        @DisplayName("챌린지 목록을 조회한다.")
         @Test
-        void getChallenges() throws Exception {
+        void 챌린지_목록을_조회한다() throws Exception {
                 // given
                 given(challengeService.getChallenges(any(), any(Pageable.class)))
                                 .willReturn(new PageImpl<>(List.of(GetChallengeResponse.builder().build())));
@@ -37,9 +37,8 @@ class ChallengeControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isOk());
         }
 
-        @DisplayName("상태별 챌린지 목록을 조회한다.")
         @Test
-        void getChallengesByStatus() throws Exception {
+        void 상태별_챌린지_목록을_조회한다() throws Exception {
                 // given
                 given(challengeService.getChallenges(any(), any(Pageable.class)))
                                 .willReturn(new PageImpl<>(List.of(GetChallengeResponse.builder().build())));
@@ -50,9 +49,8 @@ class ChallengeControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isOk());
         }
 
-        @DisplayName("챌린지 단건 상세 정보를 조회한다.")
         @Test
-        void getChallenge() throws Exception {
+        void 챌린지_단건_상세_정보를_조회한다() throws Exception {
                 // given
                 given(challengeService.getChallenge(any()))
                                 .willReturn(me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse.builder()
@@ -63,9 +61,8 @@ class ChallengeControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isOk());
         }
 
-        @DisplayName("존재하지 않는 챌린지 상세 정보를 조회할 수 없다.")
         @Test
-        void getChallengeNotFound() throws Exception {
+        void 존재하지_않는_챌린지_상세_정보를_조회할_수_없다() throws Exception {
                 // given
                 given(challengeService.getChallenge(any()))
                                 .willThrow(new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND));
@@ -75,9 +72,8 @@ class ChallengeControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isNotFound());
         }
 
-        @DisplayName("챌린지 참여자 목록을 조회한다.")
         @Test
-        void getChallengeParticipants() throws Exception {
+        void 챌린지_참여자_목록을_조회한다() throws Exception {
                 // given
                 given(challengeService.getChallengeParticipants(any(), any(), any(Pageable.class)))
                                 .willReturn(new PageImpl<>(List.of(GetChallengeParticipantResponse.builder().build())));
@@ -88,9 +84,8 @@ class ChallengeControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isOk());
         }
 
-        @DisplayName("팀이 없는 참여자 목록을 조회한다.")
         @Test
-        void getChallengeParticipantsWithoutTeam() throws Exception {
+        void 팀이_없는_참여자_목록을_조회한다() throws Exception {
                 // given
                 given(challengeService.getChallengeParticipants(any(), any(), any(Pageable.class)))
                                 .willReturn(new PageImpl<>(List.of(GetChallengeParticipantResponse.builder().build())));
@@ -101,9 +96,8 @@ class ChallengeControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isOk());
         }
 
-        @DisplayName("특정 팀의 참여자 목록을 조회한다.")
         @Test
-        void getChallengeParticipantsByTeam() throws Exception {
+        void 특정_팀의_참여자_목록을_조회한다() throws Exception {
                 // given
                 given(challengeService.getChallengeParticipants(any(), any(), any(Pageable.class)))
                                 .willReturn(new PageImpl<>(List.of(GetChallengeParticipantResponse.builder().build())));
@@ -112,6 +106,18 @@ class ChallengeControllerTest extends ControllerTestSupport {
                 mockMvc.perform(get("/admin/api/v1/challenges/1/participants")
                                 .param("challengeTeamId", "1")
                                 .param("hasTeam", "true"))
+                                .andExpect(status().isOk());
+        }
+
+        @Test
+        void 챌린지_팀을_자동_배정한다() throws Exception {
+                // given
+                AssignTeamsRequest request = new AssignTeamsRequest(15);
+
+                // when // then
+                mockMvc.perform(MockMvcRequestBuilders.post("/admin/api/v1/challenges/1/teams/assignment")
+                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk());
         }
 }

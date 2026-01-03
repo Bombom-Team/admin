@@ -2,6 +2,7 @@ package me.bombom.api.v1.common.support;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import me.bombom.api.v1.common.config.SecurityConfig;
+import me.bombom.api.v1.common.exception.GlobalExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -11,7 +12,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest
-@Import(SecurityConfig.class)
+@Import({ SecurityConfig.class, GlobalExceptionHandler.class })
 @WithMockUser(roles = "2")
 public abstract class ControllerTestSupport {
 
