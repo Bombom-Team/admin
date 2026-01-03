@@ -54,7 +54,6 @@ public class ChallengeService {
         return challengeParticipantRepository.getChallengeParticipants(challengeId, request, pageable);
     }
 
-    @Transactional(readOnly = true)
     public List<GetChallengeTeamResponse> getChallengeTeams(Long challengeId) {
         return challengeTeamRepository.findByChallengeId(challengeId).stream()
                 .map(GetChallengeTeamResponse::from)
