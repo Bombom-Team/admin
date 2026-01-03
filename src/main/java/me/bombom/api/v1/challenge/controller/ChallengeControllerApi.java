@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
+import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
@@ -20,9 +21,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Challenge", description = "챌린지 관리 API")
@@ -115,6 +118,30 @@ public interface ChallengeControllerApi {
         })
         void assignTeams(
                         @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId,
-                        @RequestBody @Valid AssignTeamsRequest request
-        );
+                        @RequestBody @Valid AssignTeamsRequest request);
+
+        @Operation(summary = "챌린지 팀 일괄 생성", description = "지정된 개수만큼 챌린지 팀을 일괄 생성합니다.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "생성 성공"),
+                        @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지", content = @Content)
+        })
+        @PostMapping("/{challengeId}/teams")
+        void createChallengeTeams(
+                        @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId,
+                        @RequestBody @Valid CreateChallengeTeamsRequest request);
+
+        @Operation(summary = "챌린지 팀 삭제", description = """
+                        챌린지 팀을 삭제합니다.
+
+                        **Frontend Tip:**
+                        - 삭제 시 해당 팀에 속해있던 참여자들은 자동으로 **'팀 미배정'** 상태가 됩니다.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "삭제 성공"),
+                        @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지/팀", content = @Content)
+        })
+        @DeleteMapping("/{challengeId}/teams/{teamId}")
+        void deleteChallengeTeam(
+                        @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId,
+                        @Parameter(description = "챌린지 팀 ID", required = true) @PathVariable Long teamId);
 }

@@ -40,7 +40,7 @@ public class ChallengeParticipant extends BaseEntity {
     @Column(nullable = false)
     private boolean isSurvived = true;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
     private int shield = 0;
 
     @Builder

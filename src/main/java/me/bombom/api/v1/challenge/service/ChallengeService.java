@@ -8,6 +8,7 @@ import me.bombom.api.v1.challenge.domain.Challenge;
 import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
+import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
@@ -49,8 +50,7 @@ public class ChallengeService {
     public Page<GetChallengeParticipantResponse> getChallengeParticipants(
             Long challengeId,
             GetChallengeParticipantsRequest request,
-            Pageable pageable
-    ) {
+            Pageable pageable) {
         return challengeParticipantRepository.getChallengeParticipants(challengeId, request, pageable);
     }
 
@@ -99,6 +99,32 @@ public class ChallengeService {
         }
 
         participant.assignTeam(team.getId());
+    }
+
+    @Transactional
+    public void createChallengeTeams(Long challengeId, CreateChallengeTeamsRequest request) {
+        if (!challengeRepository.existsById(challengeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge");
+        }
+
+        List<ChallengeTeam> teams = createTeams(challengeId, request.count());
+        challengeTeamRepository.saveAll(teams);
+    }
+
+    @Transactional
+    public void deleteChallengeTeam(Long challengeId, Long teamId) {
+        ChallengeTeam team = challengeTeamRepository.findById(teamId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "challengeTeam"));
+
+        if (!team.getChallengeId().equals(challengeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "challengeTeam");
+        }
+
+        challengeParticipantRepository.updateChallengeTeamIdToNull(teamId);
+        challengeTeamRepository.delete(team);
     }
 
     private int calculateTeamCount(int totalParticipants, int maxTeamSize) {
