@@ -70,11 +70,11 @@ public class ChallengeController implements ChallengeControllerApi {
     }
 
     @Override
-    @PatchMapping("/{challengeId}/participants/{memberId}/team")
+    @PatchMapping("/{challengeId}/participants/{participantId}/team")
     public void updateParticipantTeam(
             @PathVariable Long challengeId,
-            @PathVariable Long memberId,
+            @PathVariable Long participantId,
             @Valid @RequestBody UpdateParticipantTeamRequest request) {
-        challengeService.updateParticipantTeam(challengeId, memberId, request);
+        challengeService.updateParticipantTeam(challengeId, participantId, request);
     }
 }

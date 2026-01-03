@@ -49,7 +49,8 @@ public class ChallengeService {
     public Page<GetChallengeParticipantResponse> getChallengeParticipants(
             Long challengeId,
             GetChallengeParticipantsRequest request,
-            Pageable pageable) {
+            Pageable pageable
+    ) {
         return challengeParticipantRepository.getChallengeParticipants(challengeId, request, pageable);
     }
 
@@ -80,14 +81,13 @@ public class ChallengeService {
     }
 
     @Transactional
-    public void updateParticipantTeam(Long challengeId, Long memberId, UpdateParticipantTeamRequest request) {
+    public void updateParticipantTeam(Long challengeId, Long participantId, UpdateParticipantTeamRequest request) {
         if (!challengeRepository.existsById(challengeId)) {
             throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                     .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge");
         }
 
-        ChallengeParticipant participant = challengeParticipantRepository
-                .findByChallengeIdAndMemberId(challengeId, memberId)
+        ChallengeParticipant participant = challengeParticipantRepository.findById(participantId)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "challengeParticipant"));
 

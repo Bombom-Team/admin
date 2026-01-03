@@ -231,8 +231,11 @@ class ChallengeServiceTest {
         ChallengeTeam newTeam = teams.getFirst();
 
         // when
-        challengeService.updateParticipantTeam(challenge.getId(), participant.getMemberId(),
-                new UpdateParticipantTeamRequest(newTeam.getId()));
+        challengeService.updateParticipantTeam(
+                challenge.getId(),
+                participant.getId(),
+                new UpdateParticipantTeamRequest(newTeam.getId())
+        );
 
         // then
         ChallengeParticipant updatedParticipant = challengeParticipantRepository

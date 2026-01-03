@@ -5,7 +5,7 @@ import lombok.Builder;
 
 @Builder
 public record GetChallengeParticipantResponse(
-                Long memberId,
+                Long participantId,
                 String nickname,
                 Long challengeTeamId,
                 int completedDays,
