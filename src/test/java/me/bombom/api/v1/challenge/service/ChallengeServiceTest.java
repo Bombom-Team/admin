@@ -9,6 +9,7 @@ import java.util.List;
 import me.bombom.api.v1.challenge.domain.Challenge;
 import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
+import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
@@ -44,7 +45,7 @@ class ChallengeServiceTest {
         createParticipants(challenge.getId(), 15);
 
         // when
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
@@ -65,7 +66,7 @@ class ChallengeServiceTest {
         createParticipants(challenge.getId(), 16);
 
         // when
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
@@ -79,7 +80,7 @@ class ChallengeServiceTest {
         createParticipants(challenge.getId(), 22);
 
         // when
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
@@ -93,7 +94,7 @@ class ChallengeServiceTest {
         createParticipants(challenge.getId(), 30);
 
         // when
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
@@ -113,7 +114,7 @@ class ChallengeServiceTest {
         createParticipants(challenge.getId(), 31);
 
         // when
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
@@ -127,7 +128,7 @@ class ChallengeServiceTest {
         createParticipants(challenge.getId(), 45);
 
         // when
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
@@ -141,7 +142,7 @@ class ChallengeServiceTest {
         createParticipants(challenge.getId(), 46);
 
         // when
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
@@ -155,7 +156,7 @@ class ChallengeServiceTest {
         createParticipants(challenge.getId(), 5);
 
         // when
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
@@ -170,6 +171,20 @@ class ChallengeServiceTest {
                 .endDate(java.time.LocalDate.now().plusDays(30))
                 .totalDays(30)
                 .build());
+    }
+
+    @Test
+    void 팀_크기_설정_테스트_10명_제한() {
+        // given
+        Challenge challenge = createChallenge();
+        createParticipants(challenge.getId(), 21); // 21 participants
+
+        // when
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(10)); // Max 10
+
+        // then
+        List<ChallengeTeam> teams = challengeTeamRepository.findAll();
+        assertThat(teams).hasSize(3); // ceil(21/10) = 3
     }
 
     private void createParticipants(Long challengeId, int count) {
@@ -188,7 +203,7 @@ class ChallengeServiceTest {
         // given
         Challenge challenge = createChallenge();
         createParticipants(challenge.getId(), 15);
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // when
         List<GetChallengeTeamResponse> responses = challengeService.getChallengeTeams(challenge.getId());
@@ -206,10 +221,11 @@ class ChallengeServiceTest {
         // given
         Challenge challenge = createChallenge();
         createParticipants(challenge.getId(), 5);
-        challengeService.assignTeams(challenge.getId());
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         List<ChallengeTeam> teams = challengeTeamRepository.findByChallengeId(challenge.getId());
-        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge.getId()).getFirst();
+        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge.getId())
+                .getFirst();
 
         // 1개 팀뿐이면 같은 팀으로 변경(실질적 변경 없음)도 허용되므로 첫번째 팀 선택 로직 단순화
         ChallengeTeam newTeam = teams.getFirst();
@@ -232,10 +248,11 @@ class ChallengeServiceTest {
         Challenge challenge2 = createChallenge();
         createParticipants(challenge1.getId(), 5);
         createParticipants(challenge2.getId(), 5);
-        challengeService.assignTeams(challenge1.getId());
-        challengeService.assignTeams(challenge2.getId());
+        challengeService.assignTeams(challenge1.getId(), new AssignTeamsRequest(15));
+        challengeService.assignTeams(challenge2.getId(), new AssignTeamsRequest(15));
 
-        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge1.getId()).getFirst();
+        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge1.getId())
+                .getFirst();
         ChallengeTeam otherChallengeTeam = challengeTeamRepository.findByChallengeId(challenge2.getId()).getFirst();
 
         UpdateParticipantTeamRequest request = new UpdateParticipantTeamRequest(otherChallengeTeam.getId());

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.challenge.domain.Challenge;
 import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
+import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
@@ -60,7 +61,7 @@ public class ChallengeService {
     }
 
     @Transactional
-    public void assignTeams(Long challengeId) {
+    public void assignTeams(Long challengeId, AssignTeamsRequest request) {
         Challenge challenge = challengeRepository.findById(challengeId)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge"));
@@ -72,7 +73,7 @@ public class ChallengeService {
 
         Collections.shuffle(participants);
 
-        int teamCount = calculateTeamCount(participants.size());
+        int teamCount = calculateTeamCount(participants.size(), request.maxTeamSize());
         List<ChallengeTeam> teams = createTeams(challenge.getId(), teamCount);
         challengeTeamRepository.saveAll(teams);
         assignParticipantsToTeams(participants, teams);
@@ -85,7 +86,8 @@ public class ChallengeService {
                     .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge");
         }
 
-        ChallengeParticipant participant = challengeParticipantRepository.findByChallengeIdAndMemberId(challengeId, memberId)
+        ChallengeParticipant participant = challengeParticipantRepository
+                .findByChallengeIdAndMemberId(challengeId, memberId)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "challengeParticipant"));
 
@@ -101,8 +103,7 @@ public class ChallengeService {
         participant.assignTeam(team.getId());
     }
 
-    private int calculateTeamCount(int totalParticipants) {
-        int maxTeamSize = 15;
+    private int calculateTeamCount(int totalParticipants, int maxTeamSize) {
         return Math.max(1, (int) Math.ceil((double) totalParticipants / maxTeamSize));
     }
 

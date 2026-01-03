@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
 import me.bombom.api.v1.challenge.service.ChallengeService;
@@ -110,8 +111,13 @@ class ChallengeControllerTest extends ControllerTestSupport {
 
         @Test
         void 챌린지_팀을_자동_배정한다() throws Exception {
+                // given
+                AssignTeamsRequest request = new AssignTeamsRequest(15);
+
                 // when // then
-                mockMvc.perform(MockMvcRequestBuilders.post("/admin/api/v1/challenges/1/teams/assignment"))
+                mockMvc.perform(MockMvcRequestBuilders.post("/admin/api/v1/challenges/1/teams/assignment")
+                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk());
         }
 }

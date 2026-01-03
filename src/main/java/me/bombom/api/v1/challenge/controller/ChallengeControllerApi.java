@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
@@ -112,5 +113,8 @@ public interface ChallengeControllerApi {
                         @ApiResponse(responseCode = "200", description = "배정 성공"),
                         @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지", content = @Content)
         })
-        void assignTeams(@Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId);
+        void assignTeams(
+                        @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId,
+                        @RequestBody @Valid AssignTeamsRequest request
+        );
 }

@@ -3,6 +3,7 @@ package me.bombom.api.v1.challenge.controller;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
@@ -61,8 +62,11 @@ public class ChallengeController implements ChallengeControllerApi {
 
     @Override
     @PostMapping("/{challengeId}/teams/assignment")
-    public void assignTeams(@PathVariable Long challengeId) {
-        challengeService.assignTeams(challengeId);
+    public void assignTeams(
+            @PathVariable Long challengeId,
+            @Valid @RequestBody AssignTeamsRequest request
+    ) {
+        challengeService.assignTeams(challengeId, request);
     }
 
     @Override
@@ -70,8 +74,7 @@ public class ChallengeController implements ChallengeControllerApi {
     public void updateParticipantTeam(
             @PathVariable Long challengeId,
             @PathVariable Long memberId,
-            @Valid @RequestBody UpdateParticipantTeamRequest request
-    ) {
+            @Valid @RequestBody UpdateParticipantTeamRequest request) {
         challengeService.updateParticipantTeam(challengeId, memberId, request);
     }
 }
