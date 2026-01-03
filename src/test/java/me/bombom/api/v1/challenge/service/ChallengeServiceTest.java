@@ -10,6 +10,7 @@ import me.bombom.api.v1.challenge.domain.Challenge;
 import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
+import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
@@ -234,8 +235,7 @@ class ChallengeServiceTest {
         challengeService.updateParticipantTeam(
                 challenge.getId(),
                 participant.getId(),
-                new UpdateParticipantTeamRequest(newTeam.getId())
-        );
+                new UpdateParticipantTeamRequest(newTeam.getId()));
 
         // then
         ChallengeParticipant updatedParticipant = challengeParticipantRepository
@@ -264,5 +264,44 @@ class ChallengeServiceTest {
         assertThatThrownBy(
                 () -> challengeService.updateParticipantTeam(challenge1.getId(), participant.getMemberId(), request))
                 .isInstanceOf(CIllegalArgumentException.class);
+    }
+
+    @Test
+    void 챌린지_팀_일괄_생성_성공() {
+        // given
+        Challenge challenge = createChallenge();
+        CreateChallengeTeamsRequest request = new CreateChallengeTeamsRequest(5);
+
+        // when
+        challengeService.createChallengeTeams(challenge.getId(), request);
+
+        // then
+        List<ChallengeTeam> teams = challengeTeamRepository.findByChallengeId(challenge.getId());
+        assertThat(teams).hasSize(5);
+    }
+
+    @Test
+    void 챌린지_팀_삭제_성공_참여자_미배정_처리() {
+        // given
+        Challenge challenge = createChallenge();
+        createParticipants(challenge.getId(), 5);
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
+
+        ChallengeTeam team = challengeTeamRepository.findByChallengeId(challenge.getId()).getFirst();
+        Long teamId = team.getId();
+
+        // when
+        challengeService.deleteChallengeTeam(challenge.getId(), teamId);
+
+        // then
+        // 1. 팀 삭제 확인
+        assertSoftly(softly -> {
+            softly.assertThat(challengeTeamRepository.findById(teamId)).isEmpty();
+
+            // 2. 참여자 미배정 확인
+            List<ChallengeParticipant> participants = challengeParticipantRepository
+                    .findAllByChallengeId(challenge.getId());
+            softly.assertThat(participants).allMatch(p -> p.getChallengeTeamId() == null);
+        });
     }
 }
