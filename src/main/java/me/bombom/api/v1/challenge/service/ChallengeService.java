@@ -11,7 +11,9 @@ import me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
+import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengesRequest;
+import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
@@ -50,6 +52,13 @@ public class ChallengeService {
         return challengeParticipantRepository.getChallengeParticipants(challengeId, request, pageable);
     }
 
+    @Transactional(readOnly = true)
+    public List<GetChallengeTeamResponse> getChallengeTeams(Long challengeId) {
+        return challengeTeamRepository.findByChallengeId(challengeId).stream()
+                .map(GetChallengeTeamResponse::from)
+                .toList();
+    }
+
     @Transactional
     public void assignTeams(Long challengeId) {
         Challenge challenge = challengeRepository.findById(challengeId)
@@ -67,6 +76,29 @@ public class ChallengeService {
         List<ChallengeTeam> teams = createTeams(challenge.getId(), teamCount);
         challengeTeamRepository.saveAll(teams);
         assignParticipantsToTeams(participants, teams);
+    }
+
+    @Transactional
+    public void updateParticipantTeam(Long challengeId, Long memberId, UpdateParticipantTeamRequest request) {
+        if (!challengeRepository.existsById(challengeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge");
+        }
+
+        ChallengeParticipant participant = challengeParticipantRepository.findByChallengeIdAndMemberId(challengeId, memberId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "challengeParticipant"));
+
+        ChallengeTeam team = challengeTeamRepository.findById(request.challengeTeamId())
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "challengeTeam"));
+
+        if (!team.getChallengeId().equals(challengeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.INVALID_INPUT_VALUE)
+                    .addContext(ErrorContextKeys.REASON, "해당 Challege에 없는 teamId입니다.");
+        }
+
+        participant.assignTeam(team.getId());
     }
 
     private int calculateTeamCount(int totalParticipants) {
