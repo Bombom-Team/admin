@@ -32,6 +32,7 @@ public class CustomChallengeRepositoryImpl implements CustomChallengeRepository 
                                                 challenge.generation,
                                                 challenge.startDate,
                                                 challenge.endDate))
+                                .from(challenge)
                                 .where(filterByStatus(request.status()))
                                 .offset(pageable.getOffset())
                                 .limit(pageable.getPageSize())

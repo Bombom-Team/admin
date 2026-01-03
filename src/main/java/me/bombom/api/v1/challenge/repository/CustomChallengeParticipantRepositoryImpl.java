@@ -64,7 +64,10 @@ public class CustomChallengeParticipantRepositoryImpl implements CustomChallenge
         return challengeParticipant.challengeTeamId.eq(challengeTeamId);
     }
 
-    private BooleanExpression filterHasTeam(boolean hasTeam) {
+    private BooleanExpression filterHasTeam(Boolean hasTeam) {
+        if (hasTeam == null) {
+            return null;
+        }
         if (hasTeam) {
             return challengeParticipant.challengeTeamId.isNotNull();
         }
