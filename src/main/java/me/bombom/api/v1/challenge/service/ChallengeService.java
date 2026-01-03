@@ -74,9 +74,8 @@ public class ChallengeService {
         Collections.shuffle(participants);
 
         int teamCount = calculateTeamCount(participants.size(), request.maxTeamSize());
-        List<ChallengeTeam> teams = createTeams(challenge.getId(), teamCount);
-        challengeTeamRepository.saveAll(teams);
-        assignParticipantsToTeams(participants, teams);
+        List<ChallengeTeam> savedTeams = challengeTeamRepository.saveAll(createTeams(challenge.getId(), teamCount));
+        assignParticipantsToTeams(participants, savedTeams);
     }
 
     @Transactional
