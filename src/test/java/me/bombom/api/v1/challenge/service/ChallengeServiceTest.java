@@ -304,4 +304,50 @@ class ChallengeServiceTest {
             softly.assertThat(participants).allMatch(p -> p.getChallengeTeamId() == null);
         });
     }
+
+    @Test
+    void 팀_자동_배정_중복_호출_시_팀_재사용_확인() {
+        // given
+        Challenge challenge = createChallenge();
+        createParticipants(challenge.getId(), 30); // 15 max -> 2 teams
+
+        // when
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
+
+        // then
+        List<ChallengeTeam> teams = challengeTeamRepository.findAll();
+        assertThat(teams).hasSize(2);
+    }
+
+    @Test
+    void 팀_추가_필요_시_부족한_수만큼_생성() { // Reuse existing and add missing
+        // given
+        Challenge challenge = createChallenge();
+        createParticipants(challenge.getId(), 15); // Needs 1 team
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15)); // Created 1 team
+
+        // Add 16 more participants (Total 31). Needs 3 teams (ceil(31/15) = 3).
+        // Existing: 1. Needed: 3. Missing: 2.
+        createParticipants(challenge.getId(), 16, 15L);
+
+        // when
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
+
+        // then
+        List<ChallengeTeam> teams = challengeTeamRepository.findAll();
+        assertThat(teams).hasSize(3);
+    }
+
+    // Helper method to create participants with offset
+    private void createParticipants(Long challengeId, int count, long startMemberId) {
+        List<ChallengeParticipant> participants = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            participants.add(ChallengeParticipant.builder()
+                    .challengeId(challengeId)
+                    .memberId(startMemberId + i)
+                    .build());
+        }
+        challengeParticipantRepository.saveAll(participants);
+    }
 }

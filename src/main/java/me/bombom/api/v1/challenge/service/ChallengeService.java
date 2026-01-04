@@ -74,8 +74,14 @@ public class ChallengeService {
         Collections.shuffle(participants);
 
         int teamCount = calculateTeamCount(participants.size(), request.maxTeamSize());
-        List<ChallengeTeam> savedTeams = challengeTeamRepository.saveAll(createTeams(challenge.getId(), teamCount));
-        assignParticipantsToTeams(participants, savedTeams);
+        List<ChallengeTeam> existingTeams = challengeTeamRepository.findByChallengeId(challengeId);
+
+        if (existingTeams.size() < teamCount) {
+            int missingTeamCount = teamCount - existingTeams.size();
+            List<ChallengeTeam> newTeams = challengeTeamRepository.saveAll(createTeams(challenge.getId(), missingTeamCount));
+            existingTeams.addAll(newTeams);
+        }
+        assignParticipantsToTeams(participants, existingTeams);
     }
 
     @Transactional
