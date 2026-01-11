@@ -40,6 +40,12 @@ public enum ErrorDetail {
     * G : 인가
      */
     FORBIDDEN_RESOURCE(HttpStatus.FORBIDDEN, "A001", "접근 권한이 없는 리소스입니다."),
+
+    /*
+     * W : 외부 연동
+     */
+    EXTERNAL_API_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E001", "외부 서비스 연동 중 오류가 발생했습니다."),
+
     ;
 
     private final HttpStatus status;
