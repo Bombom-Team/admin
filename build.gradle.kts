@@ -86,6 +86,9 @@ dependencies {
 
     // for : s3
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.4.2")
+
+    // image resizing
+    implementation("net.coobird:thumbnailator:0.4.20")
 }
 
 // Querydsl 생성된 파일 정리
