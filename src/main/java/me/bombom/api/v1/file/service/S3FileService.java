@@ -86,7 +86,7 @@ public class S3FileService {
         String ext = extractExt(file);
         String uuid = UUID.randomUUID().toString();
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        return datePath + "/" + uuid + "." + ext;
+        return "notices/" + datePath + "/" + uuid + "." + ext;
     }
 
     private String extractExt(MultipartFile file) {
