@@ -2,11 +2,13 @@ package me.bombom.api.v1.session.repository;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Getter;
 
 @Entity
+@Table(name = "SPRING_SESSION")
 @Getter
-public class SpringSessionEntity {
+public class SpringSession {
 
     @Id
     private String primaryId;

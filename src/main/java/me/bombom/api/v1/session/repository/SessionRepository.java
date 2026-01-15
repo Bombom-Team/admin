@@ -6,16 +6,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface SessionRepository extends JpaRepository<SpringSessionEntity, String> {
+public interface SessionRepository extends JpaRepository<SpringSession, String> {
 
     @Query(value = """
-        SELECT COUNT(DISTINCT s.PRINCIPAL_NAME)
-        FROM SPRING_SESSION s
-        WHERE s.LAST_ACCESS_TIME >= :todayStartMillis
-          AND s.EXPIRY_TIME > :nowMillis
-    """, nativeQuery = true)
+                SELECT COUNT(DISTINCT s.PRINCIPAL_NAME)
+                FROM SPRING_SESSION s
+                WHERE s.LAST_ACCESS_TIME >= :todayStartMillis
+                  AND s.EXPIRY_TIME > :nowMillis
+            """, nativeQuery = true)
     long countTodayActiveUsers(
             @Param("todayStartMillis") long todayStartMillis,
-            @Param("nowMillis") long nowMillis
-    );
+            @Param("nowMillis") long nowMillis);
 }
