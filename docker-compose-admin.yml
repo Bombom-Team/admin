@@ -12,7 +12,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       LOGGING_FILE_NAME: /logs/bombom-prod.log
-      JAVA_TOOL_OPTIONS: "-Xms384m -Xmx384m -XX:MaxMetaspaceSize=128m"
+      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m -XX:MaxMetaspaceSize=192m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
 
 
       #### --------------------------------------
