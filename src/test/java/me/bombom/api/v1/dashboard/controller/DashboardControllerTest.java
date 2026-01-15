@@ -23,7 +23,8 @@ class DashboardControllerTest extends ControllerTestSupport {
     @DisplayName("대시보드 통계를 조회한다.")
     void getStats() throws Exception {
         // given
-        DashboardStatsResponse response = new DashboardStatsResponse(1234L, 42L, 89L);
+        DashboardStatsResponse response = new DashboardStatsResponse(
+                1234L, 42L, 89L, 10L, 2L);
         given(dashboardService.getStats()).willReturn(response);
 
         // when & then
@@ -31,6 +32,8 @@ class DashboardControllerTest extends ControllerTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalMembers").value(1234))
                 .andExpect(jsonPath("$.totalNotices").value(42))
-                .andExpect(jsonPath("$.newMembersThisMonth").value(89));
+                .andExpect(jsonPath("$.newMembersThisMonth").value(89))
+                .andExpect(jsonPath("$.todayJoinedMembers").value(10))
+                .andExpect(jsonPath("$.withdrawnMembersThisMonth").value(2));
     }
 }
