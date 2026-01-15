@@ -11,7 +11,7 @@ import me.bombom.api.v1.member.repository.MemberRepository;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
-import me.bombom.api.v1.session.repository.SessionRepository;
+import me.bombom.api.v1.session.repository.SpringSessionRepository;
 import me.bombom.api.v1.withdraw.domain.WithdrawnMember;
 import me.bombom.api.v1.withdraw.repository.WithdrawnMemberRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -41,7 +41,7 @@ class DashboardServiceTest {
     private WithdrawnMemberRepository withdrawnMemberRepository;
 
     @Autowired
-    private SessionRepository sessionRepository;
+    private SpringSessionRepository springSessionRepository;
 
     @Test
     @DisplayName("대시보드 통계를 조회한다.")

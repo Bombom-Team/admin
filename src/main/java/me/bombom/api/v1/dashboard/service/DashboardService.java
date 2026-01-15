@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.dashboard.dto.DashboardStatsResponse;
 import me.bombom.api.v1.member.repository.MemberRepository;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
-import me.bombom.api.v1.session.repository.SessionRepository;
+import me.bombom.api.v1.session.repository.SpringSessionRepository;
 import me.bombom.api.v1.withdraw.repository.WithdrawnMemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +20,7 @@ public class DashboardService {
     private final MemberRepository memberRepository;
     private final NoticeRepository noticeRepository;
     private final WithdrawnMemberRepository withdrawnMemberRepository;
-    private final SessionRepository sessionRepository;
+    private final SpringSessionRepository springSessionRepository;
 
     public DashboardStatsResponse getStats() {
         long totalMembers = memberRepository.count();
@@ -37,7 +37,7 @@ public class DashboardService {
                 .toInstant()
                 .toEpochMilli();
         long nowMillis = Instant.now().toEpochMilli();
-        long todayActiveUsers = sessionRepository.countTodayActiveUsers(todayStartMillis, nowMillis);
+        long todayActiveUsers = springSessionRepository.countTodayActiveUsers(todayStartMillis, nowMillis);
 
         return DashboardStatsResponse.of(
                 totalMembers,
@@ -45,7 +45,6 @@ public class DashboardService {
                 newMembersThisMonth,
                 todayJoinedMembers,
                 todayActiveUsers,
-                withdrawnMembersThisMonth
-        );
+                withdrawnMembersThisMonth);
     }
 }
