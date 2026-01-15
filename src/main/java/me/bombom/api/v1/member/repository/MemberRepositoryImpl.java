@@ -58,6 +58,19 @@ public class MemberRepositoryImpl implements CustomMemberRepository {
         return count != null ? count : 0L;
     }
 
+    @Override
+    public long countTodayJoinedMembers() {
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+
+        Long count = queryFactory
+                .select(member.count())
+                .from(member)
+                .where(member.createdAt.goe(startOfToday))
+                .fetchOne();
+
+        return count != null ? count : 0L;
+    }
+
     private List<GetMemberResponse> findContents(Pageable pageable, BooleanExpression predicate) {
         return queryFactory
                 .select(new QGetMemberResponse(
