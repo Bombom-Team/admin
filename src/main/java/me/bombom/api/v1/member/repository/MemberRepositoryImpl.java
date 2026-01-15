@@ -44,7 +44,35 @@ public class MemberRepositoryImpl implements CustomMemberRepository {
     }
 
     @Override
-    public long countNewMembersThisMonth() {
+    public long countDailyJoinedMembers() {
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+
+        Long count = queryFactory
+                .select(member.count())
+                .from(member)
+                .where(member.createdAt.goe(startOfToday))
+                .fetchOne();
+
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public long countWeeklyJoinedMembers() {
+        LocalDateTime startOfWeek = LocalDate.now()
+                .minusDays(6)
+                .atStartOfDay();
+
+        Long count = queryFactory
+                .select(member.count())
+                .from(member)
+                .where(member.createdAt.goe(startOfWeek))
+                .fetchOne();
+
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public long countMonthlyJoinedMembers() {
         LocalDateTime startOfMonth = LocalDate.now()
                 .withDayOfMonth(1)
                 .atStartOfDay();
@@ -59,13 +87,15 @@ public class MemberRepositoryImpl implements CustomMemberRepository {
     }
 
     @Override
-    public long countTodayJoinedMembers() {
-        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+    public long countYearlyJoinedMembers() {
+        LocalDateTime startOfYear = LocalDate.now()
+                .withDayOfYear(1)
+                .atStartOfDay();
 
         Long count = queryFactory
                 .select(member.count())
                 .from(member)
-                .where(member.createdAt.goe(startOfToday))
+                .where(member.createdAt.goe(startOfYear))
                 .fetchOne();
 
         return count != null ? count : 0L;

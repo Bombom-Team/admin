@@ -11,7 +11,6 @@ import me.bombom.api.v1.member.repository.MemberRepository;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
-import me.bombom.api.v1.session.repository.SpringSessionRepository;
 import me.bombom.api.v1.withdraw.domain.WithdrawnMember;
 import me.bombom.api.v1.withdraw.repository.WithdrawnMemberRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -40,9 +39,6 @@ class DashboardServiceTest {
     @Autowired
     private WithdrawnMemberRepository withdrawnMemberRepository;
 
-    @Autowired
-    private SpringSessionRepository springSessionRepository;
-
     @Test
     @DisplayName("대시보드 통계를 조회한다.")
     void getStats() {
@@ -62,9 +58,10 @@ class DashboardServiceTest {
         assertSoftly(softly -> {
             softly.assertThat(response.totalMembers()).isEqualTo(2);
             softly.assertThat(response.totalNotices()).isEqualTo(2);
-            softly.assertThat(response.newMembersThisMonth()).isEqualTo(2);
-            softly.assertThat(response.todayJoinedMembers()).isEqualTo(2);
-            softly.assertThat(response.todayActiveUsers()).isGreaterThanOrEqualTo(0);
+            softly.assertThat(response.dailyJoinedMembers()).isEqualTo(2);
+            softly.assertThat(response.weeklyJoinedMembers()).isEqualTo(2);
+            softly.assertThat(response.monthlyJoinedMembers()).isEqualTo(2);
+            softly.assertThat(response.yearlyJoinedMembers()).isEqualTo(2);
             softly.assertThat(response.withdrawnMembersThisMonth()).isEqualTo(1);
         });
     }
@@ -79,9 +76,10 @@ class DashboardServiceTest {
         assertSoftly(softly -> {
             softly.assertThat(response.totalMembers()).isZero();
             softly.assertThat(response.totalNotices()).isZero();
-            softly.assertThat(response.newMembersThisMonth()).isZero();
-            softly.assertThat(response.todayJoinedMembers()).isZero();
-            softly.assertThat(response.todayActiveUsers()).isGreaterThanOrEqualTo(0);
+            softly.assertThat(response.dailyJoinedMembers()).isZero();
+            softly.assertThat(response.weeklyJoinedMembers()).isZero();
+            softly.assertThat(response.monthlyJoinedMembers()).isZero();
+            softly.assertThat(response.yearlyJoinedMembers()).isZero();
             softly.assertThat(response.withdrawnMembersThisMonth()).isZero();
         });
     }

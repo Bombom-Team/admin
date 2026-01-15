@@ -8,7 +8,11 @@ public interface CustomMemberRepository {
 
     Page<GetMemberResponse> findMemberInfo(Pageable pageable, String name, String role);
 
-    long countNewMembersThisMonth();
+    long countDailyJoinedMembers();
 
-    long countTodayJoinedMembers();
+    long countWeeklyJoinedMembers();
+
+    long countMonthlyJoinedMembers();
+
+    long countYearlyJoinedMembers();
 }
