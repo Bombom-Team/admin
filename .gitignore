@@ -40,3 +40,5 @@ out/
 *.properties
 src/main/resources/log4j2.xml
 !.github/**/*.yml
+.DS_Store
+**/.DS_Store

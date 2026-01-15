@@ -7,4 +7,8 @@ import org.springframework.data.domain.Pageable;
 public interface CustomMemberRepository {
 
     Page<GetMemberResponse> findMemberInfo(Pageable pageable, String name, String role);
+
+    long countNewMembersThisMonth();
+
+    long countTodayJoinedMembers();
 }

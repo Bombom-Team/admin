@@ -7,6 +7,8 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.ComparableExpressionBase;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +41,34 @@ public class MemberRepositoryImpl implements CustomMemberRepository {
         Long total = findTotal(predicate);
         List<GetMemberResponse> content = findContents(pageable, predicate);
         return new PageImpl<>(content, pageable, total == null ? 0 : total);
+    }
+
+    @Override
+    public long countNewMembersThisMonth() {
+        LocalDateTime startOfMonth = LocalDate.now()
+                .withDayOfMonth(1)
+                .atStartOfDay();
+
+        Long count = queryFactory
+                .select(member.count())
+                .from(member)
+                .where(member.createdAt.goe(startOfMonth))
+                .fetchOne();
+
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public long countTodayJoinedMembers() {
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+
+        Long count = queryFactory
+                .select(member.count())
+                .from(member)
+                .where(member.createdAt.goe(startOfToday))
+                .fetchOne();
+
+        return count != null ? count : 0L;
     }
 
     private List<GetMemberResponse> findContents(Pageable pageable, BooleanExpression predicate) {
