@@ -1,6 +1,7 @@
 # AGENTS.md
 
 ## Scope
+
 This AGENTS.md applies to the **backend workspace only**.
 
 ---
@@ -13,9 +14,9 @@ This AGENTS.md applies to the **backend workspace only**.
 - Never infer domain rules or business policies
 - Never modify DB schema or domain entities without explicit user declaration
 - Do NOT access or modify protected branches:
-    - server
-    - main
-    - release/*
+  - server
+  - main
+  - release/*
 
 ---
 
@@ -23,9 +24,9 @@ This AGENTS.md applies to the **backend workspace only**.
 
 - `[WORKFLOW]` prefix is the **only valid trigger** for workflow automation
 - If `[WORKFLOW]` is NOT present:
-    - Treat the request as a normal question
-    - Do NOT apply workflow rules
-    - Do NOT enforce guards or steps
+  - Treat the request as a normal question
+  - Do NOT apply workflow rules
+  - Do NOT enforce guards or steps
 
 ---
 
@@ -33,11 +34,11 @@ This AGENTS.md applies to the **backend workspace only**.
 
 When `[WORKFLOW]` prefix is present, you MUST:
 
-- Execute **0️⃣ Guard Stage** before doing anything else
+- Execute **0️⃣ Guard Stage** automatically
+- Enter **1️⃣ Dry-run Stage automatically** (no user approval required)
 - Follow **all steps and stop rules** defined in `docs/WORKFLOW_CONVENTION.md`
-- Stop immediately if required input is missing
-- Never skip steps unless Fast Track is **explicitly declared by user**
-- Never explore files, open code, or analyze logic before Dry-run approval
+- Never skip steps unless **Fast Track is explicitly declared by the user**
+- Never guess or infer missing domain / policy decisions
 
 ⚠️ Detailed workflow steps, Fast Track rules, and stop conditions  
 are defined in `docs/WORKFLOW_CONVENTION.md` and MUST be followed verbatim.
@@ -46,11 +47,55 @@ are defined in `docs/WORKFLOW_CONVENTION.md` and MUST be followed verbatim.
 
 ## Code Access Rules
 
-- During Dry-run stages:
-    - Directory listing ❌
-    - File open ❌
-    - Code analysis ❌
-- Code access is allowed **only after explicit user approval**
+### 0️⃣ Guard Stage (Limited Access Allowed)
+
+Allowed:
+- Open and read **rule documents only**:
+  - docs/WORKFLOW_CONVENTION.md
+  - docs/DEVELOPMENT_CONVENTION.md
+  - docs/TEST_CONVENTION.md
+  - docs/COMMIT_CONVENTION.md
+
+Not allowed:
+- Open application source code
+- Analyze business logic
+- Inspect implementation details
+- Modify any file
+
+---
+
+### 1️⃣ Dry-run Stage (No Code Access)
+
+Allowed:
+- Text-based reasoning
+- Planning
+- Change scope declaration
+- Recommendation output
+
+Not allowed:
+- Directory listing
+- File open
+- Code analysis
+- Code generation or modification
+
+Dry-run stage is entered **automatically** when `[WORKFLOW]` is present.  
+No user approval is required for this stage.
+
+---
+
+### 7️⃣ Implementation Stage (Explicit Approval Required)
+
+Allowed only **after user approval** to proceed beyond Dry-run:
+
+- Directory listing
+- File open
+- Code analysis
+- Code generation and modification
+- Test creation
+
+Without explicit approval:
+- Any implementation action ❌
+- Any file access ❌
 
 ---
 
@@ -60,13 +105,23 @@ are defined in `docs/WORKFLOW_CONVENTION.md` and MUST be followed verbatim.
 - PR template `.github/pull_request_template.md` is mandatory
 - Never auto-commit or auto-push without user approval
 - Never bypass PR checklist gates
+- Protected branches are always forbidden targets
 
 ---
 
-## Failure Rule
+## Failure / Stop Rule (Absolute)
 
-- If rules conflict or required information is missing:
-    - Stop immediately
-    - Output a stop message
-    - Do NOT guess
-    - Do NOT continue
+If any of the following occurs, you MUST stop immediately:
+
+- Required user input is missing
+- Rules conflict or cannot be satisfied
+- Domain or business logic must be inferred
+- Scope exceeds declared change range
+
+On stop:
+- Output a stop message
+- State the exact blocking reason
+- Do NOT guess
+- Do NOT continue automatically
+
+Stopping is **correct behavior**, not a failure.

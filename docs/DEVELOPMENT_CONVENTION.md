@@ -141,3 +141,44 @@ me.bombom
 - 메서드 네이밍 쿼리 우선
 - ASC 정렬은 생략
 - 테이블명에 **예약어 사용 금지**
+
+## 13. Import 사용 규칙 (단일 원칙)
+
+### 핵심 원칙 (강제)
+
+코드 본문에서 패키지 경로가 직접 드러나면 안 된다.
+
+즉, 아래 형태는 모두 금지한다.
+
+```java
+java.time.LocalDate.of(2024, 2, 1);
+java.util.UUID.randomUUID();
+me.bombom.api.v1.challenge.ChallengeStatus.ACTIVE;
+```
+
+허용 규칙
+
+패키지 경로는 반드시 import 구문으로만 노출되어야 한다.
+
+```java
+import java.time.LocalDate;
+import java.util.UUID;
+
+LocalDate.of(2024, 2, 1);
+UUID.randomUUID();
+```
+
+Static import 관련 규칙
+
+Static import의 허용 여부는 별도 규칙에 따르되,
+static import를 사용하더라도 코드 본문에 패키지 경로가 보이지 않으면 규칙 위반이 아니다.
+
+```java
+import static java.time.Month.FEBRUARY;
+
+LocalDate.of(2024, FEBRUARY, 1); // 허용 여부는 static import 규칙에 따름
+```
+
+### IDE 자동 Import 관련 주의
+
+- IDE 자동 완성으로 패키지 경로가 코드 본문에 직접 삽입되는 경우도 본 규칙 위반으로 간주한다.
