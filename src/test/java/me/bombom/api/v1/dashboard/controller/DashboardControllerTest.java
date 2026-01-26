@@ -24,7 +24,7 @@ class DashboardControllerTest extends ControllerTestSupport {
     void getStats() throws Exception {
         // given
         DashboardStatsResponse response = new DashboardStatsResponse(
-                1234L, 42L, 10L, 89L, 234L, 567L, 2L);
+                1234L, 42L, 10L, 89L, 234L, 567L, 2L, 5L);
         given(dashboardService.getStats()).willReturn(response);
 
         // when & then
@@ -36,6 +36,7 @@ class DashboardControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.weeklyJoinedMembers").value(89))
                 .andExpect(jsonPath("$.monthlyJoinedMembers").value(234))
                 .andExpect(jsonPath("$.yearlyJoinedMembers").value(567))
-                .andExpect(jsonPath("$.withdrawnMembersThisMonth").value(2));
+                .andExpect(jsonPath("$.withdrawnMembersThisMonth").value(2))
+                .andExpect(jsonPath("$.todayActiveMembers").value(5));
     }
 }

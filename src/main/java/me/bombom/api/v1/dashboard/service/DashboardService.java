@@ -17,6 +17,7 @@ public class DashboardService {
     private final MemberRepository memberRepository;
     private final NoticeRepository noticeRepository;
     private final WithdrawnMemberRepository withdrawnMemberRepository;
+    private final me.bombom.api.v1.session.repository.SpringSessionRepository springSessionRepository;
 
     public DashboardStatsResponse getStats() {
         long totalMembers = memberRepository.count();
@@ -30,6 +31,8 @@ public class DashboardService {
         LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
         long withdrawnMembersThisMonth = withdrawnMemberRepository.countDeletedMembersThisMonth(startOfMonth);
 
+        long todayActiveMembers = countTodayActiveMembers();
+
         return DashboardStatsResponse.of(
                 totalMembers,
                 totalNotices,
@@ -37,6 +40,16 @@ public class DashboardService {
                 weeklyJoinedMembers,
                 monthlyJoinedMembers,
                 yearlyJoinedMembers,
-                withdrawnMembersThisMonth);
+                withdrawnMembersThisMonth,
+                todayActiveMembers);
+    }
+
+    private long countTodayActiveMembers() {
+        long startOfTodayMillis = java.time.LocalDate.now()
+                .atStartOfDay(java.time.ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+
+        return springSessionRepository.countTodayActiveUsers(startOfTodayMillis, System.currentTimeMillis());
     }
 }

@@ -7,7 +7,9 @@ public record DashboardStatsResponse(
         long weeklyJoinedMembers,
         long monthlyJoinedMembers,
         long yearlyJoinedMembers,
-        long withdrawnMembersThisMonth) {
+        long withdrawnMembersThisMonth,
+        long todayActiveMembers
+) {
 
     public static DashboardStatsResponse of(
             long totalMembers,
@@ -16,7 +18,9 @@ public record DashboardStatsResponse(
             long weeklyJoinedMembers,
             long monthlyJoinedMembers,
             long yearlyJoinedMembers,
-            long withdrawnMembersThisMonth) {
+            long withdrawnMembersThisMonth,
+            long todayActiveMembers
+    ) {
         return new DashboardStatsResponse(
                 totalMembers,
                 totalNotices,
@@ -24,6 +28,8 @@ public record DashboardStatsResponse(
                 weeklyJoinedMembers,
                 monthlyJoinedMembers,
                 yearlyJoinedMembers,
-                withdrawnMembersThisMonth);
+                withdrawnMembersThisMonth,
+                todayActiveMembers
+        );
     }
 }
