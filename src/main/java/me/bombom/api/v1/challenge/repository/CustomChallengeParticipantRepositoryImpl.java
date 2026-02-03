@@ -32,14 +32,16 @@ public class CustomChallengeParticipantRepositoryImpl implements CustomChallenge
                         member.nickname,
                         challengeTeam.id,
                         challengeParticipant.completedDays,
-                        challengeParticipant.isSurvived))
+                        challengeParticipant.isSurvived,
+                        challengeParticipant.shield))
                 .from(challengeParticipant)
                 .join(member).on(challengeParticipant.memberId.eq(member.id))
                 .leftJoin(challengeTeam).on(challengeParticipant.challengeTeamId.eq(challengeTeam.id))
                 .where(
                         challengeParticipant.challengeId.eq(challengeId),
                         eqChallengeTeamId(request.challengeTeamId()),
-                        filterHasTeam(request.hasTeam())
+                        filterHasTeam(request.hasTeam()),
+                        eqIsSurvived(request.isSurvived())
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -51,7 +53,8 @@ public class CustomChallengeParticipantRepositoryImpl implements CustomChallenge
                 .from(challengeParticipant)
                 .where(challengeParticipant.challengeId.eq(challengeId),
                         eqChallengeTeamId(request.challengeTeamId()),
-                        filterHasTeam(request.hasTeam()));
+                        filterHasTeam(request.hasTeam()),
+                        eqIsSurvived(request.isSurvived()));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
@@ -71,5 +74,12 @@ public class CustomChallengeParticipantRepositoryImpl implements CustomChallenge
             return challengeParticipant.challengeTeamId.isNotNull();
         }
         return challengeParticipant.challengeTeamId.isNull();
+    }
+
+    private BooleanExpression eqIsSurvived(Boolean isSurvived) {
+        if (isSurvived == null) {
+            return null;
+        }
+        return challengeParticipant.isSurvived.eq(isSurvived);
     }
 }

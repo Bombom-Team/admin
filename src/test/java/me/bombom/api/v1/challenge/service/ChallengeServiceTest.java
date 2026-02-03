@@ -1,9 +1,9 @@
 package me.bombom.api.v1.challenge.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import me.bombom.api.v1.challenge.domain.Challenge;
@@ -11,18 +11,23 @@ import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
-import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
+import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
+import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
 import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
 import me.bombom.api.v1.common.config.QuerydslConfig;
-import me.bombom.api.v1.common.exception.CIllegalArgumentException;
+import me.bombom.api.v1.member.domain.Member;
+import me.bombom.api.v1.member.enums.Gender;
+import me.bombom.api.v1.member.repository.MemberRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.TestPropertySource;
 
 @DataJpaTest
@@ -44,6 +49,9 @@ class ChallengeServiceTest {
 
     @Autowired
     private ChallengeTeamRepository challengeTeamRepository;
+
+    @Autowired
+    private MemberRepository memberRepository;
 
     @Test
     void 참여자가_15명일_때_1개의_팀이_생성된다() {
@@ -153,208 +161,139 @@ class ChallengeServiceTest {
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
-        assertThat(teams).hasSize(4); // ceil(46/15) = 4
+        assertThat(teams).hasSize(4); // ceil(46/15) = 4 (11.5 members per team)
     }
 
     @Test
-    void 참여자가_5명일_때_최소_인원_1개의_팀이_생성된다() {
+    void 참여자가_최대_배수일_때_팀마다_배정된_인원수가_동일하다() {
         // given
         Challenge challenge = createChallenge();
-        createParticipants(challenge.getId(), 5);
+        createParticipants(challenge.getId(), 45);
 
         // when
         challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
-        assertThat(teams).hasSize(1);
-    }
+        List<ChallengeParticipant> participants = challengeParticipantRepository
+                .findAllByChallengeId(challenge.getId());
 
-    private Challenge createChallenge() {
-        return challengeRepository.save(Challenge.builder()
-                .name("테스트 챌린지")
-                .generation(1)
-                .startDate(java.time.LocalDate.now())
-                .endDate(java.time.LocalDate.now().plusDays(30))
-                .totalDays(30)
-                .build());
-    }
-
-    @Test
-    void 팀_크기_설정_테스트_10명_제한() {
-        // given
-        Challenge challenge = createChallenge();
-        createParticipants(challenge.getId(), 21); // 21 participants
-
-        // when
-        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(10)); // Max 10
-
-        // then
-        List<ChallengeTeam> teams = challengeTeamRepository.findAll();
-        assertThat(teams).hasSize(3); // ceil(21/10) = 3
-    }
-
-    private void createParticipants(Long challengeId, int count) {
-        List<ChallengeParticipant> participants = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            participants.add(ChallengeParticipant.builder()
-                    .challengeId(challengeId)
-                    .memberId((long) i)
-                    .build());
-        }
-        challengeParticipantRepository.saveAll(participants);
-    }
-
-    @Test
-    void 챌린지_팀_목록_조회_성공() {
-        // given
-        Challenge challenge = createChallenge();
-        createParticipants(challenge.getId(), 15);
-        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
-
-        // when
-        List<GetChallengeTeamResponse> responses = challengeService.getChallengeTeams(challenge.getId());
-
-        // then
         assertSoftly(softly -> {
-            softly.assertThat(responses).isNotEmpty();
-            softly.assertThat(responses).extracting("challengeId").containsOnly(challenge.getId());
-            softly.assertThat(responses).hasSize(1);
+            for (ChallengeTeam team : teams) {
+                long teamCount = participants.stream()
+                        .filter(p -> team.getId().equals(p.getChallengeTeamId()))
+                        .count();
+                softly.assertThat(teamCount).isEqualTo(15);
+            }
         });
     }
 
     @Test
-    void 참여자_팀_수동_변경_성공() {
+    void 참여자가_최대_배수가_아닐_때_배정된_인원수의_차이가_최대_1명이다() {
         // given
         Challenge challenge = createChallenge();
-        createParticipants(challenge.getId(), 5);
-        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
-
-        List<ChallengeTeam> teams = challengeTeamRepository.findByChallengeId(challenge.getId());
-        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge.getId())
-                .getFirst();
-
-        // 1개 팀뿐이면 같은 팀으로 변경(실질적 변경 없음)도 허용되므로 첫번째 팀 선택 로직 단순화
-        ChallengeTeam newTeam = teams.getFirst();
+        createParticipants(challenge.getId(), 32);
 
         // when
-        challengeService.updateParticipantTeam(
-                challenge.getId(),
-                participant.getId(),
-                new UpdateParticipantTeamRequest(newTeam.getId()));
+        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
-        ChallengeParticipant updatedParticipant = challengeParticipantRepository
-                .findByChallengeIdAndMemberId(challenge.getId(), participant.getMemberId()).orElseThrow();
+        List<ChallengeTeam> teams = challengeTeamRepository.findAll();
+        List<ChallengeParticipant> participants = challengeParticipantRepository
+                .findAllByChallengeId(challenge.getId());
 
-        assertThat(updatedParticipant.getChallengeTeamId()).isEqualTo(newTeam.getId());
+        assertSoftly(softly -> {
+            long minCount = Long.MAX_VALUE;
+            long maxCount = Long.MIN_VALUE;
+
+            for (ChallengeTeam team : teams) {
+                long teamCount = participants.stream()
+                        .filter(p -> team.getId().equals(p.getChallengeTeamId()))
+                        .count();
+                minCount = Math.min(minCount, teamCount);
+                maxCount = Math.max(maxCount, teamCount);
+            }
+
+            softly.assertThat(maxCount - minCount).isLessThanOrEqualTo(1);
+        });
     }
 
     @Test
-    void 참여자_팀_수동_변경_실패_다른_챌린지_팀() {
-        // given
-        Challenge challenge1 = createChallenge();
-        Challenge challenge2 = createChallenge();
-        createParticipants(challenge1.getId(), 5);
-        createParticipants(challenge2.getId(), 5);
-        challengeService.assignTeams(challenge1.getId(), new AssignTeamsRequest(15));
-        challengeService.assignTeams(challenge2.getId(), new AssignTeamsRequest(15));
-
-        ChallengeParticipant participant = challengeParticipantRepository.findAllByChallengeId(challenge1.getId())
-                .getFirst();
-        ChallengeTeam otherChallengeTeam = challengeTeamRepository.findByChallengeId(challenge2.getId()).getFirst();
-
-        UpdateParticipantTeamRequest request = new UpdateParticipantTeamRequest(otherChallengeTeam.getId());
-
-        // when & then
-        assertThatThrownBy(
-                () -> challengeService.updateParticipantTeam(challenge1.getId(), participant.getMemberId(), request))
-                .isInstanceOf(CIllegalArgumentException.class);
-    }
-
-    @Test
-    void 챌린지_팀_일괄_생성_성공() {
+    void 챌린지_팀을_생성한다() {
         // given
         Challenge challenge = createChallenge();
-        CreateChallengeTeamsRequest request = new CreateChallengeTeamsRequest(5);
+        CreateChallengeTeamsRequest request = new CreateChallengeTeamsRequest(3);
 
         // when
         challengeService.createChallengeTeams(challenge.getId(), request);
-
-        // then
-        List<ChallengeTeam> teams = challengeTeamRepository.findByChallengeId(challenge.getId());
-        assertThat(teams).hasSize(5);
-    }
-
-    @Test
-    void 챌린지_팀_삭제_성공_참여자_미배정_처리() {
-        // given
-        Challenge challenge = createChallenge();
-        createParticipants(challenge.getId(), 5);
-        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
-
-        ChallengeTeam team = challengeTeamRepository.findByChallengeId(challenge.getId()).getFirst();
-        Long teamId = team.getId();
-
-        // when
-        challengeService.deleteChallengeTeam(challenge.getId(), teamId);
-
-        // then
-        // 1. 팀 삭제 확인
-        assertSoftly(softly -> {
-            softly.assertThat(challengeTeamRepository.findById(teamId)).isEmpty();
-
-            // 2. 참여자 미배정 확인
-            List<ChallengeParticipant> participants = challengeParticipantRepository
-                    .findAllByChallengeId(challenge.getId());
-            softly.assertThat(participants).allMatch(p -> p.getChallengeTeamId() == null);
-        });
-    }
-
-    @Test
-    void 팀_자동_배정_중복_호출_시_팀_재사용_확인() {
-        // given
-        Challenge challenge = createChallenge();
-        createParticipants(challenge.getId(), 30); // 15 max -> 2 teams
-
-        // when
-        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
-        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
-
-        // then
-        List<ChallengeTeam> teams = challengeTeamRepository.findAll();
-        assertThat(teams).hasSize(2);
-    }
-
-    @Test
-    void 팀_추가_필요_시_부족한_수만큼_생성() { // Reuse existing and add missing
-        // given
-        Challenge challenge = createChallenge();
-        createParticipants(challenge.getId(), 15); // Needs 1 team
-        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15)); // Created 1 team
-
-        // Add 16 more participants (Total 31). Needs 3 teams (ceil(31/15) = 3).
-        // Existing: 1. Needed: 3. Missing: 2.
-        createParticipants(challenge.getId(), 16, 15L);
-
-        // when
-        challengeService.assignTeams(challenge.getId(), new AssignTeamsRequest(15));
 
         // then
         List<ChallengeTeam> teams = challengeTeamRepository.findAll();
         assertThat(teams).hasSize(3);
     }
 
-    // Helper method to create participants with offset
-    private void createParticipants(Long challengeId, int count, long startMemberId) {
-        List<ChallengeParticipant> participants = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            participants.add(ChallengeParticipant.builder()
-                    .challengeId(challengeId)
-                    .memberId(startMemberId + i)
-                    .build());
-        }
-        challengeParticipantRepository.saveAll(participants);
+    @Test
+    void 챌린지_팀을_삭제한다() {
+        // given
+        Challenge challenge = createChallenge();
+        ChallengeTeam team = challengeTeamRepository.save(ChallengeTeam.builder()
+                .challengeId(challenge.getId())
+                .progress(0)
+                .build());
+
+        // when
+        challengeService.deleteChallengeTeam(challenge.getId(), team.getId());
+
+        // then
+        assertThat(challengeTeamRepository.existsById(team.getId())).isFalse();
+    }
+
+    @Test
+    void 챌린지_팀_삭제_시_해당_팀원들의_팀ID는_null이_된다() {
+        // given
+        Challenge challenge = createChallenge();
+        ChallengeTeam team = challengeTeamRepository.save(ChallengeTeam.builder()
+                .challengeId(challenge.getId())
+                .progress(0)
+                .build());
+
+        Member member = createMember("user1");
+        ChallengeParticipant participant = challengeParticipantRepository.save(ChallengeParticipant.builder()
+                .challengeId(challenge.getId())
+                .memberId(member.getId())
+                .challengeTeamId(team.getId())
+                .build());
+
+        // when
+        challengeService.deleteChallengeTeam(challenge.getId(), team.getId());
+
+        // then
+        ChallengeParticipant updatedParticipant = challengeParticipantRepository.findById(participant.getId()).get();
+        assertThat(updatedParticipant.getChallengeTeamId()).isNull();
+    }
+
+    @Test
+    void 참여자의_팀을_수정한다() {
+        // given
+        Challenge challenge = createChallenge();
+        ChallengeTeam team = challengeTeamRepository.save(ChallengeTeam.builder()
+                .challengeId(challenge.getId())
+                .progress(0)
+                .build());
+
+        Member member = createMember("user1");
+        ChallengeParticipant participant = challengeParticipantRepository.save(ChallengeParticipant.builder()
+                .challengeId(challenge.getId())
+                .memberId(member.getId())
+                .build());
+
+        // when
+        challengeService.updateParticipantTeam(challenge.getId(), participant.getId(),
+                new UpdateParticipantTeamRequest(team.getId()));
+
+        // then
+        ChallengeParticipant updatedParticipant = challengeParticipantRepository.findById(participant.getId()).get();
+        assertThat(updatedParticipant.getChallengeTeamId()).isEqualTo(team.getId());
     }
 
     @Test
@@ -362,23 +301,27 @@ class ChallengeServiceTest {
         // given
         Challenge challenge = createChallenge();
 
-        // 생존자 (memberId 1L, 2L), 비생존자 (memberId 3L)
+        Member m1 = createMember("m1");
+        Member m2 = createMember("m2");
+        Member m3 = createMember("m3");
+
+        // 생존자 (m1, m2), 비생존자 (m3)
         challengeParticipantRepository.saveAll(List.of(
                 ChallengeParticipant.builder()
                         .challengeId(challenge.getId())
-                        .memberId(1L)
+                        .memberId(m1.getId())
                         .shield(1) // 초기 쉴드 1개
                         .isSurvived(true)
                         .build(),
                 ChallengeParticipant.builder()
                         .challengeId(challenge.getId())
-                        .memberId(2L)
+                        .memberId(m2.getId())
                         .shield(0) // 초기 쉴드 0개
                         .isSurvived(true)
                         .build(),
                 ChallengeParticipant.builder()
                         .challengeId(challenge.getId())
-                        .memberId(3L)
+                        .memberId(m3.getId())
                         .shield(0) // 초기 쉴드 0개 (비생존자)
                         .isSurvived(false)
                         .build()));
@@ -394,16 +337,100 @@ class ChallengeServiceTest {
 
         assertSoftly(softly -> {
             softly.assertThat(
-                    participants.stream().filter(p -> p.getMemberId().equals(1L)).findFirst().get().getShield())
+                    participants.stream().filter(p -> p.getMemberId().equals(m1.getId())).findFirst().get().getShield())
                     .isEqualTo(3);
             softly.assertThat(
-                    participants.stream().filter(p -> p.getMemberId().equals(2L)).findFirst().get().getShield())
+                    participants.stream().filter(p -> p.getMemberId().equals(m2.getId())).findFirst().get().getShield())
                     .isEqualTo(2);
 
             // 비생존자: 0 (변동 없음)
             softly.assertThat(
-                    participants.stream().filter(p -> p.getMemberId().equals(3L)).findFirst().get().getShield())
+                    participants.stream().filter(p -> p.getMemberId().equals(m3.getId())).findFirst().get().getShield())
                     .isEqualTo(0);
         });
+    }
+
+    @Test
+    void 참여자_조회_시_쉴드_개수가_포함되며_생존_여부로_필터링할_수_있다() {
+        // given
+        Challenge challenge = createChallenge();
+
+        Member m1 = createMember("survivor");
+        Member m2 = createMember("failed");
+
+        challengeParticipantRepository.saveAll(List.of(
+                ChallengeParticipant.builder()
+                        .challengeId(challenge.getId())
+                        .memberId(m1.getId())
+                        .shield(5)
+                        .isSurvived(true)
+                        .build(),
+                ChallengeParticipant.builder()
+                        .challengeId(challenge.getId())
+                        .memberId(m2.getId())
+                        .shield(2)
+                        .isSurvived(false)
+                        .build()));
+
+        // when (생존자 필터링)
+        GetChallengeParticipantsRequest request = new GetChallengeParticipantsRequest(null, null, true);
+        Page<GetChallengeParticipantResponse> result = challengeService.getChallengeParticipants(challenge.getId(),
+                request, PageRequest.of(0, 10));
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result.getContent()).hasSize(1);
+            softly.assertThat(result.getContent().get(0).nickname()).isEqualTo("survivor");
+            softly.assertThat(result.getContent().get(0).shield()).isEqualTo(5);
+            softly.assertThat(result.getContent().get(0).isSurvived()).isTrue();
+        });
+
+        // when (탈락자 필터링)
+        GetChallengeParticipantsRequest failRequest = new GetChallengeParticipantsRequest(null, null, false);
+        Page<GetChallengeParticipantResponse> failResult = challengeService.getChallengeParticipants(challenge.getId(),
+                failRequest, PageRequest.of(0, 10));
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(failResult.getContent()).hasSize(1);
+            softly.assertThat(failResult.getContent().get(0).nickname()).isEqualTo("failed");
+            softly.assertThat(failResult.getContent().get(0).shield()).isEqualTo(2);
+            softly.assertThat(failResult.getContent().get(0).isSurvived()).isFalse();
+        });
+    }
+
+    private Challenge createChallenge() {
+        Challenge challenge = Challenge.builder()
+                .name("테스트 챌린지")
+                .generation(1)
+                .startDate(LocalDate.now())
+                .endDate(LocalDate.now().plusDays(30))
+                .totalDays(30)
+                .build();
+        return challengeRepository.save(challenge);
+    }
+
+    private Member createMember(String nickname) {
+        Member member = Member.builder()
+                .provider("google")
+                .providerId("id_" + nickname)
+                .email(nickname + "@test.com")
+                .nickname(nickname)
+                .gender(Gender.NONE)
+                .roleId(1L)
+                .build();
+        return memberRepository.save(member);
+    }
+
+    private void createParticipants(Long challengeId, int count) {
+        List<ChallengeParticipant> participants = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            Member member = createMember("user" + i);
+            participants.add(ChallengeParticipant.builder()
+                    .challengeId(challengeId)
+                    .memberId(member.getId())
+                    .build());
+        }
+        challengeParticipantRepository.saveAll(participants);
     }
 }

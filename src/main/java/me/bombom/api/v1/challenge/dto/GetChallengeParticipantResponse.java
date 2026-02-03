@@ -5,11 +5,12 @@ import lombok.Builder;
 
 @Builder
 public record GetChallengeParticipantResponse(
-                Long participantId,
-                String nickname,
-                Long challengeTeamId,
-                int completedDays,
-                boolean isSurvived
+        Long participantId,
+        String nickname,
+        Long challengeTeamId,
+        int completedDays,
+        boolean isSurvived,
+        int shield
 ) {
 
         @QueryProjection
