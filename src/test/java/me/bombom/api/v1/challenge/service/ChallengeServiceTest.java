@@ -13,6 +13,7 @@ import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
+import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
@@ -354,5 +355,55 @@ class ChallengeServiceTest {
                     .build());
         }
         challengeParticipantRepository.saveAll(participants);
+    }
+
+    @Test
+    void 생존자들에게_지정한_개수만큼_쉴드를_지급한다() {
+        // given
+        Challenge challenge = createChallenge();
+
+        // 생존자 (memberId 1L, 2L), 비생존자 (memberId 3L)
+        challengeParticipantRepository.saveAll(List.of(
+                ChallengeParticipant.builder()
+                        .challengeId(challenge.getId())
+                        .memberId(1L)
+                        .shield(1) // 초기 쉴드 1개
+                        .isSurvived(true)
+                        .build(),
+                ChallengeParticipant.builder()
+                        .challengeId(challenge.getId())
+                        .memberId(2L)
+                        .shield(0) // 초기 쉴드 0개
+                        .isSurvived(true)
+                        .build(),
+                ChallengeParticipant.builder()
+                        .challengeId(challenge.getId())
+                        .memberId(3L)
+                        .shield(0) // 초기 쉴드 0개 (비생존자)
+                        .isSurvived(false)
+                        .build()));
+
+        GrantShieldRequest request = new GrantShieldRequest(2); // 2개 지급
+
+        // when
+        challengeService.grantShield(challenge.getId(), request);
+
+        // then
+        List<ChallengeParticipant> participants = challengeParticipantRepository
+                .findAllByChallengeId(challenge.getId());
+
+        assertSoftly(softly -> {
+            softly.assertThat(
+                    participants.stream().filter(p -> p.getMemberId().equals(1L)).findFirst().get().getShield())
+                    .isEqualTo(3);
+            softly.assertThat(
+                    participants.stream().filter(p -> p.getMemberId().equals(2L)).findFirst().get().getShield())
+                    .isEqualTo(2);
+
+            // 비생존자: 0 (변동 없음)
+            softly.assertThat(
+                    participants.stream().filter(p -> p.getMemberId().equals(3L)).findFirst().get().getShield())
+                    .isEqualTo(0);
+        });
     }
 }

@@ -9,6 +9,7 @@ import java.util.List;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
+import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
 import me.bombom.api.v1.challenge.service.ChallengeService;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
@@ -117,6 +119,18 @@ class ChallengeControllerTest extends ControllerTestSupport {
                 // when // then
                 mockMvc.perform(MockMvcRequestBuilders.post("/admin/api/v1/challenges/1/teams/assignment")
                                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk());
+        }
+
+        @Test
+        void 생존자들에게_쉴드를_지급한다() throws Exception {
+                // given
+                GrantShieldRequest request = new GrantShieldRequest(2);
+
+                // when // then
+                mockMvc.perform(MockMvcRequestBuilders.post("/admin/api/v1/challenges/1/participants/shield")
+                                .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk());
         }
