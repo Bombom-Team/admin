@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
@@ -16,6 +17,7 @@ import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengesRequest;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
+import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -103,6 +105,21 @@ public interface ChallengeControllerApi {
                         @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId,
                         @Parameter(description = "참여자 ID (Member ID)", required = true) @PathVariable Long memberId,
                         @RequestBody @Valid UpdateParticipantTeamRequest request);
+
+        @Operation(summary = "챌린지 생존자 쉴드 일괄 지급", description = """
+                        특정 챌린지의 모든 생존 참여자에게 쉴드를 일괄 지급합니다.
+                        - DB 부하 최소화를 위해 벌크 업데이트(Bulk Update) 방식으로 처리됩니다.
+                        - 지급할 쉴드 개수를 지정할 수 있습니다.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "지급 성공"),
+                        @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지", content = @Content)
+        })
+        @PostMapping("/{challengeId}/participants/shield")
+        void grantShield(
+                        @Parameter(description = "챌린지 ID", required = true) @Positive(message = "id는 1 이상의 값이어야 합니다.") @PathVariable Long challengeId,
+                        @RequestBody @Valid GrantShieldRequest request
+        );
 
         @Operation(summary = "챌린지 팀 자동 배정", description = """
                         챌린지 참여자를 대상으로 팀을 자동으로 배정합니다.

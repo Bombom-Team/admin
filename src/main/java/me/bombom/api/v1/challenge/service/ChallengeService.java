@@ -16,6 +16,7 @@ import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengesRequest;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
+import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
@@ -78,7 +79,8 @@ public class ChallengeService {
 
         if (existingTeams.size() < teamCount) {
             int missingTeamCount = teamCount - existingTeams.size();
-            List<ChallengeTeam> newTeams = challengeTeamRepository.saveAll(createTeams(challenge.getId(), missingTeamCount));
+            List<ChallengeTeam> newTeams = challengeTeamRepository
+                    .saveAll(createTeams(challenge.getId(), missingTeamCount));
             existingTeams.addAll(newTeams);
         }
         assignParticipantsToTeams(participants, existingTeams);
@@ -155,5 +157,15 @@ public class ChallengeService {
             ChallengeTeam team = teams.get(i % teamCount);
             participant.assignTeam(team.getId());
         }
+    }
+
+    @Transactional
+    public void grantShield(Long challengeId, GrantShieldRequest request) {
+        if (!challengeRepository.existsById(challengeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge");
+        }
+
+        challengeParticipantRepository.incrementShieldByChallengeId(challengeId, request.count());
     }
 }

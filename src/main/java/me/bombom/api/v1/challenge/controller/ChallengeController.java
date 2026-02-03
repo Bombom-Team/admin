@@ -1,6 +1,7 @@
 package me.bombom.api.v1.challenge.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
@@ -11,6 +12,7 @@ import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengesRequest;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
+import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
 import me.bombom.api.v1.challenge.service.ChallengeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -95,5 +97,13 @@ public class ChallengeController implements ChallengeControllerApi {
             @PathVariable Long participantId,
             @Valid @RequestBody UpdateParticipantTeamRequest request) {
         challengeService.updateParticipantTeam(challengeId, participantId, request);
+    }
+
+    @Override
+    @PostMapping("/{challengeId}/participants/shield")
+    public void grantShield(
+            @PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long challengeId,
+            @Valid @RequestBody GrantShieldRequest request) {
+        challengeService.grantShield(challengeId, request);
     }
 }
