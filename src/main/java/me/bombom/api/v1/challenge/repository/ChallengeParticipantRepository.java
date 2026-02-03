@@ -21,4 +21,15 @@ public interface ChallengeParticipantRepository extends JpaRepository<ChallengeP
         WHERE p.challengeTeamId = :challengeTeamId
     """)
     void updateChallengeTeamIdToNull(@Param("challengeTeamId") Long challengeTeamId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        UPDATE ChallengeParticipant p
+        SET p.shield = (p.shield + :incrementCount)
+        WHERE p.challengeId = :challengeId AND p.isSurvived = true
+    """)
+    void incrementShieldByChallengeId(
+            @Param("challengeId") Long challengeId,
+            @Param("incrementCount") int incrementCount
+    );
 }
