@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/api/v1/dev")
+@RequestMapping("/admin/api/v1")
 public class DevController implements DevControllerApi {
 
     private final DataSource dataSource;
