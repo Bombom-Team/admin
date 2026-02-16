@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -59,5 +60,17 @@ public class EventNotificationSchedule {
     public void markAsSent() {
         this.sent = true;
         this.sentAt = LocalDateTime.now();
+    }
+
+    public void update(LocalDateTime scheduledAt, NotificationScheduleType type, Integer minutesBefore) {
+        if (Objects.equals(this.scheduledAt, scheduledAt)
+                && this.type == type
+                && Objects.equals(this.minutesBefore, minutesBefore)) {
+            return;
+        }
+
+        this.scheduledAt = scheduledAt;
+        this.type = type;
+        this.minutesBefore = minutesBefore;
     }
 }
