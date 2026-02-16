@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,6 +46,18 @@ public class Event {
     }
 
     public void updateStatus(EventStatus status) {
+        this.status = status;
+    }
+
+    public void update(String name, LocalDateTime startTime, EventStatus status) {
+        if (Objects.equals(this.name, name)
+                && Objects.equals(this.startTime, startTime)
+                && this.status == status) {
+            return;
+        }
+
+        this.name = name;
+        this.startTime = startTime;
         this.status = status;
     }
 }
