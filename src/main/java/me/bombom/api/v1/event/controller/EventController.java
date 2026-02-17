@@ -38,7 +38,7 @@ public class EventController implements EventControllerApi {
     @GetMapping
     public Page<GetEventResponse> getEvents(
             @ModelAttribute GetEventsRequest request,
-            @PageableDefault(sort = "startTime", direction = Direction.DESC) Pageable pageable
+            @PageableDefault(sort = "id", direction = Direction.ASC) Pageable pageable
     ) {
         return eventService.getEvents(request, pageable);
     }

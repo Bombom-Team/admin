@@ -43,7 +43,7 @@ public class EventRepositoryImpl implements CustomEventRepository {
                         statusEq(request.status()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .orderBy(event.startTime.desc(), event.id.desc())
+                .orderBy(event.id.asc())
                 .fetch();
     }
 
