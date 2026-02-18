@@ -22,6 +22,12 @@ public class SecurityConfig {
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
+    @Value("${server.servlet.session.cookie.name}")
+    private String cookieName;
+
+    @Value("${server.servlet.session.cookie.domain}")
+    private String cookieDomain;
+
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return web -> web.ignoring()
@@ -53,7 +59,8 @@ public class SecurityConfig {
     @Bean
     public CookieSerializer cookieSerializer(@Value("${server.servlet.session.cookie.max-age}") Duration cookieMaxAge) {
         DefaultCookieSerializer serializer = new DefaultCookieSerializer();
-        serializer.setCookieName("JSESSIONID");
+        serializer.setCookieName(cookieName);
+        serializer.setDomainName(cookieDomain);
         serializer.setUseHttpOnlyCookie(true);
         serializer.setUseSecureCookie(true);
         serializer.setSameSite("None");
