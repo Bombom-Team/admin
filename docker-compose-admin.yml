@@ -11,6 +11,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://${RDS_ENDPOINT}:3306/${DATABASE}?useSSL=false&serverTimezone=Asia/Seoul
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      PERSONAL_ACCESS_TOKEN: ${PERSONAL_ACCESS_TOKEN}
       LOGGING_FILE_NAME: /logs/bombom-prod.log
       JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m -XX:MaxMetaspaceSize=192m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
 
