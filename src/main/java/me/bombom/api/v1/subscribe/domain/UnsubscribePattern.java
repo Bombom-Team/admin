@@ -33,4 +33,8 @@ public class UnsubscribePattern extends BaseEntity {
         this.patternKey = patternKey;
         this.patternValue = patternValue;
     }
+
+    public void update(String patternValue) {
+        this.patternValue = patternValue;
+    }
 }
