@@ -4,7 +4,7 @@
  * 이 엔진은 기존 Spring Boot의 UnsubscribeAgent 로직을 람다 환경으로 이식한 것입니다.
  * 단순한 클릭을 넘어 네트워크 응답 분석, 다이얼로그 처리, 리다이렉트 감지 등 
  * 다각적인 성공 판정 로직을 포함하고 있습니다.
- */ 
+ */
 
 const chromium = require('@sparticuz/chromium');
 const { chromium: playwright } = require('playwright-core');
