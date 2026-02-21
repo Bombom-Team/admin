@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - server
+    paths-ignore:
+      - 'src/main/resources/lambda-playwright/**'
 
 jobs:
   build:
