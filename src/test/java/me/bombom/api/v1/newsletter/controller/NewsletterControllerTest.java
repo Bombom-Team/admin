@@ -16,6 +16,7 @@ import java.util.List;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.common.support.ControllerTestSupport;
+import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
 import me.bombom.api.v1.newsletter.dto.CreateNewsletterRequest;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
@@ -49,7 +50,12 @@ class NewsletterControllerTest extends ControllerTestSupport {
                                 "매주 월요일",
                                 "뉴스레터 발송자",
                                 null,
-                                "이메일 구독");
+                                "이메일 구독",
+                                NewsletterPreviousStrategy.INACTIVE,
+                                0,
+                                0,
+                                0
+                );
 
                 doNothing().when(newsletterService).create(any(CreateNewsletterRequest.class));
 
@@ -76,7 +82,12 @@ class NewsletterControllerTest extends ControllerTestSupport {
                                 "매주 월요일",
                                 "뉴스레터 발송자",
                                 null,
-                                "이메일 구독");
+                                "이메일 구독",
+                                NewsletterPreviousStrategy.INACTIVE,
+                                0,
+                                0,
+                                0
+                );
 
                 doThrow(new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                                 .addContext("category", "없는카테고리"))

@@ -9,6 +9,7 @@ import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.newsletter.domain.Category;
 import me.bombom.api.v1.newsletter.domain.Newsletter;
 import me.bombom.api.v1.newsletter.domain.NewsletterDetail;
+import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
 import me.bombom.api.v1.newsletter.dto.CreateNewsletterRequest;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
@@ -68,7 +69,12 @@ class NewsletterServiceTest {
                                 "weekly",
                                 "sender",
                                 null,
-                                "email");
+                                "email",
+                                NewsletterPreviousStrategy.INACTIVE,
+                                0,
+                                0,
+                                0
+                );
 
                 // when
                 newsletterService.create(request);
@@ -99,7 +105,12 @@ class NewsletterServiceTest {
                                 "weekly",
                                 "sender",
                                 null,
-                                "email");
+                                "email",
+                                NewsletterPreviousStrategy.INACTIVE,
+                                0,
+                                0,
+                                0
+                );
 
                 // when & then
                 assertThatThrownBy(() -> newsletterService.create(request))
