@@ -87,7 +87,7 @@ public class LambdaPlaywrightService {
                     .encodeToString(request.content().getBytes(StandardCharsets.UTF_8));
 
             GithubUpdateFileRequest updateRequest = new GithubUpdateFileRequest(
-                    "chore: update lambda-playwright script",
+                    "chore: AWS lambda-playwright 스크립트 수정",
                     encodedContent,
                     current.sha(),
                     branch
