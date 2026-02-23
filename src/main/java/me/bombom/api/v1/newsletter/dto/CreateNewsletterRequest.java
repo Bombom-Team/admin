@@ -3,6 +3,8 @@ package me.bombom.api.v1.newsletter.dto;
 import jakarta.validation.constraints.NotBlank;
 import me.bombom.api.v1.newsletter.domain.Newsletter;
 import me.bombom.api.v1.newsletter.domain.NewsletterDetail;
+import me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy;
+import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
 
 public record CreateNewsletterRequest(
         @NotBlank String name,
@@ -17,7 +19,13 @@ public record CreateNewsletterRequest(
         @NotBlank String issueCycle,
         @NotBlank String sender,
         String previousNewsletterUrl,
-        String subscribeMethod
+        String subscribeMethod,
+
+        // Previous Article Strategy
+        NewsletterPreviousStrategy previousStrategy,
+        int previousFixedCount,
+        int previousRecentCount,
+        int previousExposureRatio
 ) {
 
     public NewsletterDetail toDetailEntity() {
@@ -40,6 +48,18 @@ public record CreateNewsletterRequest(
                 .email(email)
                 .categoryId(categoryId)
                 .detailId(detailId)
+                .build();
+    }
+
+    public NewsletterPreviousPolicy toNewsletterPreviousPolicy(
+            Long newsletterId
+    ) {
+        return NewsletterPreviousPolicy.builder()
+                .newsletterId(newsletterId)
+                .strategy(previousStrategy)
+                .fixedCount(previousFixedCount)
+                .recentCount(previousRecentCount)
+                .exposureRatio(previousExposureRatio)
                 .build();
     }
 }
