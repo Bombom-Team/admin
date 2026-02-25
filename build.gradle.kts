@@ -64,7 +64,9 @@ dependencies {
     testImplementation("org.testcontainers:mysql")
     testImplementation("org.testcontainers:junit-jupiter")
     testRuntimeOnly("com.h2database:h2")
-
+    // instancio
+    testImplementation("org.instancio:instancio-junit:5.3.0")
+    
     // db
     runtimeOnly("com.mysql:mysql-connector-j")
 
