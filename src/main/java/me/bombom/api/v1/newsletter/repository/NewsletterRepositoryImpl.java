@@ -15,12 +15,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import me.bombom.api.v1.newsletter.domain.NewsletterPublicationStatus;
 import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
+import me.bombom.api.v1.newsletter.domain.NewsletterPublicationStatus;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
 import me.bombom.api.v1.newsletter.dto.NewsletterSortType;
+import me.bombom.api.v1.newsletter.dto.NewsletterStatusFilter;
 import me.bombom.api.v1.newsletter.dto.QGetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.QGetNewsletterSummaryResponse;
 import org.springframework.util.StringUtils;
@@ -51,7 +52,8 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
                 .where(
                         keywordContains(request.keyword()),
                         categoryNameEq(request.category()),
-                        previousStrategyEq(request.previousStrategy()))
+                        previousStrategyEq(request.previousStrategy()),
+                        publicationStatusEq(request.status(), suspensionThreshold))
                 .orderBy(getOrderSpecifier(request.sort()))
                 .fetch();
     }
@@ -126,6 +128,20 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
                         .and(newsletter.suspendedAt.lt(threshold)))
                 .then("SUSPENDED_HIDDEN")
                 .otherwise(newsletter.status.stringValue());
+    }
+
+    private BooleanExpression publicationStatusEq(NewsletterStatusFilter statusFilter, LocalDate threshold) {
+        if (statusFilter == null) {
+            return null;
+        }
+        return switch (statusFilter) {
+            case ACTIVE -> newsletter.status.eq(NewsletterPublicationStatus.ACTIVE);
+            case DISCONTINUED -> newsletter.status.eq(NewsletterPublicationStatus.DISCONTINUED);
+            case SUSPENDED_VISIBLE -> newsletter.status.eq(NewsletterPublicationStatus.SUSPENDED)
+                    .and(newsletter.suspendedAt.goe(threshold));
+            case SUSPENDED_HIDDEN -> newsletter.status.eq(NewsletterPublicationStatus.SUSPENDED)
+                    .and(newsletter.suspendedAt.lt(threshold));
+        };
     }
 
     private BooleanExpression previousStrategyEq(NewsletterPreviousStrategy strategy) {

@@ -18,6 +18,7 @@ import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
 import me.bombom.api.v1.newsletter.dto.NewsletterSortType;
+import me.bombom.api.v1.newsletter.dto.NewsletterStatusFilter;
 import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
 import me.bombom.api.v1.newsletter.dto.UpdateNewsletterStatusRequest;
 import me.bombom.api.v1.newsletter.fixture.NewsletterFixture;
@@ -136,7 +137,7 @@ class NewsletterServiceTest {
             newsletterSubscriptionCountRepository.save(NewsletterFixture.createSubscriptionCount(newsletter.getId(), 100));
         }
 
-        GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, null);
+        GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, null, null);
 
         // when
         List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
@@ -160,7 +161,7 @@ class NewsletterServiceTest {
         createNewsletterWithSubscriberCount(category, "뉴스레터 2", 300);
         createNewsletterWithSubscriberCount(category, "뉴스레터 3", 200);
 
-        GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, NewsletterSortType.POPULAR);
+        GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, null, NewsletterSortType.POPULAR);
 
         // when
         List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
@@ -184,7 +185,7 @@ class NewsletterServiceTest {
         createNewsletterWithCategory(tech, "테크 뉴스레터", "매주 월요일");
         createNewsletterWithCategory(economy, "경제 뉴스레터", "매주 화요일");
 
-        GetNewslettersRequest request = new GetNewslettersRequest(null, "테크", null, null);
+        GetNewslettersRequest request = new GetNewslettersRequest(null, "테크", null, null, null);
 
         // when
         List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
@@ -205,7 +206,7 @@ class NewsletterServiceTest {
         createNewsletterWithCategory(tech, "월요 뉴스레터", "매주 월요일");
         createNewsletterWithCategory(tech, "화요 뉴스레터", "매주 화요일");
 
-        GetNewslettersRequest request = new GetNewslettersRequest("월요일", null, null, null);
+        GetNewslettersRequest request = new GetNewslettersRequest("월요일", null, null, null, null);
 
         // when
         List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
@@ -241,7 +242,7 @@ class NewsletterServiceTest {
         newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(n2.getId()));
 
         GetNewslettersRequest request = new GetNewslettersRequest(null, null,
-                me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.RECENT_ONLY, null);
+                me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.RECENT_ONLY, null, null);
 
         // when
         List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
@@ -378,6 +379,85 @@ class NewsletterServiceTest {
             softly.assertThat(newsletterDetailRepository.existsById(detail.getId())).isFalse();
             softly.assertThat(newsletterSubscriptionCountRepository.findByNewsletterId(newsletter.getId()))
                     .isEmpty();
+        });
+    }
+
+    @Test
+    @DisplayName("발행 상태 ACTIVE 필터링")
+    void getNewsletters_filterByStatusActive() {
+        // given
+        createNewsletterWithStatus(NewsletterPublicationStatus.ACTIVE, null);
+        createNewsletterWithStatus(NewsletterPublicationStatus.SUSPENDED, LocalDate.now().minusMonths(3));
+        createNewsletterWithStatus(NewsletterPublicationStatus.DISCONTINUED, LocalDate.now());
+
+        GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, NewsletterStatusFilter.ACTIVE, null);
+
+        // when
+        List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result).hasSize(1);
+            softly.assertThat(result.getFirst().status()).isEqualTo("ACTIVE");
+        });
+    }
+
+    @Test
+    @DisplayName("발행 상태 SUSPENDED_VISIBLE 필터링 - suspendedAt 6개월 이내만 포함")
+    void getNewsletters_filterByStatusSuspendedVisible() {
+        // given
+        createNewsletterWithStatus(NewsletterPublicationStatus.ACTIVE, null);
+        createNewsletterWithStatus(NewsletterPublicationStatus.SUSPENDED, LocalDate.now().minusMonths(3));  // visible
+        createNewsletterWithStatus(NewsletterPublicationStatus.SUSPENDED, LocalDate.now().minusMonths(9));  // hidden
+
+        GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, NewsletterStatusFilter.SUSPENDED_VISIBLE, null);
+
+        // when
+        List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result).hasSize(1);
+            softly.assertThat(result.getFirst().status()).isEqualTo("SUSPENDED_VISIBLE");
+        });
+    }
+
+    @Test
+    @DisplayName("발행 상태 SUSPENDED_HIDDEN 필터링 - suspendedAt 6개월 초과만 포함")
+    void getNewsletters_filterByStatusSuspendedHidden() {
+        // given
+        createNewsletterWithStatus(NewsletterPublicationStatus.ACTIVE, null);
+        createNewsletterWithStatus(NewsletterPublicationStatus.SUSPENDED, LocalDate.now().minusMonths(3));  // visible
+        createNewsletterWithStatus(NewsletterPublicationStatus.SUSPENDED, LocalDate.now().minusMonths(9));  // hidden
+
+        GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, NewsletterStatusFilter.SUSPENDED_HIDDEN, null);
+
+        // when
+        List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result).hasSize(1);
+            softly.assertThat(result.getFirst().status()).isEqualTo("SUSPENDED_HIDDEN");
+        });
+    }
+
+    @Test
+    @DisplayName("발행 상태 DISCONTINUED 필터링")
+    void getNewsletters_filterByStatusDiscontinued() {
+        // given
+        createNewsletterWithStatus(NewsletterPublicationStatus.ACTIVE, null);
+        createNewsletterWithStatus(NewsletterPublicationStatus.DISCONTINUED, LocalDate.now());
+
+        GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, NewsletterStatusFilter.DISCONTINUED, null);
+
+        // when
+        List<GetNewsletterSummaryResponse> result = newsletterService.getNewsletters(request);
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result).hasSize(1);
+            softly.assertThat(result.getFirst().status()).isEqualTo("DISCONTINUED");
         });
     }
 

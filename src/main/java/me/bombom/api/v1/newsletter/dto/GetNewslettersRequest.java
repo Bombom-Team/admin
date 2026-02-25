@@ -4,8 +4,10 @@ import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
 
 public record GetNewslettersRequest(
 
-                String keyword,
-                String category,
-                NewsletterPreviousStrategy previousStrategy,
-                NewsletterSortType sort) {
+        String keyword,
+        String category,
+        NewsletterPreviousStrategy previousStrategy,
+        NewsletterStatusFilter status,
+        NewsletterSortType sort
+) {
 }
