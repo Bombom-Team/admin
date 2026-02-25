@@ -1,5 +1,7 @@
 package me.bombom.api.v1.newsletter.service;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
@@ -29,6 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class NewsletterService {
 
+    private static final int LONG_TERM_SUSPENSION_MONTHS = 6;
+
+    private final Clock clock;
     private final NewsletterRepository newsletterRepository;
     private final NewsletterDetailRepository newsletterDetailRepository;
     private final NewsletterPreviousPolicyRepository newsletterPreviousPolicyRepository;
@@ -48,11 +53,11 @@ public class NewsletterService {
     }
 
     public List<GetNewsletterSummaryResponse> getNewsletters(GetNewslettersRequest request) {
-        return newsletterRepository.findNewsletters(request);
+        return newsletterRepository.findNewsletters(request, suspensionThreshold());
     }
 
     public GetNewsletterResponse getNewsletterDetail(Long id) {
-        return newsletterRepository.findNewsletter(id)
+        return newsletterRepository.findNewsletter(id, suspensionThreshold())
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "newsletter")
                         .addContext(ErrorContextKeys.OPERATION, "getNewsletter"));
@@ -107,6 +112,10 @@ public class NewsletterService {
         newsletterPreviousPolicyRepository.deleteByNewsletterId(id);
         newsletterRepository.delete(newsletter);
         newsletterDetailRepository.deleteById(newsletter.getDetailId());
+    }
+
+    private LocalDate suspensionThreshold() {
+        return LocalDate.now(clock).minusMonths(LONG_TERM_SUSPENSION_MONTHS);
     }
 
     private Newsletter findNewsletter(Long id) {

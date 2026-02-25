@@ -108,9 +108,9 @@ class NewsletterControllerTest extends ControllerTestSupport {
         void getNewsletters_success() throws Exception {
                 // given
                 GetNewsletterSummaryResponse response1 = new GetNewsletterSummaryResponse(
-                                1L, "뉴스레터1", "img1", "테크", "매주", 10, "INACTIVE");
+                                1L, "뉴스레터1", "img1", "테크", "매주", 10, "INACTIVE", "ACTIVE", null);
                 GetNewsletterSummaryResponse response2 = new GetNewsletterSummaryResponse(
-                                2L, "뉴스레터2", "img2", "경제", "격주", 20, "INACTIVE");
+                                2L, "뉴스레터2", "img2", "경제", "격주", 20, "INACTIVE", "ACTIVE", null);
 
                 given(newsletterService.getNewsletters(any(GetNewslettersRequest.class)))
                                 .willReturn(List.of(response1, response2));
@@ -146,7 +146,9 @@ class NewsletterControllerTest extends ControllerTestSupport {
                                 null,
                                 0,
                                 0,
-                                0);
+                                0,
+                                "ACTIVE",
+                                null);
 
                 given(newsletterService.getNewsletterDetail(1L))
                                 .willReturn(response);
