@@ -20,6 +20,7 @@ import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
 import me.bombom.api.v1.newsletter.dto.NewsletterSortType;
 import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
 import me.bombom.api.v1.newsletter.dto.UpdateNewsletterStatusRequest;
+import me.bombom.api.v1.newsletter.fixture.NewsletterFixture;
 import me.bombom.api.v1.newsletter.repository.CategoryRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterDetailRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterPreviousPolicyRepository;
@@ -58,9 +59,7 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터를 생성한다.")
     void createNewsletter() {
         // given
-        Category category = categoryRepository.save(Category.builder()
-                .name("경제")
-                .build());
+        Category category = categoryRepository.save(NewsletterFixture.createCategory("경제"));
 
         CreateNewsletterRequest request = new CreateNewsletterRequest(
                 "테스트 뉴스레터",
@@ -126,29 +125,15 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터 목록을 조회한다.")
     void getNewslettersDetail() {
         // given
-        Category category = categoryRepository.save(Category.builder().name("테크").build());
+        Category category = categoryRepository.save(NewsletterFixture.createCategory("테크"));
 
         for (int i = 0; i < 30; i++) {
-            NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
-                    .mainPageUrl("https://example.com/" + i)
-                    .subscribeUrl("https://subscribe.com/" + i)
-                    .issueCycle("매주 월요일")
-                    .sender("보내는 사람 " + i)
-                    .build());
+            NewsletterDetail detail = newsletterDetailRepository.save(NewsletterFixture.createDetail("weekly"));
 
-            Newsletter newsletter = newsletterRepository.save(Newsletter.builder()
-                    .name("뉴스레터 " + i)
-                    .description("설명 " + i)
-                    .imageUrl("https://image.com/" + i)
-                    .email("test" + i + "@example.com")
-                    .detailId(detail.getId())
-                    .categoryId(category.getId())
-                    .build());
+            Newsletter newsletter = newsletterRepository.save(NewsletterFixture.createNewsletter(category.getId(), detail.getId(),
+                            "Test Newsletter", "test@example.com"));
 
-            newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.builder()
-                    .newsletterId(newsletter.getId())
-                    .total(100)
-                    .build());
+            newsletterSubscriptionCountRepository.save(NewsletterFixture.createSubscriptionCount(newsletter.getId(), 100));
         }
 
         GetNewslettersRequest request = new GetNewslettersRequest(null, null, null, null);
@@ -159,10 +144,8 @@ class NewsletterServiceTest {
         // then
         assertSoftly(softly -> {
             softly.assertThat(result).hasSize(30);
-            // Default sort desc by createdAt
-            // Since we created them in a loop, the last one created (id 29) should be first
-            softly.assertThat(result.getFirst().name()).isEqualTo("뉴스레터 29");
-            softly.assertThat(result.getFirst().issueCycle()).isEqualTo("매주 월요일");
+            softly.assertThat(result.getFirst().name()).isEqualTo("Test Newsletter");
+            softly.assertThat(result.getFirst().issueCycle()).isEqualTo("weekly");
         });
     }
 
@@ -170,7 +153,7 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터 목록을 인기순(구독자수)으로 정렬한다.")
     void getNewsletters_sortByPopularity() {
         // given
-        Category category = categoryRepository.save(Category.builder().name("테크").build());
+        Category category = categoryRepository.save(NewsletterFixture.createCategory("테크"));
 
         // Create 3 newsletters with different subscription counts
         createNewsletterWithSubscriberCount(category, "뉴스레터 1", 100);
@@ -195,8 +178,8 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터 목록을 카테고리로 필터링한다.")
     void getNewsletters_filterByCategoryDetail() {
         // given
-        Category tech = categoryRepository.save(Category.builder().name("테크").build());
-        Category economy = categoryRepository.save(Category.builder().name("경제").build());
+        Category tech = categoryRepository.save(NewsletterFixture.createCategory("테크"));
+        Category economy = categoryRepository.save(NewsletterFixture.createCategory("경제"));
 
         createNewsletterWithCategory(tech, "테크 뉴스레터", "매주 월요일");
         createNewsletterWithCategory(economy, "경제 뉴스레터", "매주 화요일");
@@ -217,7 +200,7 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터 목록을 발행 주기로 검색한다.")
     void getNewsletters_searchByIssueCycleDetail() {
         // given
-        Category tech = categoryRepository.save(Category.builder().name("테크").build());
+        Category tech = categoryRepository.save(NewsletterFixture.createCategory("테크"));
 
         createNewsletterWithCategory(tech, "월요 뉴스레터", "매주 월요일");
         createNewsletterWithCategory(tech, "화요 뉴스레터", "매주 화요일");
@@ -237,56 +220,22 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터 목록을 지난 뉴스레터 전략으로 필터링한다.")
     void getNewsletters_filterByPreviousStrategy() {
         // given
-        Category category = categoryRepository.save(Category.builder().name("테크").build());
-        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
-                .mainPageUrl("url")
-                .subscribeUrl("sub")
-                .issueCycle("weekly")
-                .sender("sender")
-                .build());
+        Category category = categoryRepository.save(NewsletterFixture.createCategory("테크"));
+        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterFixture.createDetail("weekly"));
 
         // Newsletter 1: INACTIVE (default)
-        Newsletter n1 = newsletterRepository.save(Newsletter.builder()
-                .name("n1")
-                .description("desc")
-                .imageUrl("img")
-                .email("email1")
-                .detailId(detail.getId())
-                .categoryId(category.getId())
-                .build());
-        newsletterPreviousPolicyRepository.save(me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy
-                .builder()
-                .newsletterId(n1.getId())
-                .strategy(me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.INACTIVE)
-                .fixedCount(0)
-                .recentCount(0)
-                .exposureRatio(0)
-                .build());
+        Newsletter n1 = newsletterRepository.save(
+                NewsletterFixture.createNewsletter(category.getId(), detail.getId(), "n1", "email1"));
+        newsletterPreviousPolicyRepository.save(NewsletterFixture.createPreviousPolicy(n1.getId(),
+                me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.INACTIVE));
 
-        NewsletterDetail detail2 = newsletterDetailRepository.save(NewsletterDetail.builder()
-                .mainPageUrl("url2")
-                .subscribeUrl("sub2")
-                .issueCycle("weekly")
-                .sender("sender2")
-                .build());
+        NewsletterDetail detail2 = newsletterDetailRepository.save(NewsletterFixture.createDetail("weekly"));
 
         // Newsletter 2: RECENT_ONLY
-        Newsletter n2 = newsletterRepository.save(Newsletter.builder()
-                .name("n2")
-                .description("desc")
-                .imageUrl("img")
-                .email("email2")
-                .detailId(detail2.getId())
-                .categoryId(category.getId())
-                .build());
-        newsletterPreviousPolicyRepository.save(me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy
-                .builder()
-                .newsletterId(n2.getId())
-                .strategy(me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.RECENT_ONLY)
-                .fixedCount(0)
-                .recentCount(5)
-                .exposureRatio(0)
-                .build());
+        Newsletter n2 = newsletterRepository.save(
+                NewsletterFixture.createNewsletter(category.getId(), detail2.getId(), "n2", "email2"));
+        newsletterPreviousPolicyRepository.save(NewsletterFixture.createPreviousPolicy(n2.getId(),
+                me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.RECENT_ONLY));
 
         newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(n1.getId()));
         newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(n2.getId()));
@@ -309,27 +258,15 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터 상세 정보를 조회한다.")
     void getNewsletterDetail() {
         // given
-        Category category = categoryRepository.save(Category.builder().name("테크").build());
-        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
-                .mainPageUrl("https://example.com")
-                .subscribeUrl("https://subscribe.com")
-                .issueCycle("매주 월요일")
-                .sender("sender")
-                .build());
+        Category category = categoryRepository.save(NewsletterFixture.createCategory("테크"));
+        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterFixture.createDetail("weekly"));
 
-        Newsletter newsletter = newsletterRepository.save(Newsletter.builder()
-                .name("테크 뉴스레터")
-                .description("desc")
-                .imageUrl("img")
-                .email("email")
-                .detailId(detail.getId())
-                .categoryId(category.getId())
-                .build());
+        Newsletter newsletter = newsletterRepository
+                .save(NewsletterFixture.createNewsletter(category.getId(), detail.getId(), "테크 뉴스레터",
+                        "sender"));
 
-        newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.builder()
-                .newsletterId(newsletter.getId())
-                .total(100)
-                .build());
+        newsletterSubscriptionCountRepository
+                .save(NewsletterFixture.createSubscriptionCount(newsletter.getId(), 100));
 
         // when
         GetNewsletterResponse response = newsletterService.getNewsletterDetail(newsletter.getId());
@@ -355,33 +292,16 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터 정보를 수정한다.")
     void updateNewsletter() {
         // given
-        Category category = categoryRepository.save(Category.builder().name("테크").build());
-        Category newCategory = categoryRepository.save(Category.builder().name("경제").build());
+        Category category = categoryRepository.save(NewsletterFixture.createCategory("테크"));
+        Category newCategory = categoryRepository.save(NewsletterFixture.createCategory("경제"));
 
-        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
-                .mainPageUrl("old.com")
-                .subscribeUrl("old-sub.com")
-                .issueCycle("weekly")
-                .sender("sender")
-                .previousAllowed(true)
-                .build());
+        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterFixture.createDetail("weekly"));
 
-        Newsletter newsletter = newsletterRepository.save(Newsletter.builder()
-                .name("Old Name")
-                .description("Old Desc")
-                .imageUrl("old.img")
-                .email("old@email.com")
-                .detailId(detail.getId())
-                .categoryId(category.getId())
-                .build());
-        newsletterPreviousPolicyRepository.save(me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy
-                .builder()
-                .newsletterId(newsletter.getId())
-                .strategy(me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.INACTIVE)
-                .fixedCount(0)
-                .recentCount(0)
-                .exposureRatio(0)
-                .build());
+        Newsletter newsletter = newsletterRepository
+                .save(NewsletterFixture.createNewsletter(category.getId(), detail.getId(),
+                        "Test Newsletter", "test@test.com"));
+        newsletterPreviousPolicyRepository.save(NewsletterFixture.createPreviousPolicy(newsletter.getId(),
+                me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy.INACTIVE));
 
         UpdateNewsletterRequest request = new UpdateNewsletterRequest(
                 "New Name",
@@ -440,22 +360,12 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터를 삭제한다.")
     void deleteNewsletter() {
         // given
-        Category category = categoryRepository.save(Category.builder().name("테크").build());
-        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
-                .mainPageUrl("url")
-                .subscribeUrl("sub")
-                .issueCycle("weekly")
-                .sender("sender")
-                .build());
+        Category category = categoryRepository.save(NewsletterFixture.createCategory("테크"));
+        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterFixture.createDetail("weekly"));
 
-        Newsletter newsletter = newsletterRepository.save(Newsletter.builder()
-                .name("Delete Me")
-                .description("desc")
-                .imageUrl("img")
-                .email("email")
-                .detailId(detail.getId())
-                .categoryId(category.getId())
-                .build());
+        Newsletter newsletter = newsletterRepository
+                .save(NewsletterFixture.createNewsletter(category.getId(), detail.getId(),
+                        "Test Newsletter", "test@test.com"));
 
         newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(newsletter.getId()));
 
@@ -511,12 +421,9 @@ class NewsletterServiceTest {
     @DisplayName("뉴스레터 상태를 ACTIVE로 변경하면 suspendedAt이 null로 초기화된다.")
     void updateStatus_toActive_clearsSuspendedAt() {
         // given
-        Newsletter newsletter = newsletterRepository.save(Newsletter.builder()
-                .name("test").description("desc").imageUrl("img").email("email@test.com")
-                .detailId(0L).categoryId(0L)
-                .status(NewsletterPublicationStatus.SUSPENDED)
-                .suspendedAt(LocalDate.of(2025, 1, 1))
-                .build());
+        Newsletter newsletter = newsletterRepository.save(NewsletterFixture.createNewsletter(0L, 0L, "test", "email@test.com"));
+        newsletter.updateStatus(NewsletterPublicationStatus.SUSPENDED, LocalDate.of(2025, 1, 1));
+        newsletterRepository.save(newsletter);
         UpdateNewsletterStatusRequest request = new UpdateNewsletterStatusRequest(
                 NewsletterPublicationStatus.ACTIVE, null);
 
@@ -621,64 +528,26 @@ class NewsletterServiceTest {
     }
 
     private Newsletter saveMinimalNewsletter() {
-        return newsletterRepository.save(Newsletter.builder()
-                .name("test").description("desc").imageUrl("img").email("email@test.com")
-                .detailId(0L).categoryId(0L)
-                .build());
+        return newsletterRepository.save(NewsletterFixture.createNewsletter(0L, 0L, "test", "email@test.com"));
     }
 
     private Newsletter createNewsletterWithStatus(NewsletterPublicationStatus status, LocalDate suspendedAt) {
-        Category category = categoryRepository.save(Category.builder().name("테크").build());
-        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
-                .mainPageUrl("url").subscribeUrl("sub").issueCycle("weekly").sender("sender")
-                .build());
-        return newsletterRepository.save(Newsletter.builder()
-                .name("test").description("desc").imageUrl("img").email("email@test.com")
-                .detailId(detail.getId()).categoryId(category.getId())
-                .status(status).suspendedAt(suspendedAt)
-                .build());
+        Category category = categoryRepository.save(NewsletterFixture.createCategory("테크"));
+        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterFixture.createDetail("weekly"));
+        Newsletter newsletter = newsletterRepository.save(NewsletterFixture.createNewsletter(category.getId(), detail.getId(), "test", "email@test.com"));
+        newsletter.updateStatus(status, suspendedAt);
+        return newsletterRepository.save(newsletter);
     }
 
     private void createNewsletterWithCategory(Category category, String name, String issueCycle) {
-        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
-                .mainPageUrl("https://example.com")
-                .subscribeUrl("https://subscribe.com")
-                .issueCycle(issueCycle)
-                .sender("sender")
-                .build());
-
-        Newsletter newsletter = newsletterRepository.save(Newsletter.builder()
-                .name(name)
-                .description("desc")
-                .imageUrl("img")
-                .email("email")
-                .detailId(detail.getId())
-                .categoryId(category.getId())
-                .build());
-
+        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterFixture.createDetail(issueCycle));
+        Newsletter newsletter = newsletterRepository.save(NewsletterFixture.createNewsletter(category.getId(), detail.getId(), name, "email"));
         newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(newsletter.getId()));
     }
 
     private void createNewsletterWithSubscriberCount(Category category, String name, int count) {
-        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterDetail.builder()
-                .mainPageUrl("https://example.com")
-                .subscribeUrl("https://subscribe.com")
-                .issueCycle("weekly")
-                .sender("sender")
-                .build());
-
-        Newsletter newsletter = newsletterRepository.save(Newsletter.builder()
-                .name(name)
-                .description("desc")
-                .imageUrl("img")
-                .email("email")
-                .detailId(detail.getId())
-                .categoryId(category.getId())
-                .build());
-
-        newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.builder()
-                .newsletterId(newsletter.getId())
-                .total(count)
-                .build());
+        NewsletterDetail detail = newsletterDetailRepository.save(NewsletterFixture.createDetail("weekly"));
+        Newsletter newsletter = newsletterRepository.save(NewsletterFixture.createNewsletter(category.getId(), detail.getId(), name, "email"));
+        newsletterSubscriptionCountRepository.save(NewsletterFixture.createSubscriptionCount(newsletter.getId(), count));
     }
 }

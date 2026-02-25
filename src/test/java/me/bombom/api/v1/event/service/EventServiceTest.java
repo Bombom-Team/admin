@@ -16,6 +16,7 @@ import me.bombom.api.v1.event.dto.GetEventDetailResponse;
 import me.bombom.api.v1.event.dto.GetEventResponse;
 import me.bombom.api.v1.event.dto.GetEventsRequest;
 import me.bombom.api.v1.event.dto.UpdateEventRequest;
+import me.bombom.api.v1.event.fixture.EventFixture;
 import me.bombom.api.v1.event.repository.EventRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,11 +66,7 @@ class EventServiceTest {
     @DisplayName("이벤트 상세를 조회한다.")
     void 이벤트_상세를_조회한다() {
         // given
-        Event saved = eventRepository.save(Event.builder()
-                .name("상세 이벤트")
-                .startTime(LocalDateTime.now())
-                .status(EventStatus.SCHEDULED)
-                .build());
+        Event saved = eventRepository.save(EventFixture.createEvent("상세 이벤트", EventStatus.SCHEDULED));
 
         // when
         GetEventDetailResponse response = eventService.getEvent(saved.getId());
@@ -95,16 +92,8 @@ class EventServiceTest {
     @DisplayName("이벤트 목록을 조회한다.")
     void 이벤트_목록을_조회한다() {
         // given
-        eventRepository.save(Event.builder()
-                .name("테스트 이벤트1")
-                .startTime(LocalDateTime.now())
-                .status(EventStatus.SCHEDULED)
-                .build());
-        eventRepository.save(Event.builder()
-                .name("다른 이벤트")
-                .startTime(LocalDateTime.now())
-                .status(EventStatus.IN_PROGRESS)
-                .build());
+        eventRepository.save(EventFixture.createEvent("테스트 이벤트1", EventStatus.SCHEDULED));
+        eventRepository.save(EventFixture.createEvent("다른 이벤트", EventStatus.IN_PROGRESS));
 
         GetEventsRequest request = new GetEventsRequest("테스트", null);
         Pageable pageable = PageRequest.of(0, 10);
@@ -121,11 +110,7 @@ class EventServiceTest {
     @DisplayName("이벤트 전체 정보를 수정한다.")
     void 이벤트_전체_정보를_수정한다() {
         // given
-        Event saved = eventRepository.save(Event.builder()
-                .name("상태 이벤트")
-                .startTime(LocalDateTime.now())
-                .status(EventStatus.SCHEDULED)
-                .build());
+        Event saved = eventRepository.save(EventFixture.createEvent("상태 이벤트", EventStatus.SCHEDULED));
 
         UpdateEventRequest request = new UpdateEventRequest(
                 "수정된 이벤트",
@@ -162,11 +147,7 @@ class EventServiceTest {
     @DisplayName("이벤트를 삭제한다.")
     void 이벤트를_삭제한다() {
         // given
-        Event saved = eventRepository.save(Event.builder()
-                .name("삭제 이벤트")
-                .startTime(LocalDateTime.now())
-                .status(EventStatus.SCHEDULED)
-                .build());
+        Event saved = eventRepository.save(EventFixture.createEvent("삭제 이벤트", EventStatus.SCHEDULED));
 
         // when
         eventService.deleteEvent(saved.getId());

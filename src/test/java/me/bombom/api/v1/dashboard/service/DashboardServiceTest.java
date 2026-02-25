@@ -7,14 +7,13 @@ import static org.mockito.BDDMockito.given;
 import java.time.LocalDate;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.dashboard.dto.DashboardStatsResponse;
-import me.bombom.api.v1.member.domain.Member;
-import me.bombom.api.v1.member.enums.Gender;
+import me.bombom.api.v1.member.fixture.MemberFixture;
 import me.bombom.api.v1.member.repository.MemberRepository;
-import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
+import me.bombom.api.v1.notice.fixture.NoticeFixture;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
 import me.bombom.api.v1.session.repository.SpringSessionRepository;
-import me.bombom.api.v1.withdraw.domain.WithdrawnMember;
+import me.bombom.api.v1.withdraw.fixture.WithdrawnMemberFixture;
 import me.bombom.api.v1.withdraw.repository.WithdrawnMemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,13 +49,14 @@ class DashboardServiceTest {
     @DisplayName("대시보드 통계를 조회한다.")
     void getStats() {
         // given
-        saveMember("kakao", "12345", "test1@example.com", "테스트1", Gender.MALE);
-        saveMember("kakao", "67890", "test2@example.com", "테스트2", Gender.FEMALE);
+        memberRepository.save(MemberFixture.createMember("테스트1"));
+        memberRepository.save(MemberFixture.createMember("테스트2"));
 
-        saveNotice("공지사항 1", "내용 1", NoticeCategory.NOTICE);
-        saveNotice("공지사항 2", "내용 2", NoticeCategory.EVENT);
+        noticeRepository.save(NoticeFixture.createNotice("공지사항 1", "내용 1", NoticeCategory.NOTICE));
+        noticeRepository.save(NoticeFixture.createNotice("공지사항 2", "내용 2", NoticeCategory.EVENT));
 
-        saveWithdrawnMember(1L, "withdrawn@example.com", LocalDate.now());
+        withdrawnMemberRepository
+                .save(WithdrawnMemberFixture.createWithdrawnMember(1L, "withdrawn@example.com", LocalDate.now()));
 
         given(springSessionRepository.countTodayActiveUsers(anyLong(), anyLong())).willReturn(5L);
 
@@ -95,33 +95,4 @@ class DashboardServiceTest {
         });
     }
 
-    private void saveMember(String provider, String providerId, String email, String nickname, Gender gender) {
-        memberRepository.save(Member.builder()
-                .provider(provider)
-                .providerId(providerId)
-                .email(email)
-                .nickname(nickname)
-                .gender(gender)
-                .roleId(1L)
-                .build());
-    }
-
-    private void saveNotice(String title, String content, NoticeCategory category) {
-        noticeRepository.save(Notice.builder()
-                .title(title)
-                .content(content)
-                .noticeCategory(category)
-                .build());
-    }
-
-    private void saveWithdrawnMember(Long memberId, String email, LocalDate deletedDate) {
-        withdrawnMemberRepository.save(WithdrawnMember.builder()
-                .memberId(memberId)
-                .email(email)
-                .gender(Gender.MALE)
-                .joinedDate(LocalDate.now().minusMonths(1))
-                .deletedDate(deletedDate)
-                .expireDate(deletedDate.plusDays(30))
-                .build());
-    }
 }
