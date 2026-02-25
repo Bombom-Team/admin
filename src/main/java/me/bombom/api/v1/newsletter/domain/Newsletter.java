@@ -77,6 +77,15 @@ public class Newsletter extends BaseEntity {
         this.suspendedAt = suspendedAt;
     }
 
+    public void updateStatus(NewsletterPublicationStatus status, LocalDate suspendedAt) {
+        this.status = status;
+        if (status == NewsletterPublicationStatus.ACTIVE) {
+            this.suspendedAt = null;
+        } else {
+            this.suspendedAt = suspendedAt != null ? suspendedAt : LocalDate.now();
+        }
+    }
+
     public void update(String name, String description, String imageUrl, String email, Long categoryId) {
         if (name != null)
             this.name = name;

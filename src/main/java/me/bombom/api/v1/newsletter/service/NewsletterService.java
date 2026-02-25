@@ -14,6 +14,7 @@ import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
 import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
+import me.bombom.api.v1.newsletter.dto.UpdateNewsletterStatusRequest;
 import me.bombom.api.v1.newsletter.repository.CategoryRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterDetailRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterPreviousPolicyRepository;
@@ -89,6 +90,12 @@ public class NewsletterService {
                 request.previousRecentCount(),
                 request.previousExposureRatio()
         );
+    }
+
+    @Transactional
+    public void updateStatus(Long id, UpdateNewsletterStatusRequest request) {
+        Newsletter newsletter = findNewsletter(id);
+        newsletter.updateStatus(request.status(), request.suspendedAt());
     }
 
     // TODO: 추후에 휴재, 폐간 처리로 해야할 듯
