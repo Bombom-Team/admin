@@ -1,6 +1,7 @@
 package me.bombom.api.v1.newsletter.dto;
 
 import com.querydsl.core.annotations.QueryProjection;
+import java.time.LocalDate;
 
 public record GetNewsletterResponse(
         Long id,
@@ -24,7 +25,12 @@ public record GetNewsletterResponse(
         String previousStrategy,
         int previousFixedCount,
         int previousRecentCount,
-        int previousExposureRatio) {
+        int previousExposureRatio,
+
+        // Publication Status fields
+        String status,
+        LocalDate suspendedAt
+) {
 
     @QueryProjection
     public GetNewsletterResponse {

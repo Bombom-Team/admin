@@ -12,6 +12,7 @@ import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
+import me.bombom.api.v1.notice.fixture.NoticeFixture;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,11 +53,7 @@ class NoticeServiceTest {
     @DisplayName("공지사항을 수정한다.")
     void updateNotice() {
         // given
-        Notice notice = noticeRepository.save(Notice.builder()
-                .title("제목")
-                .content("내용")
-                .noticeCategory(NoticeCategory.NOTICE)
-                .build());
+        Notice notice = noticeRepository.save(NoticeFixture.createNotice("제목", "내용", NoticeCategory.NOTICE));
 
         UpdateNoticeRequest request = new UpdateNoticeRequest("수정 제목", "수정 내용", NoticeCategory.UPDATE);
 
@@ -77,11 +74,7 @@ class NoticeServiceTest {
     @DisplayName("공지사항을 일부만 수정한다.")
     void updateNotice_partial() {
         // given
-        Notice notice = noticeRepository.save(Notice.builder()
-                .title("제목")
-                .content("내용")
-                .noticeCategory(NoticeCategory.NOTICE)
-                .build());
+        Notice notice = noticeRepository.save(NoticeFixture.createNotice("제목", "내용", NoticeCategory.NOTICE));
 
         UpdateNoticeRequest request = new UpdateNoticeRequest("수정 제목", null, null);
 
@@ -102,11 +95,7 @@ class NoticeServiceTest {
     @DisplayName("공지사항을 삭제한다.")
     void deleteNotice() {
         // given
-        Notice notice = noticeRepository.save(Notice.builder()
-                .title("제목")
-                .content("내용")
-                .noticeCategory(NoticeCategory.NOTICE)
-                .build());
+        Notice notice = noticeRepository.save(NoticeFixture.createNotice("제목", "내용", NoticeCategory.NOTICE));
 
         // when
         noticeService.deleteNotice(notice.getId());
@@ -120,17 +109,8 @@ class NoticeServiceTest {
     @DisplayName("공지사항 목록을 조회한다.")
     void getNotices() {
         // given
-        noticeRepository.save(Notice.builder()
-                .title("공지 제목")
-                .content("공지 내용")
-                .noticeCategory(NoticeCategory.NOTICE)
-                .build());
-
-        noticeRepository.save(Notice.builder()
-                .title("이벤트 제목")
-                .content("이벤트 내용")
-                .noticeCategory(NoticeCategory.EVENT)
-                .build());
+        noticeRepository.save(NoticeFixture.createNotice("공지 제목", "공지 내용", NoticeCategory.NOTICE));
+        noticeRepository.save(NoticeFixture.createNotice("이벤트 제목", "이벤트 내용", NoticeCategory.EVENT));
 
         GetNoticesRequest request = new GetNoticesRequest("공지", null);
         Pageable pageRequest = PageRequest.of(0, 10);
@@ -158,11 +138,7 @@ class NoticeServiceTest {
     @DisplayName("공지사항 상세 정보를 조회한다.")
     void getNotice() {
         // given
-        Notice notice = noticeRepository.save(Notice.builder()
-                .title("제목")
-                .content("내용")
-                .noticeCategory(NoticeCategory.NOTICE)
-                .build());
+        Notice notice = noticeRepository.save(NoticeFixture.createNotice("제목", "내용", NoticeCategory.NOTICE));
 
         // when
         me.bombom.api.v1.notice.dto.GetNoticeDetailResponse response = noticeService.getNotice(notice.getId());

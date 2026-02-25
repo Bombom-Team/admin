@@ -12,6 +12,7 @@ import me.bombom.api.v1.subscribe.domain.UnsubscribePattern;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternRequest;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternUpdateRequest;
 import me.bombom.api.v1.subscribe.dto.response.UnsubscribePatternResponse;
+import me.bombom.api.v1.subscribe.fixture.UnsubscribePatternFixture;
 import me.bombom.api.v1.subscribe.repository.UnsubscribePatternRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,8 +40,7 @@ class UnsubscribePatternServiceTest {
         // given
         UnsubscribePatternRequest request = new UnsubscribePatternRequest(
                 "pattern-key",
-                "pattern-value"
-        );
+                "pattern-value");
 
         // when
         unsubscribePatternService.createUnsubscribePattern(request);
@@ -58,14 +58,10 @@ class UnsubscribePatternServiceTest {
     @DisplayName("구독_해지_패턴_목록을_조회한다")
     void 구독_해지_패턴_목록을_조회한다() {
         // given
-        unsubscribePatternRepository.save(UnsubscribePattern.builder()
-                .patternKey("pattern-key-1")
-                .patternValue("pattern-value-1")
-                .build());
-        unsubscribePatternRepository.save(UnsubscribePattern.builder()
-                .patternKey("pattern-key-2")
-                .patternValue("pattern-value-2")
-                .build());
+        unsubscribePatternRepository
+                .save(UnsubscribePatternFixture.createUnsubscribePattern("pattern-key-1", "pattern-value-1"));
+        unsubscribePatternRepository
+                .save(UnsubscribePatternFixture.createUnsubscribePattern("pattern-key-2", "pattern-value-2"));
 
         // when
         List<UnsubscribePatternResponse> responses = unsubscribePatternService.getUnsubscribePatterns();
@@ -82,10 +78,8 @@ class UnsubscribePatternServiceTest {
     @DisplayName("구독_해지_패턴을_단건_조회한다")
     void 구독_해지_패턴을_단건_조회한다() {
         // given
-        UnsubscribePattern saved = unsubscribePatternRepository.save(UnsubscribePattern.builder()
-                .patternKey("pattern-key")
-                .patternValue("pattern-value")
-                .build());
+        UnsubscribePattern saved = unsubscribePatternRepository
+                .save(UnsubscribePatternFixture.createUnsubscribePattern("pattern-key", "pattern-value"));
 
         // when
         UnsubscribePatternResponse response = unsubscribePatternService.getUnsubscribePattern(saved.getId());
@@ -111,10 +105,8 @@ class UnsubscribePatternServiceTest {
     @DisplayName("구독_해지_패턴을_수정한다")
     void 구독_해지_패턴을_수정한다() {
         // given
-        UnsubscribePattern saved = unsubscribePatternRepository.save(UnsubscribePattern.builder()
-                .patternKey("pattern-key")
-                .patternValue("pattern-value")
-                .build());
+        UnsubscribePattern saved = unsubscribePatternRepository
+                .save(UnsubscribePatternFixture.createUnsubscribePattern("pattern-key", "pattern-value"));
         UnsubscribePatternUpdateRequest request = new UnsubscribePatternUpdateRequest("updated-pattern-value");
 
         // when

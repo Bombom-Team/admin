@@ -1,5 +1,7 @@
 package me.bombom.api.v1.newsletter.service;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
@@ -14,6 +16,7 @@ import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
 import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
+import me.bombom.api.v1.newsletter.dto.UpdateNewsletterStatusRequest;
 import me.bombom.api.v1.newsletter.repository.CategoryRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterDetailRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterPreviousPolicyRepository;
@@ -28,6 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class NewsletterService {
 
+    private static final int LONG_TERM_SUSPENSION_MONTHS = 6;
+
+    private final Clock clock;
     private final NewsletterRepository newsletterRepository;
     private final NewsletterDetailRepository newsletterDetailRepository;
     private final NewsletterPreviousPolicyRepository newsletterPreviousPolicyRepository;
@@ -47,11 +53,11 @@ public class NewsletterService {
     }
 
     public List<GetNewsletterSummaryResponse> getNewsletters(GetNewslettersRequest request) {
-        return newsletterRepository.findNewsletters(request);
+        return newsletterRepository.findNewsletters(request, suspensionThreshold());
     }
 
     public GetNewsletterResponse getNewsletterDetail(Long id) {
-        return newsletterRepository.findNewsletter(id)
+        return newsletterRepository.findNewsletter(id, suspensionThreshold())
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "newsletter")
                         .addContext(ErrorContextKeys.OPERATION, "getNewsletter"));
@@ -91,6 +97,12 @@ public class NewsletterService {
         );
     }
 
+    @Transactional
+    public void updateStatus(Long id, UpdateNewsletterStatusRequest request) {
+        Newsletter newsletter = findNewsletter(id);
+        newsletter.updateStatus(request.status(), request.suspendedAt());
+    }
+
     // TODO: 추후에 휴재, 폐간 처리로 해야할 듯
     @Transactional
     public void delete(Long id) {
@@ -100,6 +112,10 @@ public class NewsletterService {
         newsletterPreviousPolicyRepository.deleteByNewsletterId(id);
         newsletterRepository.delete(newsletter);
         newsletterDetailRepository.deleteById(newsletter.getDetailId());
+    }
+
+    private LocalDate suspensionThreshold() {
+        return LocalDate.now(clock).minusMonths(LONG_TERM_SUSPENSION_MONTHS);
     }
 
     private Newsletter findNewsletter(Long id) {

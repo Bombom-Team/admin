@@ -8,10 +8,14 @@ import static me.bombom.api.v1.subscribe.domain.QNewsletterSubscriptionCount.new
 
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.newsletter.domain.NewsletterPublicationStatus;
 import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
@@ -27,7 +31,7 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<GetNewsletterSummaryResponse> findNewsletters(GetNewslettersRequest request) {
+    public List<GetNewsletterSummaryResponse> findNewsletters(GetNewslettersRequest request, LocalDate suspensionThreshold) {
         return queryFactory
                 .select(new QGetNewsletterSummaryResponse(
                         newsletter.id,
@@ -36,7 +40,9 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
                         category.name,
                         newsletterDetail.issueCycle,
                         newsletterSubscriptionCount.total,
-                        newsletterPreviousPolicy.strategy.stringValue()))
+                        newsletterPreviousPolicy.strategy.stringValue(),
+                        publicationStatusExpression(suspensionThreshold),
+                        newsletter.suspendedAt))
                 .from(newsletter)
                 .join(newsletterDetail).on(newsletter.detailId.eq(newsletterDetail.id))
                 .join(category).on(newsletter.categoryId.eq(category.id))
@@ -51,7 +57,7 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
     }
 
     @Override
-    public Optional<GetNewsletterResponse> findNewsletter(Long id) {
+    public Optional<GetNewsletterResponse> findNewsletter(Long id, LocalDate suspensionThreshold) {
         return Optional.ofNullable(queryFactory
                 .select(new QGetNewsletterResponse(
                         newsletter.id,
@@ -73,7 +79,9 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
                         newsletterPreviousPolicy.strategy.stringValue(),
                         newsletterPreviousPolicy.fixedCount,
                         newsletterPreviousPolicy.recentCount,
-                        newsletterPreviousPolicy.exposureRatio))
+                        newsletterPreviousPolicy.exposureRatio,
+                        publicationStatusExpression(suspensionThreshold),
+                        newsletter.suspendedAt))
                 .from(newsletter)
                 .join(newsletterDetail).on(newsletter.detailId.eq(newsletterDetail.id))
                 .leftJoin(newsletterPreviousPolicy).on(newsletter.id.eq(newsletterPreviousPolicy.newsletterId))
@@ -107,6 +115,17 @@ public class NewsletterRepositoryImpl implements CustomNewsletterRepository {
             return null;
         }
         return category.name.eq(categoryName);
+    }
+
+    private StringExpression publicationStatusExpression(LocalDate threshold) {
+        return new CaseBuilder()
+                .when(newsletter.status.eq(NewsletterPublicationStatus.SUSPENDED)
+                        .and(newsletter.suspendedAt.goe(threshold)))
+                .then("SUSPENDED_VISIBLE")
+                .when(newsletter.status.eq(NewsletterPublicationStatus.SUSPENDED)
+                        .and(newsletter.suspendedAt.lt(threshold)))
+                .then("SUSPENDED_HIDDEN")
+                .otherwise(newsletter.status.stringValue());
     }
 
     private BooleanExpression previousStrategyEq(NewsletterPreviousStrategy strategy) {

@@ -12,6 +12,7 @@ import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
 import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
 import me.bombom.api.v1.newsletter.dto.UpdateNewsletterRequest;
+import me.bombom.api.v1.newsletter.dto.UpdateNewsletterStatusRequest;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,4 +57,25 @@ public interface NewsletterControllerApi {
                         @ApiResponse(responseCode = "404", description = "뉴스레터를 찾을 수 없음", content = @Content)
         })
         void deleteNewsletter(@PathVariable Long id);
+
+        @Operation(summary = "뉴스레터 발행 상태 변경",
+                        description = "뉴스레터의 발행 상태를 변경합니다.<br><br>"
+                                        + "**요청 status 값 (3종)**<br>"
+                                        + "- **ACTIVE**: 발행중 (suspendedAt 자동 초기화)<br>"
+                                        + "- **SUSPENDED**: 휴재 (suspendedAt 미입력 시 오늘 날짜)<br>"
+                                        + "- **DISCONTINUED**: 폐간 (suspendedAt 미입력 시 오늘 날짜)<br><br>"
+                                        + "**조회 응답 status 값 (4종)**<br>"
+                                        + "- **ACTIVE**: 발행중<br>"
+                                        + "- **SUSPENDED_VISIBLE**: 휴재 (본 서비스 노출 중)<br>"
+                                        + "- **SUSPENDED_HIDDEN**: 휴재 (본 서비스 숨김)<br>"
+                                        + "- **DISCONTINUED**: 폐간")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "상태 변경 성공"),
+                        @ApiResponse(responseCode = "400", description = "잘못된 요청 값", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "뉴스레터를 찾을 수 없음", content = @Content)
+        })
+        void updateStatus(
+                        @PathVariable Long id,
+                        @Valid @RequestBody UpdateNewsletterStatusRequest request
+        );
 }
