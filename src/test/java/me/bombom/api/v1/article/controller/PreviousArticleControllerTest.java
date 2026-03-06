@@ -31,7 +31,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @WebMvcTest(PreviousArticleController.class)
 class PreviousArticleControllerTest extends ControllerTestSupport {
 
-    private static final String BASE_URL = "/admin/api/v1/newsletters/{newsletterId}/previous-articles";
+    private static final String BASE_URL = "/admin/api/v1/newsletters/{newsletterId}/articles/previous";
 
     @MockitoBean
     protected PreviousArticleService previousArticleService;
