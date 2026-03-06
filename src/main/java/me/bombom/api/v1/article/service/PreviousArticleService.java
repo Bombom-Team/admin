@@ -46,7 +46,7 @@ public class PreviousArticleService {
 
     public List<GetPreviousArticleResponse> getPreviousArticles(Long newsletterId) {
         validateNewsletterExists(newsletterId);
-        return previousArticleRepository.findByNewsletterId(newsletterId)
+        return previousArticleRepository.findByNewsletterIdOrderByArrivedDateTimeDesc(newsletterId)
                 .stream()
                 .map(GetPreviousArticleResponse::from)
                 .toList();

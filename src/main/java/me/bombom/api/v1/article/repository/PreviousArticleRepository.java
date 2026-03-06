@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PreviousArticleRepository extends JpaRepository<PreviousArticle, Long> {
 
-    List<PreviousArticle> findByNewsletterId(Long newsletterId);
+    List<PreviousArticle> findByNewsletterIdOrderByArrivedDateTimeDesc(Long newsletterId);
 }
