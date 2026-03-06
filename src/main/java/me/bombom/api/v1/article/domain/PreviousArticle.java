@@ -63,4 +63,22 @@ public class PreviousArticle extends BaseEntity {
         this.arrivedDateTime = arrivedDateTime;
         this.isFixed = isFixed;
     }
+
+    public void update(
+            String title,
+            String contents,
+            String contentsSummary,
+            int expectedReadTime,
+            LocalDateTime arrivedDateTime,
+            Boolean isFixed
+    ) {
+        if (title != null) this.title = title;
+        if (contents != null) {
+            this.contents = contents;
+            this.contentsSummary = contentsSummary;
+            this.expectedReadTime = expectedReadTime;
+        }
+        if (arrivedDateTime != null) this.arrivedDateTime = arrivedDateTime;
+        if (isFixed != null) this.isFixed = isFixed;
+    }
 }
