@@ -91,6 +91,9 @@ dependencies {
 
     // image resizing
     implementation("net.coobird:thumbnailator:0.4.20")
+
+    // html parsing
+    implementation("org.jsoup:jsoup:1.21.2")
 }
 
 // Querydsl 생성된 파일 정리
