@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/admin/api/v1/newsletters/{newsletterId}/previous-articles")
+@RequestMapping("/admin/api/v1/newsletters/{newsletterId}/articles/previous")
 public class PreviousArticleController implements PreviousArticleControllerApi {
 
     private final PreviousArticleService previousArticleService;
