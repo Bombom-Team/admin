@@ -81,16 +81,16 @@ exports.handler = async (event) => {
             timezoneId: 'Asia/Seoul'
         });
 
-        await context.route('**/*', (route) => {
+        await context.route('**/*', async (route) => {
             try {
                 const type = route.request().resourceType();
                 if (BLOCKED_RESOURCE_TYPES.includes(type)) {
-                    route.abort();
+                    await route.abort();
                 } else {
-                    route.continue();
+                    await route.continue();
                 }
             } catch (e) {
-                route.continue();
+                try { await route.continue(); } catch { }
             }
         });
 
@@ -148,9 +148,13 @@ exports.handler = async (event) => {
 
         console.log(`🔗 [STEP 2] 페이지 접속 시도: ${url}`);
         // networkidle: 최소 500ms 동안 네트워크 통신이 없을 때까지 대기 (SPA에 유효)
-        await page.goto(url, { waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS }).catch(() =>
-            page.goto(url, { waitUntil: 'load', timeout: NAVIGATION_TIMEOUT_MS }) // 실패 시 load로 재시도
-        );
+        // 실패 시 load로 재시도 — .catch() 체이닝 대신 try/catch 사용 (컨텍스트 닫힘 시 두 번째 goto 보호)
+        try {
+            await page.goto(url, { waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS });
+        } catch (gotoErr) {
+            console.warn(`⚠️ [STEP 2] networkidle 실패, load로 재시도: ${gotoErr.message}`);
+            await page.goto(url, { waitUntil: 'load', timeout: NAVIGATION_TIMEOUT_MS });
+        }
 
         const pageTitle = await page.title().catch(() => 'No Title');
         console.log(`✅ [STEP 2] 페이지 로드 완료 (Title: "${pageTitle}")`);
