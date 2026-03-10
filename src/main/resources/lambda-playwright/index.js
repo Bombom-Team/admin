@@ -49,7 +49,7 @@ exports.handler = async (event) => {
     const regex = {
         unsubscribe: new RegExp(patterns?.unsubscribe || 'unsubscribe|구독.?취소|해지|수신.?거부', 'i'),
         success: new RegExp(patterns?.success || 'success|unsubscribed|완료|되었습니다|성공', 'i'),
-        alreadyUnsubscribed: new RegExp(patterns?.alreadyUnsubscribed || 'already|이미|하고 계시지 않습니다|수신.?거부', 'i'),
+        alreadyUnsubscribed: new RegExp(patterns?.alreadyUnsubscribed || 'already|이미|하고 계시지 않습니다|수신.?거부|메일러가 없어요', 'i'),
         error: new RegExp(patterns?.error || 'error|failed|실패|오류', 'i')
     };
 
@@ -158,6 +158,13 @@ exports.handler = async (event) => {
 
         const pageTitle = await page.title().catch(() => 'No Title');
         console.log(`✅ [STEP 2] 페이지 로드 완료 (Title: "${pageTitle}")`);
+
+        // 페이지 로드 직후 토스트 등 즉시 감지 (5초 대기 전)
+        const earlyText = await page.innerText('body').catch(() => '');
+        if (regex.success.test(earlyText) || regex.alreadyUnsubscribed.test(earlyText)) {
+            console.log('🎯 [RESULT] 페이지 로드 직후 즉시 성공 확인됨');
+            return { success: true, statusCode: 200, message: '페이지 로드 직후 성공 문구가 발견되었습니다.', method: 'INSTANT_DETECTION_EARLY' };
+        }
 
         // 사용자의 피드백을 반영하여 대기 시간을 충분히 확보 (5초)
         console.log('⏳ 페이지 안정화 및 동적 콘텐츠 대기 중 (5s)...');
