@@ -24,4 +24,8 @@ public class Category {
 
     @Column(length = 20, nullable = false)
     private String name;
+
+    public void update(String name) {
+        this.name = name;
+    }
 }
