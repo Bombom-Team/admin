@@ -8,10 +8,12 @@ import java.util.List;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.newsletter.domain.Category;
+import me.bombom.api.v1.newsletter.domain.Newsletter;
 import me.bombom.api.v1.newsletter.dto.CreateCategoryRequest;
 import me.bombom.api.v1.newsletter.dto.GetCategoryResponse;
 import me.bombom.api.v1.newsletter.dto.UpdateCategoryRequest;
 import me.bombom.api.v1.newsletter.repository.CategoryRepository;
+import me.bombom.api.v1.newsletter.repository.NewsletterRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,9 @@ class CategoryServiceTest {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private NewsletterRepository newsletterRepository;
 
     @Test
     @DisplayName("카테고리를 생성한다.")
@@ -148,5 +153,25 @@ class CategoryServiceTest {
         assertThatThrownBy(() -> categoryService.delete(999L))
                 .isInstanceOf(CIllegalArgumentException.class)
                 .hasMessage("존재하지 않는 데이터입니다.");
+    }
+
+    @Test
+    @DisplayName("뉴스레터가 속한 카테고리 삭제 시 예외가 발생한다.")
+    void deleteCategory_inUse() {
+        // given
+        Category category = categoryRepository.save(Category.builder().name("테크").build());
+        newsletterRepository.save(Newsletter.builder()
+                .name("테크 뉴스레터")
+                .description("설명")
+                .imageUrl("https://image.url")
+                .email("tech@newsletter.com")
+                .categoryId(category.getId())
+                .detailId(1L)
+                .build());
+
+        // when & then
+        assertThatThrownBy(() -> categoryService.delete(category.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage("해당 카테고리에 속한 뉴스레터가 있어 삭제할 수 없습니다.");
     }
 }

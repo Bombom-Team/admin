@@ -9,6 +9,7 @@ import me.bombom.api.v1.newsletter.dto.CreateCategoryRequest;
 import me.bombom.api.v1.newsletter.dto.GetCategoryResponse;
 import me.bombom.api.v1.newsletter.dto.UpdateCategoryRequest;
 import me.bombom.api.v1.newsletter.repository.CategoryRepository;
+import me.bombom.api.v1.newsletter.repository.NewsletterRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final NewsletterRepository newsletterRepository;
 
     @Transactional
     public void create(CreateCategoryRequest request) {
@@ -51,6 +53,10 @@ public class CategoryService {
     @Transactional
     public void delete(Long id) {
         Category category = getCategoryById(id);
+        if (newsletterRepository.existsByCategoryId(id)) {
+            throw new CIllegalArgumentException(ErrorDetail.CATEGORY_IN_USE)
+                    .addContext("categoryId", id);
+        }
         categoryRepository.delete(category);
     }
 
