@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import me.bombom.api.v1.challenge.domain.ChallengeDailyGuide;
 import me.bombom.api.v1.challenge.domain.DailyGuideType;
 
-public record CreateDailyGuideRequest(
+public record CreateDailyGuideFromImageRequest(
         @NotNull
         @Min(1)
         Integer dayIndex,
@@ -16,7 +16,7 @@ public record CreateDailyGuideRequest(
         DailyGuideType type,
 
         @NotBlank
-        String fileName,
+        String imageUrl,
 
         @Size(max = 1000)
         String notice,
@@ -25,7 +25,7 @@ public record CreateDailyGuideRequest(
         Boolean commentEnabled
 ) {
 
-    public ChallengeDailyGuide toEntity(Long challengeId, String imageUrl) {
+    public ChallengeDailyGuide toEntity(Long challengeId) {
         return ChallengeDailyGuide.builder()
                 .challengeId(challengeId)
                 .dayIndex(dayIndex)

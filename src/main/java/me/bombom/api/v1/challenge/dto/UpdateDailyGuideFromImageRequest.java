@@ -4,13 +4,14 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import me.bombom.api.v1.challenge.domain.DailyGuideType;
 
-public record UpdateDailyGuideRequest(
+public record UpdateDailyGuideFromImageRequest(
+
         @Min(1)
         Integer dayIndex,
 
         DailyGuideType type,
 
-        String fileName,
+        String imageUrl,
 
         @Size(max = 1000)
         String notice,
