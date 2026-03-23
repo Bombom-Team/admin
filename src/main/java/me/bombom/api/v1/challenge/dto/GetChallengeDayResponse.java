@@ -7,6 +7,7 @@ public record GetChallengeDayResponse(
 
         LocalDate date,
         DayOfWeek dayOfWeek,
-        int dayIndex
+        int dayIndex,
+        String imageUrl
 ) {
 }

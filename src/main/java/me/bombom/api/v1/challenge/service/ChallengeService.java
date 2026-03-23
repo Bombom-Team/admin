@@ -5,6 +5,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.challenge.domain.Challenge;
 import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
@@ -20,6 +22,7 @@ import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengesRequest;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
 import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
+import me.bombom.api.v1.challenge.repository.ChallengeDailyGuideRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
@@ -39,6 +42,7 @@ public class ChallengeService {
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeTeamRepository challengeTeamRepository;
+    private final ChallengeDailyGuideRepository dailyGuideRepository;
 
     public Page<GetChallengeResponse> getChallenges(GetChallengesRequest request, Pageable pageable) {
         return challengeRepository.getChallenges(request, pageable);
@@ -63,10 +67,15 @@ public class ChallengeService {
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge"));
 
+        Map<Integer, String> imageUrlByDayIndex = dailyGuideRepository.findAllByChallengeIdAsResponse(challengeId)
+                .stream()
+                .collect(Collectors.toMap(g -> g.dayIndex(), g -> g.imageUrl()));
+
         List<GetChallengeDayResponse> schedule = new ArrayList<>();
         LocalDate date = challenge.getStartDate();
         while (!date.isAfter(challenge.getEndDate())) {
-            schedule.add(new GetChallengeDayResponse(date, date.getDayOfWeek(), calculateDayIndex(challenge.getStartDate(), date)));
+            int dayIndex = calculateDayIndex(challenge.getStartDate(), date);
+            schedule.add(new GetChallengeDayResponse(date, date.getDayOfWeek(), dayIndex, imageUrlByDayIndex.get(dayIndex)));
             date = date.plusDays(1);
         }
         return schedule;
