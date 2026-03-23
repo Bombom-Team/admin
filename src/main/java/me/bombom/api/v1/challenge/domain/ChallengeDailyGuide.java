@@ -58,4 +58,12 @@ public class ChallengeDailyGuide extends BaseEntity {
         this.notice = notice;
         this.commentEnabled = commentEnabled;
     }
+
+    public void update(Integer dayIndex, DailyGuideType type, String imageUrl, String notice, Boolean commentEnabled) {
+        if (dayIndex != null) this.dayIndex = dayIndex;
+        if (type != null) this.type = type;
+        if (imageUrl != null) this.imageUrl = imageUrl;
+        if (notice != null) this.notice = notice;
+        if (commentEnabled != null) this.commentEnabled = commentEnabled;
+    }
 }
