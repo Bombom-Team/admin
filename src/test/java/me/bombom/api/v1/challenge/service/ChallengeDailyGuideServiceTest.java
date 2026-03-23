@@ -12,10 +12,8 @@ import static org.mockito.Mockito.never;
 import java.util.List;
 import me.bombom.api.v1.challenge.domain.ChallengeDailyGuide;
 import me.bombom.api.v1.challenge.domain.DailyGuideType;
-import me.bombom.api.v1.challenge.dto.CreateDailyGuideFromImageRequest;
 import me.bombom.api.v1.challenge.dto.CreateDailyGuideRequest;
 import me.bombom.api.v1.challenge.dto.GetDailyGuideResponse;
-import me.bombom.api.v1.challenge.dto.UpdateDailyGuideFromImageRequest;
 import me.bombom.api.v1.challenge.dto.UpdateDailyGuideRequest;
 import me.bombom.api.v1.challenge.fixture.ChallengeDailyGuideFixture;
 import me.bombom.api.v1.challenge.fixture.ChallengeFixture;
@@ -53,11 +51,11 @@ class ChallengeDailyGuideServiceTest {
     private S3FileService s3FileService;
 
     @Test
-    void 이미지_업로드로_데일리_가이드를_생성한다() {
+    void 새_이미지를_업로드해서_데일리_가이드를_생성한다() {
         // given
         Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
         MockMultipartFile image = new MockMultipartFile("image", "test.jpg", "image/jpeg", "content".getBytes());
-        CreateDailyGuideRequest request = new CreateDailyGuideRequest(1, DailyGuideType.READ, "day1-guide", "안내");
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(1, DailyGuideType.READ, "day1-guide", null, "안내");
         String uploadedUrl = "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/day1-guide.jpg";
 
         given(s3FileService.uploadToChallengeBucket(any(), eq("day1-guide"))).willReturn(uploadedUrl);
@@ -75,15 +73,14 @@ class ChallengeDailyGuideServiceTest {
     }
 
     @Test
-    void 기존_이미지로_데일리_가이드를_생성한다() {
+    void 기존_이미지_URL로_데일리_가이드를_생성한다() {
         // given
         Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
         String imageUrl = "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/existing.jpg";
-        CreateDailyGuideFromImageRequest request = new CreateDailyGuideFromImageRequest(
-                1, DailyGuideType.READ, imageUrl, "안내");
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(1, DailyGuideType.READ, null, imageUrl, "안내");
 
         // when
-        dailyGuideService.createFromImage(challengeId, request);
+        dailyGuideService.create(challengeId, null, request);
 
         // then
         List<ChallengeDailyGuide> guides = dailyGuideRepository.findAll();
@@ -92,6 +89,17 @@ class ChallengeDailyGuideServiceTest {
             softly.assertThat(guides.get(0).getImageUrl()).isEqualTo(imageUrl);
         });
         then(s3FileService).should(never()).uploadToChallengeBucket(any(), any());
+    }
+
+    @Test
+    void image와_imageUrl_모두_없으면_예외가_발생한다() {
+        // given
+        Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(1, DailyGuideType.READ, null, null, null);
+
+        // when // then
+        assertThatThrownBy(() -> dailyGuideService.create(challengeId, null, request))
+                .isInstanceOf(CIllegalArgumentException.class);
     }
 
     @Test
@@ -138,12 +146,12 @@ class ChallengeDailyGuideServiceTest {
     }
 
     @Test
-    void 이미지_업로드로_데일리_가이드를_수정한다() {
+    void 새_이미지를_업로드해서_데일리_가이드를_수정한다() {
         // given
         Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
         Long guideId = dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId)).getId();
         MockMultipartFile newImage = new MockMultipartFile("image", "new.jpg", "image/jpeg", "new".getBytes());
-        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(2, DailyGuideType.COMMENT, "new-guide", "새 안내");
+        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(2, DailyGuideType.COMMENT, "new-guide", null, "새 안내");
         String newUrl = "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/new-guide.jpg";
 
         given(s3FileService.uploadToChallengeBucket(any(), eq("new-guide"))).willReturn(newUrl);
@@ -162,13 +170,30 @@ class ChallengeDailyGuideServiceTest {
     }
 
     @Test
-    void 이미지_없이_데일리_가이드를_수정하면_이미지는_유지된다() {
+    void 기존_이미지_URL로_데일리_가이드를_수정한다() {
+        // given
+        Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
+        Long guideId = dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId)).getId();
+        String newImageUrl = "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/other.jpg";
+        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(null, null, null, newImageUrl, null);
+
+        // when
+        dailyGuideService.update(challengeId, guideId, null, request);
+
+        // then
+        ChallengeDailyGuide updated = dailyGuideRepository.findById(guideId).get();
+        assertThat(updated.getImageUrl()).isEqualTo(newImageUrl);
+        then(s3FileService).should(never()).uploadToChallengeBucket(any(), any());
+    }
+
+    @Test
+    void 이미지_없이_수정하면_기존_이미지가_유지된다() {
         // given
         Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
         ChallengeDailyGuide guide = dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId));
         String originalImageUrl = guide.getImageUrl();
 
-        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(2, null, null, null);
+        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(2, null, null, null, null);
 
         // when
         dailyGuideService.update(challengeId, guide.getId(), null, request);
@@ -179,23 +204,6 @@ class ChallengeDailyGuideServiceTest {
             softly.assertThat(updated.getDayIndex()).isEqualTo(2);
             softly.assertThat(updated.getImageUrl()).isEqualTo(originalImageUrl);
         });
-        then(s3FileService).should(never()).uploadToChallengeBucket(any(), any());
-    }
-
-    @Test
-    void 기존_이미지_URL로_데일리_가이드를_수정한다() {
-        // given
-        Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
-        Long guideId = dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId)).getId();
-        String newImageUrl = "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/other.jpg";
-        UpdateDailyGuideFromImageRequest request = new UpdateDailyGuideFromImageRequest(null, null, newImageUrl, null);
-
-        // when
-        dailyGuideService.updateFromImage(challengeId, guideId, request);
-
-        // then
-        ChallengeDailyGuide updated = dailyGuideRepository.findById(guideId).get();
-        assertThat(updated.getImageUrl()).isEqualTo(newImageUrl);
         then(s3FileService).should(never()).uploadToChallengeBucket(any(), any());
     }
 
@@ -234,13 +242,13 @@ class ChallengeDailyGuideServiceTest {
     }
 
     @Test
-    void 이미지_업로드로_생성_시_같은_dayIndex가_존재하면_예외가_발생한다() {
+    void 새_이미지_업로드로_생성_시_같은_dayIndex가_존재하면_예외가_발생한다() {
         // given
         Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
         dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 1, DailyGuideType.READ));
 
         MockMultipartFile image = new MockMultipartFile("image", "test.jpg", "image/jpeg", "content".getBytes());
-        CreateDailyGuideRequest request = new CreateDailyGuideRequest(1, DailyGuideType.REMIND, "day1-guide", null);
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(1, DailyGuideType.REMIND, "day1-guide", null, null);
 
         // when // then
         assertThatThrownBy(() -> dailyGuideService.create(challengeId, image, request))
@@ -253,11 +261,12 @@ class ChallengeDailyGuideServiceTest {
         Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
         dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 1, DailyGuideType.READ));
 
-        CreateDailyGuideFromImageRequest request = new CreateDailyGuideFromImageRequest(
-                1, DailyGuideType.REMIND, "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/other.jpg", null);
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(
+                1, DailyGuideType.REMIND, null,
+                "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/other.jpg", null);
 
         // when // then
-        assertThatThrownBy(() -> dailyGuideService.createFromImage(challengeId, request))
+        assertThatThrownBy(() -> dailyGuideService.create(challengeId, null, request))
                 .isInstanceOf(CIllegalArgumentException.class);
     }
 
@@ -268,7 +277,7 @@ class ChallengeDailyGuideServiceTest {
         dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 2, DailyGuideType.READ));
         Long guideId = dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 1, DailyGuideType.READ)).getId();
 
-        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(2, null, null, null);
+        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(2, null, null, null, null);
 
         // when // then
         assertThatThrownBy(() -> dailyGuideService.update(challengeId, guideId, null, request))
@@ -281,7 +290,7 @@ class ChallengeDailyGuideServiceTest {
         Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
         Long guideId = dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 1, DailyGuideType.READ)).getId();
 
-        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(1, DailyGuideType.REMIND, null, null);
+        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(1, DailyGuideType.REMIND, null, null, null);
 
         // when // then (no exception)
         dailyGuideService.update(challengeId, guideId, null, request);

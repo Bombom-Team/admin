@@ -15,6 +15,8 @@ public record UpdateDailyGuideRequest(
 
         String fileName,
 
+        String imageUrl,
+
         @Size(max = 1000)
         String notice
 ) implements CommentGuideValidatable {

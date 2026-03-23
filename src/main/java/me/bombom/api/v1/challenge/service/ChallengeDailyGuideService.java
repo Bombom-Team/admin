@@ -4,10 +4,8 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.challenge.domain.ChallengeDailyGuide;
 import me.bombom.api.v1.challenge.domain.DailyGuideType;
-import me.bombom.api.v1.challenge.dto.CreateDailyGuideFromImageRequest;
 import me.bombom.api.v1.challenge.dto.CreateDailyGuideRequest;
 import me.bombom.api.v1.challenge.dto.GetDailyGuideResponse;
-import me.bombom.api.v1.challenge.dto.UpdateDailyGuideFromImageRequest;
 import me.bombom.api.v1.challenge.dto.UpdateDailyGuideRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeDailyGuideRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
@@ -35,15 +33,8 @@ public class ChallengeDailyGuideService {
     public void create(Long challengeId, MultipartFile image, CreateDailyGuideRequest request) {
         validateChallengeExists(challengeId);
         validateDayIndexNotDuplicated(challengeId, request.dayIndex());
-        String imageUrl = s3FileService.uploadToChallengeBucket(image, request.fileName());
+        String imageUrl = resolveImageUrl(image, request.fileName(), request.imageUrl());
         dailyGuideRepository.save(request.toEntity(challengeId, imageUrl));
-    }
-
-    @Transactional
-    public void createFromImage(Long challengeId, CreateDailyGuideFromImageRequest request) {
-        validateChallengeExists(challengeId);
-        validateDayIndexNotDuplicated(challengeId, request.dayIndex());
-        dailyGuideRepository.save(request.toEntity(challengeId));
     }
 
     public List<GetDailyGuideResponse> getDailyGuides(Long challengeId) {
@@ -75,25 +66,26 @@ public class ChallengeDailyGuideService {
         if (request.dayIndex() != null) {
             validateDayIndexNotDuplicatedExcluding(challengeId, request.dayIndex(), guideId);
         }
-        String imageUrl = image != null ? s3FileService.uploadToChallengeBucket(image, request.fileName()) : null;
+        String imageUrl = image != null ? s3FileService.uploadToChallengeBucket(image, request.fileName()) : request.imageUrl();
         Boolean commentEnabled = request.type() != null ? request.type() == DailyGuideType.COMMENT : null;
         guide.update(request.dayIndex(), request.type(), imageUrl, request.notice(), commentEnabled);
-    }
-
-    @Transactional
-    public void updateFromImage(Long challengeId, Long guideId, UpdateDailyGuideFromImageRequest request) {
-        ChallengeDailyGuide guide = findGuide(challengeId, guideId);
-        if (request.dayIndex() != null) {
-            validateDayIndexNotDuplicatedExcluding(challengeId, request.dayIndex(), guideId);
-        }
-        Boolean commentEnabled = request.type() != null ? request.type() == DailyGuideType.COMMENT : null;
-        guide.update(request.dayIndex(), request.type(), request.imageUrl(), request.notice(), commentEnabled);
     }
 
     @Transactional
     public void delete(Long challengeId, Long guideId) {
         ChallengeDailyGuide guide = findGuide(challengeId, guideId);
         dailyGuideRepository.delete(guide);
+    }
+
+    private String resolveImageUrl(MultipartFile image, String fileName, String imageUrl) {
+        if (image != null && !image.isEmpty()) {
+            return s3FileService.uploadToChallengeBucket(image, fileName);
+        }
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            return imageUrl;
+        }
+        throw new CIllegalArgumentException(ErrorDetail.INVALID_INPUT_VALUE)
+                .addContext("reason", "image 파일 또는 imageUrl 중 하나는 필수입니다.");
     }
 
     private void validateDayIndexNotDuplicated(Long challengeId, int dayIndex) {

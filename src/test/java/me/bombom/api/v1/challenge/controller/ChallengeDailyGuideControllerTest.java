@@ -7,17 +7,13 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
 import me.bombom.api.v1.challenge.domain.DailyGuideType;
-import me.bombom.api.v1.challenge.dto.CreateDailyGuideFromImageRequest;
 import me.bombom.api.v1.challenge.dto.CreateDailyGuideRequest;
 import me.bombom.api.v1.challenge.dto.GetDailyGuideResponse;
-import me.bombom.api.v1.challenge.dto.UpdateDailyGuideFromImageRequest;
 import me.bombom.api.v1.challenge.dto.UpdateDailyGuideRequest;
 import me.bombom.api.v1.challenge.service.ChallengeDailyGuideService;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
@@ -25,7 +21,6 @@ import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.common.support.ControllerTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -50,10 +45,10 @@ class ChallengeDailyGuideControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void 이미지_업로드로_데일리_가이드를_생성한다() throws Exception {
+    void 새_이미지를_업로드해서_데일리_가이드를_생성한다() throws Exception {
         // given
         MockMultipartFile image = new MockMultipartFile("image", "test.jpg", "image/jpeg", "content".getBytes());
-        CreateDailyGuideRequest request = new CreateDailyGuideRequest(1, DailyGuideType.READ, "day1-guide", "안내");
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(1, DailyGuideType.READ, "day1-guide", null, "안내");
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json",
                 objectMapper.writeValueAsBytes(request));
 
@@ -65,49 +60,49 @@ class ChallengeDailyGuideControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void 이미지_업로드_생성_시_필수_필드가_없으면_400을_반환한다() throws Exception {
-        // given - dayIndex 없음
-        MockMultipartFile image = new MockMultipartFile("image", "test.jpg", "image/jpeg", "content".getBytes());
-        CreateDailyGuideRequest request = new CreateDailyGuideRequest(null, DailyGuideType.READ, "day1-guide", null);
+    void 기존_이미지_URL로_데일리_가이드를_생성한다() throws Exception {
+        // given
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(
+                1, DailyGuideType.READ, null,
+                "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/day1.jpg",
+                "안내");
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json",
                 objectMapper.writeValueAsBytes(request));
 
         // when // then
         mockMvc.perform(multipart("/admin/api/v1/challenges/1/daily-guides")
-                        .file(image)
+                        .file(requestPart))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void 생성_시_필수_필드가_없으면_400을_반환한다() throws Exception {
+        // given - dayIndex 없음
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(null, DailyGuideType.READ, null, null, null);
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json",
+                objectMapper.writeValueAsBytes(request));
+
+        // when // then
+        mockMvc.perform(multipart("/admin/api/v1/challenges/1/daily-guides")
                         .file(requestPart))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void 기존_이미지로_데일리_가이드를_생성한다() throws Exception {
+    void 생성_시_존재하지_않는_챌린지이면_404를_반환한다() throws Exception {
         // given
-        CreateDailyGuideFromImageRequest request = new CreateDailyGuideFromImageRequest(
-                1, DailyGuideType.READ,
-                "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/day1.jpg",
-                "안내");
-
-        // when // then
-        mockMvc.perform(post("/admin/api/v1/challenges/1/daily-guides")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated());
-    }
-
-    @Test
-    void 기존_이미지_생성_시_존재하지_않는_챌린지이면_404를_반환한다() throws Exception {
-        // given
-        CreateDailyGuideFromImageRequest request = new CreateDailyGuideFromImageRequest(
-                1, DailyGuideType.READ,
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(
+                1, DailyGuideType.READ, null,
                 "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/day1.jpg",
                 null);
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json",
+                objectMapper.writeValueAsBytes(request));
         willThrow(new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND))
-                .given(dailyGuideService).createFromImage(any(), any());
+                .given(dailyGuideService).create(any(), any(), any());
 
         // when // then
-        mockMvc.perform(post("/admin/api/v1/challenges/999/daily-guides")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+        mockMvc.perform(multipart("/admin/api/v1/challenges/999/daily-guides")
+                        .file(requestPart))
                 .andExpect(status().isNotFound());
     }
 
@@ -155,42 +150,6 @@ class ChallengeDailyGuideControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void 이미지_업로드로_데일리_가이드를_수정한다() throws Exception {
-        // given
-        MockMultipartFile image = new MockMultipartFile("image", "new.jpg", "image/jpeg", "new".getBytes());
-        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(2, DailyGuideType.COMMENT, "new-guide", "새 안내");
-        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json",
-                objectMapper.writeValueAsBytes(request));
-
-        // when // then
-        mockMvc.perform(multipart("/admin/api/v1/challenges/1/daily-guides/1")
-                        .file(image)
-                        .file(requestPart)
-                        .with(req -> { req.setMethod("PATCH"); return req; }))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void 기존_이미지로_데일리_가이드를_수정한다() throws Exception {
-        // given
-        UpdateDailyGuideFromImageRequest request = new UpdateDailyGuideFromImageRequest(
-                2, null, "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/other.jpg", null);
-
-        // when // then
-        mockMvc.perform(patch("/admin/api/v1/challenges/1/daily-guides/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void 데일리_가이드를_삭제한다() throws Exception {
-        // when // then
-        mockMvc.perform(delete("/admin/api/v1/challenges/1/daily-guides/1"))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
     void dayIndex로_데일리_가이드를_조회한다() throws Exception {
         // given
         given(dailyGuideService.getDailyGuideByDayIndex(any(), anyInt())).willReturn(
@@ -212,6 +171,44 @@ class ChallengeDailyGuideControllerTest extends ControllerTestSupport {
         // when // then
         mockMvc.perform(get("/admin/api/v1/challenges/1/daily-guides/days/99"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void 새_이미지를_업로드해서_데일리_가이드를_수정한다() throws Exception {
+        // given
+        MockMultipartFile image = new MockMultipartFile("image", "new.jpg", "image/jpeg", "new".getBytes());
+        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(2, DailyGuideType.COMMENT, "new-guide", null, "새 안내");
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json",
+                objectMapper.writeValueAsBytes(request));
+
+        // when // then
+        mockMvc.perform(multipart("/admin/api/v1/challenges/1/daily-guides/1")
+                        .file(image)
+                        .file(requestPart)
+                        .with(req -> { req.setMethod("PATCH"); return req; }))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void 기존_이미지_URL로_데일리_가이드를_수정한다() throws Exception {
+        // given
+        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(
+                2, null, null, "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/other.jpg", null);
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json",
+                objectMapper.writeValueAsBytes(request));
+
+        // when // then
+        mockMvc.perform(multipart("/admin/api/v1/challenges/1/daily-guides/1")
+                        .file(requestPart)
+                        .with(req -> { req.setMethod("PATCH"); return req; }))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void 데일리_가이드를_삭제한다() throws Exception {
+        // when // then
+        mockMvc.perform(delete("/admin/api/v1/challenges/1/daily-guides/1"))
+                .andExpect(status().isNoContent());
     }
 
     @Test

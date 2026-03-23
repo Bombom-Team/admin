@@ -1,7 +1,6 @@
 package me.bombom.api.v1.challenge.dto;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import me.bombom.api.v1.challenge.domain.ChallengeDailyGuide;
@@ -18,19 +17,20 @@ public record CreateDailyGuideRequest(
         @NotNull
         DailyGuideType type,
 
-        @NotBlank
         String fileName,
+
+        String imageUrl,
 
         @Size(max = 1000)
         String notice
 ) implements CommentGuideValidatable {
 
-    public ChallengeDailyGuide toEntity(Long challengeId, String imageUrl) {
+    public ChallengeDailyGuide toEntity(Long challengeId, String resolvedImageUrl) {
         return ChallengeDailyGuide.builder()
                 .challengeId(challengeId)
                 .dayIndex(dayIndex)
                 .type(type)
-                .imageUrl(imageUrl)
+                .imageUrl(resolvedImageUrl)
                 .notice(notice)
                 .commentEnabled(type == DailyGuideType.COMMENT)
                 .build();
