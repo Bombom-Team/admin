@@ -6,7 +6,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import me.bombom.api.v1.challenge.domain.ChallengeDailyGuide;
 import me.bombom.api.v1.challenge.domain.DailyGuideType;
+import me.bombom.api.v1.challenge.dto.validation.CommentGuideValidatable;
+import me.bombom.api.v1.challenge.dto.validation.ValidCommentGuide;
 
+@ValidCommentGuide
 public record CreateDailyGuideFromImageRequest(
         @NotNull
         @Min(1)
@@ -19,11 +22,8 @@ public record CreateDailyGuideFromImageRequest(
         String imageUrl,
 
         @Size(max = 1000)
-        String notice,
-
-        @NotNull
-        Boolean commentEnabled
-) {
+        String notice
+) implements CommentGuideValidatable {
 
     public ChallengeDailyGuide toEntity(Long challengeId) {
         return ChallengeDailyGuide.builder()
@@ -32,7 +32,7 @@ public record CreateDailyGuideFromImageRequest(
                 .type(type)
                 .imageUrl(imageUrl)
                 .notice(notice)
-                .commentEnabled(commentEnabled)
+                .commentEnabled(type == DailyGuideType.COMMENT)
                 .build();
     }
 }

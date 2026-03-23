@@ -3,6 +3,7 @@ package me.bombom.api.v1.challenge.service;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.challenge.domain.ChallengeDailyGuide;
+import me.bombom.api.v1.challenge.domain.DailyGuideType;
 import me.bombom.api.v1.challenge.dto.CreateDailyGuideFromImageRequest;
 import me.bombom.api.v1.challenge.dto.CreateDailyGuideRequest;
 import me.bombom.api.v1.challenge.dto.GetDailyGuideResponse;
@@ -61,13 +62,15 @@ public class ChallengeDailyGuideService {
     public void update(Long challengeId, Long guideId, MultipartFile image, UpdateDailyGuideRequest request) {
         ChallengeDailyGuide guide = findGuide(challengeId, guideId);
         String imageUrl = image != null ? s3FileService.uploadToChallengeBucket(image, request.fileName()) : null;
-        guide.update(request.dayIndex(), request.type(), imageUrl, request.notice(), request.commentEnabled());
+        Boolean commentEnabled = request.type() != null ? request.type() == DailyGuideType.COMMENT : null;
+        guide.update(request.dayIndex(), request.type(), imageUrl, request.notice(), commentEnabled);
     }
 
     @Transactional
     public void updateFromImage(Long challengeId, Long guideId, UpdateDailyGuideFromImageRequest request) {
         ChallengeDailyGuide guide = findGuide(challengeId, guideId);
-        guide.update(request.dayIndex(), request.type(), request.imageUrl(), request.notice(), request.commentEnabled());
+        Boolean commentEnabled = request.type() != null ? request.type() == DailyGuideType.COMMENT : null;
+        guide.update(request.dayIndex(), request.type(), request.imageUrl(), request.notice(), commentEnabled);
     }
 
     @Transactional
