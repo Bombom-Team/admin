@@ -20,6 +20,7 @@ import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengesRequest;
+import me.bombom.api.v1.challenge.dto.GetDailyGuideResponse;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
 import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeDailyGuideRepository;
@@ -67,15 +68,19 @@ public class ChallengeService {
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge"));
 
-        Map<Integer, String> imageUrlByDayIndex = dailyGuideRepository.findAllByChallengeIdAsResponse(challengeId)
+        Map<Integer, GetDailyGuideResponse> guideByDayIndex = dailyGuideRepository.findAllByChallengeIdAsResponse(challengeId)
                 .stream()
-                .collect(Collectors.toMap(g -> g.dayIndex(), g -> g.imageUrl()));
+                .collect(Collectors.toMap(GetDailyGuideResponse::dayIndex, g -> g));
 
         List<GetChallengeDayResponse> schedule = new ArrayList<>();
         LocalDate date = challenge.getStartDate();
         while (!date.isAfter(challenge.getEndDate())) {
             int dayIndex = calculateDayIndex(challenge.getStartDate(), date);
-            schedule.add(new GetChallengeDayResponse(date, date.getDayOfWeek(), dayIndex, imageUrlByDayIndex.get(dayIndex)));
+            GetDailyGuideResponse guide = guideByDayIndex.get(dayIndex);
+            schedule.add(new GetChallengeDayResponse(
+                    date, date.getDayOfWeek(), dayIndex,
+                    guide != null ? guide.type() : null,
+                    guide != null ? guide.imageUrl() : null));
             date = date.plusDays(1);
         }
         return schedule;
