@@ -29,15 +29,16 @@ public class ChallengeDailyGuideService {
 
     public List<GetDailyGuideResponse> getDailyGuides(Long challengeId) {
         validateChallengeExists(challengeId);
-        return dailyGuideRepository.findByChallengeIdOrderByDayIndexAsc(challengeId)
-                .stream()
-                .map(GetDailyGuideResponse::from)
-                .toList();
+        return dailyGuideRepository.findAllByChallengeIdAsResponse(challengeId);
     }
 
     public GetDailyGuideResponse getDailyGuide(Long challengeId, Long guideId) {
-        ChallengeDailyGuide guide = findGuide(challengeId, guideId);
-        return GetDailyGuideResponse.from(guide);
+        validateChallengeExists(challengeId);
+        return dailyGuideRepository.findByIdAndChallengeIdAsResponse(guideId, challengeId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext("entity", "ChallengeDailyGuide")
+                        .addContext("guideId", guideId)
+                        .addContext("challengeId", challengeId));
     }
 
     @Transactional
