@@ -73,6 +73,15 @@ public class ChallengeDailyGuideController implements ChallengeDailyGuideControl
     }
 
     @Override
+    @GetMapping("/days/{dayIndex}")
+    public GetDailyGuideResponse getDailyGuideByDayIndex(
+            @PathVariable Long challengeId,
+            @PathVariable int dayIndex
+    ) {
+        return dailyGuideService.getDailyGuideByDayIndex(challengeId, dayIndex);
+    }
+
+    @Override
     @PatchMapping(value = "/{guideId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public void update(
             @PathVariable Long challengeId,

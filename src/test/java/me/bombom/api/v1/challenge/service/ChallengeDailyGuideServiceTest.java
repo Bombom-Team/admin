@@ -232,4 +232,58 @@ class ChallengeDailyGuideServiceTest {
         assertThatThrownBy(() -> dailyGuideService.getDailyGuide(challengeId, notExistGuideId))
                 .isInstanceOf(CIllegalArgumentException.class);
     }
+
+    @Test
+    void 이미지_업로드로_생성_시_같은_dayIndex가_존재하면_예외가_발생한다() {
+        // given
+        Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
+        dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 1, DailyGuideType.READ));
+
+        MockMultipartFile image = new MockMultipartFile("image", "test.jpg", "image/jpeg", "content".getBytes());
+        CreateDailyGuideRequest request = new CreateDailyGuideRequest(1, DailyGuideType.REMIND, "day1-guide", null);
+
+        // when // then
+        assertThatThrownBy(() -> dailyGuideService.create(challengeId, image, request))
+                .isInstanceOf(CIllegalArgumentException.class);
+    }
+
+    @Test
+    void 기존_이미지로_생성_시_같은_dayIndex가_존재하면_예외가_발생한다() {
+        // given
+        Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
+        dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 1, DailyGuideType.READ));
+
+        CreateDailyGuideFromImageRequest request = new CreateDailyGuideFromImageRequest(
+                1, DailyGuideType.REMIND, "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/other.jpg", null);
+
+        // when // then
+        assertThatThrownBy(() -> dailyGuideService.createFromImage(challengeId, request))
+                .isInstanceOf(CIllegalArgumentException.class);
+    }
+
+    @Test
+    void 수정_시_같은_dayIndex가_존재하면_예외가_발생한다() {
+        // given
+        Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
+        dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 2, DailyGuideType.READ));
+        Long guideId = dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 1, DailyGuideType.READ)).getId();
+
+        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(2, null, null, null);
+
+        // when // then
+        assertThatThrownBy(() -> dailyGuideService.update(challengeId, guideId, null, request))
+                .isInstanceOf(CIllegalArgumentException.class);
+    }
+
+    @Test
+    void 수정_시_자신의_dayIndex로_수정하면_예외가_발생하지_않는다() {
+        // given
+        Long challengeId = challengeRepository.save(ChallengeFixture.createChallenge()).getId();
+        Long guideId = dailyGuideRepository.save(ChallengeDailyGuideFixture.createGuide(challengeId, 1, DailyGuideType.READ)).getId();
+
+        UpdateDailyGuideRequest request = new UpdateDailyGuideRequest(1, DailyGuideType.REMIND, null, null);
+
+        // when // then (no exception)
+        dailyGuideService.update(challengeId, guideId, null, request);
+    }
 }

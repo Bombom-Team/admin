@@ -157,6 +157,19 @@ public interface ChallengeDailyGuideControllerApi {
             @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId,
             @Parameter(description = "가이드 ID", required = true) @PathVariable Long guideId);
 
+    @Operation(summary = "데일리 가이드 단건 조회 (dayIndex)", description = """
+            `dayIndex`로 데일리 가이드를 조회합니다.
+
+            **사용 예시:** `GET /challenges/1/daily-guides/days/3`
+            """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지 또는 해당 dayIndex의 가이드 없음", content = @Content)
+    })
+    GetDailyGuideResponse getDailyGuideByDayIndex(
+            @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId,
+            @Parameter(description = "챌린지 일차", required = true) @PathVariable int dayIndex);
+
     @Operation(summary = "데일리 가이드 수정 (새 이미지 업로드)", description = """
             새 이미지를 S3에 업로드하면서 데일리 가이드를 수정합니다.
 

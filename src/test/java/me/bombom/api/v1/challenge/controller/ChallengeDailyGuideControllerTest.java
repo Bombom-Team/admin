@@ -1,6 +1,7 @@
 package me.bombom.api.v1.challenge.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -187,6 +188,30 @@ class ChallengeDailyGuideControllerTest extends ControllerTestSupport {
         // when // then
         mockMvc.perform(delete("/admin/api/v1/challenges/1/daily-guides/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void dayIndex로_데일리_가이드를_조회한다() throws Exception {
+        // given
+        given(dailyGuideService.getDailyGuideByDayIndex(any(), anyInt())).willReturn(
+                new GetDailyGuideResponse(1L, 1L, 3, DailyGuideType.READ,
+                        "https://bombom-challenge.s3.ap-northeast-2.amazonaws.com/day3.jpg", "안내", false));
+
+        // when // then
+        mockMvc.perform(get("/admin/api/v1/challenges/1/daily-guides/days/3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dayIndex").value(3));
+    }
+
+    @Test
+    void dayIndex에_해당하는_가이드가_없으면_404를_반환한다() throws Exception {
+        // given
+        given(dailyGuideService.getDailyGuideByDayIndex(any(), anyInt()))
+                .willThrow(new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND));
+
+        // when // then
+        mockMvc.perform(get("/admin/api/v1/challenges/1/daily-guides/days/99"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

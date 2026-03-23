@@ -34,6 +34,7 @@ public class ChallengeDailyGuideService {
     @Transactional
     public void create(Long challengeId, MultipartFile image, CreateDailyGuideRequest request) {
         validateChallengeExists(challengeId);
+        validateDayIndexNotDuplicated(challengeId, request.dayIndex());
         String imageUrl = s3FileService.uploadToChallengeBucket(image, request.fileName());
         dailyGuideRepository.save(request.toEntity(challengeId, imageUrl));
     }
@@ -41,6 +42,7 @@ public class ChallengeDailyGuideService {
     @Transactional
     public void createFromImage(Long challengeId, CreateDailyGuideFromImageRequest request) {
         validateChallengeExists(challengeId);
+        validateDayIndexNotDuplicated(challengeId, request.dayIndex());
         dailyGuideRepository.save(request.toEntity(challengeId));
     }
 
@@ -58,9 +60,21 @@ public class ChallengeDailyGuideService {
                         .addContext("challengeId", challengeId));
     }
 
+    public GetDailyGuideResponse getDailyGuideByDayIndex(Long challengeId, int dayIndex) {
+        validateChallengeExists(challengeId);
+        return dailyGuideRepository.findByChallengeIdAndDayIndexAsResponse(challengeId, dayIndex)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext("entity", "ChallengeDailyGuide")
+                        .addContext("challengeId", challengeId)
+                        .addContext("dayIndex", dayIndex));
+    }
+
     @Transactional
     public void update(Long challengeId, Long guideId, MultipartFile image, UpdateDailyGuideRequest request) {
         ChallengeDailyGuide guide = findGuide(challengeId, guideId);
+        if (request.dayIndex() != null) {
+            validateDayIndexNotDuplicatedExcluding(challengeId, request.dayIndex(), guideId);
+        }
         String imageUrl = image != null ? s3FileService.uploadToChallengeBucket(image, request.fileName()) : null;
         Boolean commentEnabled = request.type() != null ? request.type() == DailyGuideType.COMMENT : null;
         guide.update(request.dayIndex(), request.type(), imageUrl, request.notice(), commentEnabled);
@@ -69,6 +83,9 @@ public class ChallengeDailyGuideService {
     @Transactional
     public void updateFromImage(Long challengeId, Long guideId, UpdateDailyGuideFromImageRequest request) {
         ChallengeDailyGuide guide = findGuide(challengeId, guideId);
+        if (request.dayIndex() != null) {
+            validateDayIndexNotDuplicatedExcluding(challengeId, request.dayIndex(), guideId);
+        }
         Boolean commentEnabled = request.type() != null ? request.type() == DailyGuideType.COMMENT : null;
         guide.update(request.dayIndex(), request.type(), request.imageUrl(), request.notice(), commentEnabled);
     }
@@ -77,6 +94,22 @@ public class ChallengeDailyGuideService {
     public void delete(Long challengeId, Long guideId) {
         ChallengeDailyGuide guide = findGuide(challengeId, guideId);
         dailyGuideRepository.delete(guide);
+    }
+
+    private void validateDayIndexNotDuplicated(Long challengeId, int dayIndex) {
+        if (dailyGuideRepository.existsByChallengeIdAndDayIndex(challengeId, dayIndex)) {
+            throw new CIllegalArgumentException(ErrorDetail.DUPLICATED_DATA)
+                    .addContext("challengeId", challengeId)
+                    .addContext("dayIndex", dayIndex);
+        }
+    }
+
+    private void validateDayIndexNotDuplicatedExcluding(Long challengeId, int dayIndex, Long excludeGuideId) {
+        if (dailyGuideRepository.existsByChallengeIdAndDayIndexAndIdNot(challengeId, dayIndex, excludeGuideId)) {
+            throw new CIllegalArgumentException(ErrorDetail.DUPLICATED_DATA)
+                    .addContext("challengeId", challengeId)
+                    .addContext("dayIndex", dayIndex);
+        }
     }
 
     private void validateChallengeExists(Long challengeId) {
