@@ -43,11 +43,11 @@ public class S3FileService {
     @Value("${spring.cloud.aws.cloudfront.domain:}")
     private String cloudFrontDomain;
 
-    public String upload(MultipartFile file) {
-        return upload(file, "notices");
+    public String uploadToNoticeBucket(MultipartFile file) {
+        return uploadToNoticeBucket(file, "notices");
     }
 
-    public String upload(MultipartFile file, String prefix) {
+    public String uploadToNoticeBucket(MultipartFile file, String prefix) {
         String storeFileName = createStoreFileName(file, prefix);
 
         try (InputStream inputStream = file.getInputStream()) {
@@ -58,7 +58,7 @@ public class S3FileService {
             }
 
             s3Template.upload(bucketName, storeFileName, uploadStream);
-            String fileUrl = getFileUrl(storeFileName);
+            String fileUrl = getNoticeBucketFileUrl(storeFileName);
             log.info("S3 Upload Success: {}", fileUrl);
             return fileUrl;
         } catch (IOException e) {
@@ -93,14 +93,10 @@ public class S3FileService {
         }
     }
 
-    private String getFileUrl(String storeFileName) {
+    private String getNoticeBucketFileUrl(String storeFileName) {
         if (StringUtils.hasText(cloudFrontDomain)) {
             return cloudFrontDomain + "/" + storeFileName;
         }
-        return getS3Url(storeFileName);
-    }
-
-    private String getS3Url(String storeFileName) {
         try {
             return s3Template.download(bucketName, storeFileName).getURL().toString();
         } catch (IOException e) {
