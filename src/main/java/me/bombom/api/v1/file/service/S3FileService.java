@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +34,21 @@ public class S3FileService {
     @Value("${spring.cloud.aws.s3.bucket}")
     private String bucketName;
 
+    @Value("${spring.cloud.aws.s3.challenge-bucket}")
+    private String challengeBucketName;
+
+    @Value("${spring.cloud.aws.region.static}")
+    private String region;
+
     @Value("${spring.cloud.aws.cloudfront.domain:}")
     private String cloudFrontDomain;
 
-    public String upload(MultipartFile file) {
-        String storeFileName = createStoreFileName(file);
+    public String uploadToNoticeBucket(MultipartFile file) {
+        return uploadToNoticeBucket(file, "notices");
+    }
+
+    public String uploadToNoticeBucket(MultipartFile file, String prefix) {
+        String storeFileName = createStoreFileName(file, prefix);
 
         try (InputStream inputStream = file.getInputStream()) {
             InputStream uploadStream = inputStream;
@@ -47,7 +58,7 @@ public class S3FileService {
             }
 
             s3Template.upload(bucketName, storeFileName, uploadStream);
-            String fileUrl = getFileUrl(storeFileName);
+            String fileUrl = getNoticeBucketFileUrl(storeFileName);
             log.info("S3 Upload Success: {}", fileUrl);
             return fileUrl;
         } catch (IOException e) {
@@ -56,14 +67,36 @@ public class S3FileService {
         }
     }
 
-    private String getFileUrl(String storeFileName) {
+    public List<String> listChallengeImages() {
+        return s3Template.listObjects(challengeBucketName, "").stream()
+                .map(resource -> "https://" + challengeBucketName + ".s3." + region + ".amazonaws.com/" + resource.getFilename())
+                .toList();
+    }
+
+    public String uploadToChallengeBucket(MultipartFile file, String fileName) {
+        String ext = extractExt(file);
+        String storeFileName = fileName + "." + ext;
+
+        try (InputStream inputStream = file.getInputStream()) {
+            InputStream uploadStream = inputStream;
+            if (isImage(file)) {
+                uploadStream = resizeImage(inputStream);
+            }
+
+            s3Template.upload(challengeBucketName, storeFileName, uploadStream);
+            String fileUrl = "https://" + challengeBucketName + ".s3." + region + ".amazonaws.com/" + storeFileName;
+            log.info("S3 Challenge Daily Guide 이미지 업로드 성공: {}", fileUrl);
+            return fileUrl;
+        } catch (IOException e) {
+            throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
+                    .addContext(ErrorContextKeys.OPERATION, "s3ChallengeUpload");
+        }
+    }
+
+    private String getNoticeBucketFileUrl(String storeFileName) {
         if (StringUtils.hasText(cloudFrontDomain)) {
             return cloudFrontDomain + "/" + storeFileName;
         }
-        return getS3Url(storeFileName);
-    }
-
-    private String getS3Url(String storeFileName) {
         try {
             return s3Template.download(bucketName, storeFileName).getURL().toString();
         } catch (IOException e) {
@@ -86,11 +119,11 @@ public class S3FileService {
         return contentType != null && contentType.startsWith("image/");
     }
 
-    private String createStoreFileName(MultipartFile file) {
+    private String createStoreFileName(MultipartFile file, String prefix) {
         String ext = extractExt(file);
         String uuid = UUID.randomUUID().toString();
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        return "notices/" + datePath + "/" + uuid + "." + ext;
+        return prefix + "/" + datePath + "/" + uuid + "." + ext;
     }
 
     private String extractExt(MultipartFile file) {

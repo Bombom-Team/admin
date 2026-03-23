@@ -1,5 +1,7 @@
 package me.bombom.api.v1.challenge.service;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -9,6 +11,7 @@ import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
+import me.bombom.api.v1.challenge.dto.GetChallengeDayResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
@@ -53,6 +56,20 @@ public class ChallengeService {
             GetChallengeParticipantsRequest request,
             Pageable pageable) {
         return challengeParticipantRepository.getChallengeParticipants(challengeId, request, pageable);
+    }
+
+    public List<GetChallengeDayResponse> getChallengeSchedule(Long challengeId) {
+        Challenge challenge = challengeRepository.findById(challengeId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge"));
+
+        List<GetChallengeDayResponse> schedule = new ArrayList<>();
+        LocalDate date = challenge.getStartDate();
+        while (!date.isAfter(challenge.getEndDate())) {
+            schedule.add(new GetChallengeDayResponse(date, date.getDayOfWeek(), calculateDayIndex(challenge.getStartDate(), date)));
+            date = date.plusDays(1);
+        }
+        return schedule;
     }
 
     public List<GetChallengeTeamResponse> getChallengeTeams(Long challengeId) {
@@ -133,6 +150,18 @@ public class ChallengeService {
 
         challengeParticipantRepository.updateChallengeTeamIdToNull(teamId);
         challengeTeamRepository.delete(team);
+    }
+
+    private int calculateDayIndex(LocalDate startDate, LocalDate date) {
+        if (isWeekend(date)) {
+            return 0;
+        }
+        return (int) ChronoUnit.DAYS.between(startDate, date) + 1;
+    }
+
+    private boolean isWeekend(LocalDate date) {
+        return date.getDayOfWeek() == java.time.DayOfWeek.SATURDAY
+                || date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY;
     }
 
     private int calculateTeamCount(int totalParticipants, int maxTeamSize) {

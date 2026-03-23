@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
+import me.bombom.api.v1.challenge.dto.GetChallengeDayResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
@@ -47,6 +48,12 @@ public class ChallengeController implements ChallengeControllerApi {
     @GetMapping("/{challengeId}")
     public me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse getChallenge(@PathVariable Long challengeId) {
         return challengeService.getChallenge(challengeId);
+    }
+
+    @Override
+    @GetMapping("/{challengeId}/schedule")
+    public List<GetChallengeDayResponse> getChallengeSchedule(@PathVariable Long challengeId) {
+        return challengeService.getChallengeSchedule(challengeId);
     }
 
     @Override

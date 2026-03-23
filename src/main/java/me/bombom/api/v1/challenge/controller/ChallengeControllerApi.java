@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Positive;
 import java.util.List;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
+import me.bombom.api.v1.challenge.dto.GetChallengeDayResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
@@ -56,6 +57,28 @@ public interface ChallengeControllerApi {
                         @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지", content = @Content)
         })
         me.bombom.api.v1.challenge.dto.GetChallengeDetailResponse getChallenge(
+                        @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId);
+
+        @Operation(summary = "챌린지 일정 조회", description = """
+                        챌린지 전체 기간의 일자별 날짜, 요일, dayIndex를 반환합니다.
+
+                        - 주말(토/일)은 `dayIndex: 0`으로 반환됩니다.
+                        - `dayIndex`는 startDate 기준 경과 일수 + 1 입니다. (주말 포함 달력 기준)
+
+                        **응답 예시:**
+                        ```json
+                        [
+                          { "date": "2024-01-01", "dayOfWeek": "MONDAY", "dayIndex": 1 },
+                          { "date": "2024-01-06", "dayOfWeek": "SATURDAY", "dayIndex": 0 },
+                          { "date": "2024-01-08", "dayOfWeek": "MONDAY", "dayIndex": 8 }
+                        ]
+                        ```
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "조회 성공"),
+                        @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지", content = @Content)
+        })
+        List<GetChallengeDayResponse> getChallengeSchedule(
                         @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId);
 
         @Operation(summary = "챌린지 참여자 목록 조회", description = """
