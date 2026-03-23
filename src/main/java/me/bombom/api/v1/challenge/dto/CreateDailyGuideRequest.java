@@ -11,7 +11,7 @@ import me.bombom.api.v1.challenge.dto.validation.ValidCommentGuide;
 @ValidCommentGuide
 public record CreateDailyGuideRequest(
         @NotNull
-        @Min(1)
+        @Min(0)
         Integer dayIndex,
 
         @NotNull
