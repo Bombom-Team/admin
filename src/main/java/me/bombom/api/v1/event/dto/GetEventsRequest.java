@@ -8,5 +8,3 @@ public record GetEventsRequest(
         EventStatus status
 ) {
 }
-
-

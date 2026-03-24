@@ -1,6 +1,5 @@
 package me.bombom.api.v1.member.service;
 
-import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
@@ -11,6 +10,8 @@ import me.bombom.api.v1.member.dto.MembersOptionsRequest;
 import me.bombom.api.v1.member.dto.UpdateRoleRequest;
 import me.bombom.api.v1.member.repository.MemberRepository;
 import me.bombom.api.v1.member.repository.RoleRepository;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

@@ -9,4 +9,3 @@ public interface CustomEventRepository {
 
     Page<GetEventResponse> findEvents(GetEventsRequest request, Pageable pageable);
 }
-

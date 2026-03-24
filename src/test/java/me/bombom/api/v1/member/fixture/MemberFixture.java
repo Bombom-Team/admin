@@ -1,10 +1,11 @@
 package me.bombom.api.v1.member.fixture;
 
-import static org.instancio.Select.field;
-
 import me.bombom.api.v1.member.domain.Member;
 import me.bombom.api.v1.member.domain.Role;
 import me.bombom.api.v1.member.enums.Gender;
+
+import static org.instancio.Select.field;
+
 import org.instancio.Instancio;
 
 public class MemberFixture {

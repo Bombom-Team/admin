@@ -72,4 +72,3 @@ public interface EventControllerApi {
     void deleteEvent(
             @Parameter(description = "삭제할 이벤트 ID") @PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long id);
 }
-

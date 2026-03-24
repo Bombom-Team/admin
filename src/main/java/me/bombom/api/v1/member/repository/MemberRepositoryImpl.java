@@ -1,5 +1,8 @@
 package me.bombom.api.v1.member.repository;
 
+import me.bombom.api.v1.member.dto.GetMemberResponse;
+import me.bombom.api.v1.member.dto.QGetMemberResponse;
+
 import static me.bombom.api.v1.member.domain.QMember.member;
 import static me.bombom.api.v1.member.domain.QRole.role;
 
@@ -7,6 +10,13 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.ComparableExpressionBase;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.util.StringUtils;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,14 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import lombok.RequiredArgsConstructor;
-import me.bombom.api.v1.member.dto.GetMemberResponse;
-import me.bombom.api.v1.member.dto.QGetMemberResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.util.StringUtils;
 
 @RequiredArgsConstructor
 public class MemberRepositoryImpl implements CustomMemberRepository {

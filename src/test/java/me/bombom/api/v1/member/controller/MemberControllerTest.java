@@ -1,5 +1,10 @@
 package me.bombom.api.v1.member.controller;
 
+import me.bombom.api.v1.member.dto.GetMemberResponse;
+import me.bombom.api.v1.member.dto.MembersOptionsRequest;
+import me.bombom.api.v1.member.dto.UpdateRoleRequest;
+import me.bombom.api.v1.member.service.MemberService;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -10,12 +15,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
-import me.bombom.api.v1.member.controller.MemberController;
-import me.bombom.api.v1.member.dto.GetMemberResponse;
-import me.bombom.api.v1.member.dto.MembersOptionsRequest;
-import me.bombom.api.v1.member.dto.UpdateRoleRequest;
-import me.bombom.api.v1.member.service.MemberService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -26,6 +25,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
 
 @WebMvcTest(controllers = MemberController.class)
 @AutoConfigureMockMvc(addFilters = false)
