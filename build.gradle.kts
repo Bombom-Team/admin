@@ -2,6 +2,17 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.3"
     id("io.spring.dependency-management") version "1.1.7"
+    id("com.diffplug.spotless") version "6.25.0"
+}
+
+spotless {
+    java {
+        targetExclude("src/main/generated/**")
+        importOrder("me.bombom", "\\#me.bombom", "\\#", "", "java", "javax")
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 group = "me.bombom"
