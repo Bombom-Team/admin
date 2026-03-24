@@ -1,9 +1,10 @@
 package me.bombom.api.v1.common.exception;
 
-import java.util.HashMap;
-import java.util.Map;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Getter
 public class UnauthorizedException extends RuntimeException {

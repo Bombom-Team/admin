@@ -1,5 +1,7 @@
 package me.bombom.api.v1.subscribe.domain;
 
+import me.bombom.api.v1.common.BaseEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,7 +12,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import me.bombom.api.v1.common.BaseEntity;
 
 @Getter
 @Entity

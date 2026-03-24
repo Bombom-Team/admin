@@ -1,5 +1,11 @@
 package me.bombom.api.v1.subscribe.controller;
 
+import me.bombom.api.v1.common.support.ControllerTestSupport;
+import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternRequest;
+import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternUpdateRequest;
+import me.bombom.api.v1.subscribe.dto.response.UnsubscribePatternResponse;
+import me.bombom.api.v1.subscribe.service.UnsubscribePatternService;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -12,17 +18,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
-import me.bombom.api.v1.common.support.ControllerTestSupport;
-import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternRequest;
-import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternUpdateRequest;
-import me.bombom.api.v1.subscribe.dto.response.UnsubscribePatternResponse;
-import me.bombom.api.v1.subscribe.service.UnsubscribePatternService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.util.List;
 
 @WebMvcTest(controllers = UnsubscribePatternController.class)
 class UnsubscribePatternControllerTest extends ControllerTestSupport {
