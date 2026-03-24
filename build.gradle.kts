@@ -8,7 +8,6 @@ plugins {
 spotless {
     java {
         targetExclude("src/main/generated/**")
-        importOrder("me.bombom", "\\#me.bombom", "\\#", "", "java", "javax")
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()
