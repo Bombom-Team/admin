@@ -1,5 +1,6 @@
 package me.bombom.api.v1.challenge.service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.bombom.api.v1.challenge.domain.Challenge;
 import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
@@ -35,6 +37,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -44,6 +47,7 @@ public class ChallengeService {
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeTeamRepository challengeTeamRepository;
     private final ChallengeDailyGuideRepository dailyGuideRepository;
+    private final Clock clock;
 
     public Page<GetChallengeResponse> getChallenges(GetChallengesRequest request, Pageable pageable) {
         return challengeRepository.getChallenges(request, pageable);
@@ -90,6 +94,27 @@ public class ChallengeService {
         return challengeTeamRepository.findByChallengeId(challengeId).stream()
                 .map(GetChallengeTeamResponse::from)
                 .toList();
+    }
+
+    @Transactional
+    public void assignTeamsForTodayStartChallenges() {
+        LocalDate today = LocalDate.now(clock);
+        List<Challenge> challenges = challengeRepository.findAllByStartDate(today);
+
+        if (challenges.isEmpty()) {
+            return;
+        }
+
+        log.info("[ChallengeTeamAssignment] 당일 시작 챌린지 {}개 팀 자동 배정 시작", challenges.size());
+
+        for (Challenge challenge : challenges) {
+            try {
+                assignTeams(challenge.getId(), new AssignTeamsRequest(null));
+                log.info("[ChallengeTeamAssignment] 챌린지 id={} 팀 배정 완료", challenge.getId());
+            } catch (Exception e) {
+                log.error("[ChallengeTeamAssignment] 챌린지 id={} 팀 배정 실패", challenge.getId(), e);
+            }
+        }
     }
 
     @Transactional
