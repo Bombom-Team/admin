@@ -31,8 +31,15 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      - name: Spotless Apply
-        run: ./gradlew spotlessApply
+      - name: Spotless Check
+        run: ./gradlew spotlessCheck --info
 
       - name: Test
         run: ./gradlew test
+
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: build/reports/tests/test/

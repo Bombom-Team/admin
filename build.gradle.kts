@@ -115,3 +115,16 @@ tasks.named<Delete>("clean") {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.register("installGitHooks") {
+    doLast {
+        ProcessBuilder("git", "config", "core.hooksPath", ".githooks")
+            .inheritIO()
+            .start()
+            .waitFor()
+    }
+}
+
+tasks.named("compileJava") {
+    dependsOn("installGitHooks", "spotlessApply")
+}
