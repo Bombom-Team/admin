@@ -1,5 +1,15 @@
 package me.bombom.api.v1.newsletter.repository;
 
+import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
+import me.bombom.api.v1.newsletter.domain.NewsletterPublicationStatus;
+import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
+import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
+import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
+import me.bombom.api.v1.newsletter.dto.NewsletterSortType;
+import me.bombom.api.v1.newsletter.dto.NewsletterStatusFilter;
+import me.bombom.api.v1.newsletter.dto.QGetNewsletterResponse;
+import me.bombom.api.v1.newsletter.dto.QGetNewsletterSummaryResponse;
+
 import static me.bombom.api.v1.newsletter.domain.QCategory.category;
 import static me.bombom.api.v1.newsletter.domain.QNewsletter.newsletter;
 import static me.bombom.api.v1.newsletter.domain.QNewsletterDetail.newsletterDetail;
@@ -11,20 +21,12 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
-import me.bombom.api.v1.newsletter.domain.NewsletterPublicationStatus;
-import me.bombom.api.v1.newsletter.dto.GetNewsletterResponse;
-import me.bombom.api.v1.newsletter.dto.GetNewsletterSummaryResponse;
-import me.bombom.api.v1.newsletter.dto.GetNewslettersRequest;
-import me.bombom.api.v1.newsletter.dto.NewsletterSortType;
-import me.bombom.api.v1.newsletter.dto.NewsletterStatusFilter;
-import me.bombom.api.v1.newsletter.dto.QGetNewsletterResponse;
-import me.bombom.api.v1.newsletter.dto.QGetNewsletterSummaryResponse;
-import org.springframework.util.StringUtils;
 
 @RequiredArgsConstructor
 public class NewsletterRepositoryImpl implements CustomNewsletterRepository {

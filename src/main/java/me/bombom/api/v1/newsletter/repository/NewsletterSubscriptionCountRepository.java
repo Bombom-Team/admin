@@ -1,8 +1,10 @@
 package me.bombom.api.v1.newsletter.repository;
 
-import java.util.Optional;
 import me.bombom.api.v1.subscribe.domain.NewsletterSubscriptionCount;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
 
 public interface NewsletterSubscriptionCountRepository extends JpaRepository<NewsletterSubscriptionCount, Long> {
 

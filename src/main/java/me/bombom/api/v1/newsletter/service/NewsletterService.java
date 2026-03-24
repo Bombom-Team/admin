@@ -1,9 +1,5 @@
 package me.bombom.api.v1.newsletter.service;
 
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
@@ -23,8 +19,14 @@ import me.bombom.api.v1.newsletter.repository.NewsletterPreviousPolicyRepository
 import me.bombom.api.v1.newsletter.repository.NewsletterRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterSubscriptionCountRepository;
 import me.bombom.api.v1.subscribe.domain.NewsletterSubscriptionCount;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

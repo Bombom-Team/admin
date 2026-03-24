@@ -1,10 +1,5 @@
 package me.bombom.api.v1.article.service;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-
-import java.time.LocalDateTime;
-import java.util.List;
 import me.bombom.api.v1.article.domain.PreviousArticle;
 import me.bombom.api.v1.article.dto.CreatePreviousArticleRequest;
 import me.bombom.api.v1.article.dto.GetPreviousArticleResponse;
@@ -16,11 +11,18 @@ import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.newsletter.domain.Newsletter;
 import me.bombom.api.v1.newsletter.fixture.NewsletterFixture;
 import me.bombom.api.v1.newsletter.repository.NewsletterRepository;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @DataJpaTest
 @Import({ PreviousArticleService.class, QuerydslConfig.class })

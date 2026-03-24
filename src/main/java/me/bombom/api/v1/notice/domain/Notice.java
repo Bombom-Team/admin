@@ -1,5 +1,7 @@
 package me.bombom.api.v1.notice.domain;
 
+import me.bombom.api.v1.common.BaseEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,7 +14,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import me.bombom.api.v1.common.BaseEntity;
 
 @Entity
 @Getter

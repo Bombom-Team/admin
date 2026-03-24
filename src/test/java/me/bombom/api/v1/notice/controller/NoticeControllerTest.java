@@ -1,5 +1,14 @@
 package me.bombom.api.v1.notice.controller;
 
+import me.bombom.api.v1.common.support.ControllerTestSupport;
+import me.bombom.api.v1.notice.domain.NoticeCategory;
+import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
+import me.bombom.api.v1.notice.dto.GetNoticeResponse;
+import me.bombom.api.v1.notice.dto.GetNoticesRequest;
+import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
+import me.bombom.api.v1.notice.service.NoticeService;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -12,15 +21,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
-import me.bombom.api.v1.common.support.ControllerTestSupport;
-import me.bombom.api.v1.notice.domain.NoticeCategory;
-import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
-import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
-import me.bombom.api.v1.notice.dto.GetNoticeResponse;
-import me.bombom.api.v1.notice.dto.GetNoticesRequest;
-import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
-import me.bombom.api.v1.notice.service.NoticeService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -29,6 +29,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.util.List;
 
 @WebMvcTest(controllers = NoticeController.class)
 class NoticeControllerTest extends ControllerTestSupport {
