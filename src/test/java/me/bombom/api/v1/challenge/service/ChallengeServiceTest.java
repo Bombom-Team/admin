@@ -3,6 +3,8 @@ package me.bombom.api.v1.challenge.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import me.bombom.api.v1.challenge.domain.Challenge;
@@ -19,6 +21,7 @@ import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
 import me.bombom.api.v1.common.config.QuerydslConfig;
+import me.bombom.api.v1.common.config.TimeConfig;
 import me.bombom.api.v1.member.domain.Member;
 import me.bombom.api.v1.member.fixture.MemberFixture;
 import me.bombom.api.v1.member.repository.MemberRepository;
@@ -35,11 +38,14 @@ import org.springframework.test.context.TestPropertySource;
         "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
 })
-@Import({ ChallengeService.class, QuerydslConfig.class })
+@Import({ ChallengeService.class, QuerydslConfig.class, TimeConfig.class })
 class ChallengeServiceTest {
 
     @Autowired
     private ChallengeService challengeService;
+
+    @Autowired
+    private Clock clock;
 
     @Autowired
     private ChallengeRepository challengeRepository;
@@ -365,10 +371,77 @@ class ChallengeServiceTest {
         });
     }
 
+    @Test
+    void 오늘_시작하는_챌린지가_없으면_팀_배정이_발생하지_않는다() {
+        // given
+        challengeRepository.save(ChallengeFixture.createChallengeStartingOn(LocalDate.now(clock).plusDays(1)));
+
+        // when
+        challengeService.assignTeamsForTodayStartChallenges();
+
+        // then
+        assertThat(challengeTeamRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void 오늘_시작하는_챌린지의_참여자들이_팀에_배정된다() {
+        // given
+        Challenge challenge = challengeRepository.save(ChallengeFixture.createChallengeStartingOn(LocalDate.now(clock)));
+        createParticipants(challenge.getId(), 10);
+
+        // when
+        challengeService.assignTeamsForTodayStartChallenges();
+
+        // then
+        List<ChallengeParticipant> participants = challengeParticipantRepository.findAllByChallengeId(challenge.getId());
+        assertThat(participants).allMatch(p -> p.getChallengeTeamId() != null);
+    }
+
+    @Test
+    void 오늘_시작하는_챌린지가_여러_개면_모두_배정된다() {
+        // given
+        Challenge challenge1 = challengeRepository.save(ChallengeFixture.createChallengeStartingOn(LocalDate.now(clock)));
+        Challenge challenge2 = challengeRepository.save(ChallengeFixture.createChallengeStartingOn(LocalDate.now(clock)));
+        createParticipants(challenge1.getId(), 5, "c1user");
+        createParticipants(challenge2.getId(), 5, "c2user");
+
+        // when
+        challengeService.assignTeamsForTodayStartChallenges();
+
+        // then
+        List<ChallengeParticipant> participants1 = challengeParticipantRepository.findAllByChallengeId(challenge1.getId());
+        List<ChallengeParticipant> participants2 = challengeParticipantRepository.findAllByChallengeId(challenge2.getId());
+
+        assertSoftly(softly -> {
+            softly.assertThat(participants1).allMatch(p -> p.getChallengeTeamId() != null);
+            softly.assertThat(participants2).allMatch(p -> p.getChallengeTeamId() != null);
+        });
+    }
+
+    @Test
+    void 오늘이_아닌_챌린지_참여자는_배정되지_않는다() {
+        // given
+        Challenge todayChallenge = challengeRepository.save(ChallengeFixture.createChallengeStartingOn(LocalDate.now(clock)));
+        Challenge tomorrowChallenge = challengeRepository.save(ChallengeFixture.createChallengeStartingOn(LocalDate.now(clock).plusDays(1)));
+        createParticipants(todayChallenge.getId(), 5, "today");
+        createParticipants(tomorrowChallenge.getId(), 5, "tomorrow");
+
+        // when
+        challengeService.assignTeamsForTodayStartChallenges();
+
+        // then
+        List<ChallengeParticipant> tomorrowParticipants = challengeParticipantRepository.findAllByChallengeId(tomorrowChallenge.getId());
+        assertThat(tomorrowParticipants).allMatch(p -> p.getChallengeTeamId() == null);
+    }
+
     private void createParticipants(Long challengeId, int count) {
+        createParticipants(challengeId, count, "user");
+    }
+
+    private void createParticipants(Long challengeId, int count, String nicknamePrefix) {
         List<ChallengeParticipant> participants = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            Member member = memberRepository.save(MemberFixture.createMember("user" + i));
+            Member member = memberRepository.save(MemberFixture.createMember(nicknamePrefix + i));
             participants.add(ChallengeFixture.createParticipant(challengeId, member.getId()));
         }
         challengeParticipantRepository.saveAll(participants);

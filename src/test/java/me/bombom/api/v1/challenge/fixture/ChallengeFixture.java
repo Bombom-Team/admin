@@ -22,6 +22,17 @@ public class ChallengeFixture {
                 .create();
     }
 
+    public static Challenge createChallengeStartingOn(LocalDate startDate) {
+        return Instancio.of(Challenge.class)
+                .set(field(Challenge::getId), null)
+                .set(field(Challenge::getName), "Test Challenge")
+                .set(field(Challenge::getGeneration), 1)
+                .set(field(Challenge::getStartDate), startDate)
+                .set(field(Challenge::getEndDate), startDate.plusDays(30))
+                .set(field(Challenge::getTotalDays), 30)
+                .create();
+    }
+
     public static ChallengeParticipant createParticipant(Long challengeId, Long memberId) {
         return Instancio.of(ChallengeParticipant.class)
                 .set(field(ChallengeParticipant::getId), null)

@@ -7,6 +7,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import java.time.LocalDate;
 import java.util.List;
 import me.bombom.api.v1.common.config.QuerydslConfig;
+import me.bombom.api.v1.common.config.TimeConfig;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.newsletter.domain.Category;
 import me.bombom.api.v1.newsletter.domain.Newsletter;
@@ -35,7 +36,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
 @DataJpaTest
-@Import({ NewsletterService.class, QuerydslConfig.class })
+@Import({ NewsletterService.class, QuerydslConfig.class, TimeConfig.class })
 class NewsletterServiceTest {
 
     @Autowired
