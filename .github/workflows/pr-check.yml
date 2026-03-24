@@ -37,9 +37,10 @@ jobs:
       - name: Test
         run: ./gradlew test
 
-      - name: Upload Test Report
+      - name: Publish Test Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: dorny/test-reporter@v1
         with:
-          name: test-report
-          path: build/reports/tests/test/
+          name: Test Results
+          path: build/test-results/test/*.xml
+          reporter: java-junit
