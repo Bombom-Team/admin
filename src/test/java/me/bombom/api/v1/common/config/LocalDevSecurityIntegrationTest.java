@@ -19,7 +19,12 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("local")
 @WebMvcTest(MemberController.class)
 @Import({ SecurityConfig.class, WebConfig.class })
-@TestPropertySource(properties = "spring.profiles.active=local")
+@TestPropertySource(properties = {
+    "spring.profiles.active=local",
+    "server.servlet.session.cookie.max-age=7d",
+    "server.servlet.session.cookie.name=TEST_SESSION",
+    "server.servlet.session.cookie.domain=localhost"
+})
 class LocalDevSecurityIntegrationTest {
 
     @Autowired
