@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -16,6 +17,11 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("local")
 @Import({ SecurityConfig.class, GlobalExceptionHandler.class })
 @WithMockUser(roles = "2")
+@TestPropertySource(properties = {
+    "server.servlet.session.cookie.max-age=7d",
+    "server.servlet.session.cookie.name=TEST_SESSION",
+    "server.servlet.session.cookie.domain=localhost"
+})
 public abstract class ControllerTestSupport {
 
     @Autowired
