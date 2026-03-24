@@ -1,7 +1,5 @@
 package me.bombom.api.v1.notice.service;
 
-import jakarta.validation.constraints.Positive;
-import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
@@ -12,6 +10,9 @@ import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
+
+import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

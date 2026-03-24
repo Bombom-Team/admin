@@ -1,7 +1,5 @@
 package me.bombom.api.v1.article.service;
 
-import java.util.List;
-import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.article.domain.PreviousArticle;
 import me.bombom.api.v1.article.dto.CreatePreviousArticleRequest;
 import me.bombom.api.v1.article.dto.GetPreviousArticleResponse;
@@ -13,8 +11,12 @@ import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.newsletter.repository.NewsletterRepository;
+
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

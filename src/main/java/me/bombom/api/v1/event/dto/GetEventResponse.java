@@ -20,5 +20,3 @@ public record GetEventResponse(
                 event.getStatus());
     }
 }
-
-

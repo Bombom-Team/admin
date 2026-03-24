@@ -2,6 +2,16 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.3"
     id("io.spring.dependency-management") version "1.1.7"
+    id("com.diffplug.spotless") version "6.25.0"
+}
+
+spotless {
+    java {
+        targetExclude("src/main/generated/**")
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 group = "me.bombom"
@@ -103,4 +113,17 @@ tasks.named<Delete>("clean") {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.register("installGitHooks") {
+    doLast {
+        ProcessBuilder("git", "config", "core.hooksPath", ".githooks")
+            .inheritIO()
+            .start()
+            .waitFor()
+    }
+}
+
+tasks.named("compileJava") {
+    dependsOn("installGitHooks", "spotlessApply")
 }

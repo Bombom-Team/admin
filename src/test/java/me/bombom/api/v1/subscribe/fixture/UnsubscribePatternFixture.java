@@ -1,8 +1,9 @@
 package me.bombom.api.v1.subscribe.fixture;
 
+import me.bombom.api.v1.subscribe.domain.UnsubscribePattern;
+
 import static org.instancio.Select.field;
 
-import me.bombom.api.v1.subscribe.domain.UnsubscribePattern;
 import org.instancio.Instancio;
 
 public class UnsubscribePatternFixture {

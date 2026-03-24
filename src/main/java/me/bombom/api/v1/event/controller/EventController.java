@@ -72,4 +72,3 @@ public class EventController implements EventControllerApi {
         eventService.deleteEvent(id);
     }
 }
-

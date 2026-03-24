@@ -1,10 +1,12 @@
 package me.bombom.api.v1.article.fixture;
 
+import me.bombom.api.v1.article.domain.PreviousArticle;
+
 import static org.instancio.Select.field;
 
-import java.time.LocalDateTime;
-import me.bombom.api.v1.article.domain.PreviousArticle;
 import org.instancio.Instancio;
+
+import java.time.LocalDateTime;
 
 public class PreviousArticleFixture {
 

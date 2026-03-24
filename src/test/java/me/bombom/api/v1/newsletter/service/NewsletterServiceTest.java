@@ -1,11 +1,5 @@
 package me.bombom.api.v1.newsletter.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-
-import java.time.LocalDate;
-import java.util.List;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.common.config.TimeConfig;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
@@ -29,11 +23,19 @@ import me.bombom.api.v1.newsletter.repository.NewsletterPreviousPolicyRepository
 import me.bombom.api.v1.newsletter.repository.NewsletterRepository;
 import me.bombom.api.v1.newsletter.repository.NewsletterSubscriptionCountRepository;
 import me.bombom.api.v1.subscribe.domain.NewsletterSubscriptionCount;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @DataJpaTest
 @Import({ NewsletterService.class, QuerydslConfig.class, TimeConfig.class })

@@ -1,5 +1,7 @@
 package me.bombom.api.v1.newsletter.domain;
 
+import me.bombom.api.v1.common.BaseEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,13 +11,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import me.bombom.api.v1.common.BaseEntity;
+
+import java.time.LocalDate;
 
 @Entity
 @Getter

@@ -1,10 +1,5 @@
 package me.bombom.api.v1.notice.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
-
-import java.util.List;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
@@ -14,6 +9,11 @@ import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
 import me.bombom.api.v1.notice.fixture.NoticeFixture;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +22,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 @DataJpaTest
 @Import({ NoticeService.class, QuerydslConfig.class })

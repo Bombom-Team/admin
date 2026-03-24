@@ -1,5 +1,13 @@
 package me.bombom.api.v1.article.controller;
 
+import me.bombom.api.v1.article.dto.CreatePreviousArticleRequest;
+import me.bombom.api.v1.article.dto.GetPreviousArticleResponse;
+import me.bombom.api.v1.article.dto.UpdatePreviousArticleRequest;
+import me.bombom.api.v1.article.service.PreviousArticleService;
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
+import me.bombom.api.v1.common.exception.ErrorDetail;
+import me.bombom.api.v1.common.support.ControllerTestSupport;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -13,20 +21,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import me.bombom.api.v1.article.dto.CreatePreviousArticleRequest;
-import me.bombom.api.v1.article.dto.GetPreviousArticleResponse;
-import me.bombom.api.v1.article.dto.UpdatePreviousArticleRequest;
-import me.bombom.api.v1.article.service.PreviousArticleService;
-import me.bombom.api.v1.common.exception.CIllegalArgumentException;
-import me.bombom.api.v1.common.exception.ErrorDetail;
-import me.bombom.api.v1.common.support.ControllerTestSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @WebMvcTest(PreviousArticleController.class)
 class PreviousArticleControllerTest extends ControllerTestSupport {

@@ -1,9 +1,10 @@
 package me.bombom.api.v1.notice.fixture;
 
-import static org.instancio.Select.field;
-
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
+
+import static org.instancio.Select.field;
+
 import org.instancio.Instancio;
 
 public class NoticeFixture {

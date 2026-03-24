@@ -1,13 +1,14 @@
 package me.bombom.api.v1.newsletter.fixture;
 
-import static org.instancio.Select.field;
-
 import me.bombom.api.v1.newsletter.domain.Category;
 import me.bombom.api.v1.newsletter.domain.Newsletter;
 import me.bombom.api.v1.newsletter.domain.NewsletterDetail;
 import me.bombom.api.v1.newsletter.domain.NewsletterPreviousPolicy;
 import me.bombom.api.v1.newsletter.domain.NewsletterPreviousStrategy;
 import me.bombom.api.v1.subscribe.domain.NewsletterSubscriptionCount;
+
+import static org.instancio.Select.field;
+
 import org.instancio.Instancio;
 
 public class NewsletterFixture {
