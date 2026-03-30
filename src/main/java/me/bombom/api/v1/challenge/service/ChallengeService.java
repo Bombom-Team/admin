@@ -24,7 +24,9 @@ import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengesRequest;
 import me.bombom.api.v1.challenge.dto.GetDailyGuideResponse;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
+import me.bombom.api.v1.challenge.dto.request.CreateChallengeRequest;
 import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
+import me.bombom.api.v1.challenge.dto.request.UpdateChallengeRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeDailyGuideRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
@@ -225,6 +227,43 @@ public class ChallengeService {
             ChallengeTeam team = teams.get(i % teamCount);
             participant.assignTeam(team.getId());
         }
+    }
+
+    @Transactional
+    public void createChallenge(CreateChallengeRequest request) {
+        Challenge challenge = Challenge.builder()
+                .name(request.name())
+                .generation(request.generation())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .build();
+        challengeRepository.save(challenge);
+    }
+
+    @Transactional
+    public void updateChallenge(Long challengeId, UpdateChallengeRequest request) {
+        Challenge challenge = challengeRepository.findById(challengeId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge")
+                        .addContext(ErrorContextKeys.OPERATION, "updateChallenge")
+                        .addContext("challengeId", challengeId));
+        challenge.update(request.name(), request.generation(), request.startDate(), request.endDate());
+    }
+
+    @Transactional
+    public void deleteChallenge(Long challengeId) {
+        if (!challengeRepository.existsById(challengeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge")
+                    .addContext(ErrorContextKeys.OPERATION, "deleteChallenge")
+                    .addContext("challengeId", challengeId);
+        }
+        if (challengeParticipantRepository.existsByChallengeId(challengeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.CHALLENGE_HAS_PARTICIPANTS)
+                    .addContext(ErrorContextKeys.OPERATION, "deleteChallenge")
+                    .addContext("challengeId", challengeId);
+        }
+        challengeRepository.deleteById(challengeId);
     }
 
     @Transactional

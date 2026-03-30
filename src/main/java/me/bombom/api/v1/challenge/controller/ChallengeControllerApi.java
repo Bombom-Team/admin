@@ -18,18 +18,22 @@ import me.bombom.api.v1.challenge.dto.GetChallengeResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengesRequest;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
+import me.bombom.api.v1.challenge.dto.request.CreateChallengeRequest;
 import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
+import me.bombom.api.v1.challenge.dto.request.UpdateChallengeRequest;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Tag(name = "Challenge", description = "챌린지 관리 API")
 @ApiResponses({
@@ -37,6 +41,63 @@ import org.springframework.web.bind.annotation.RequestBody;
                 @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content)
 })
 public interface ChallengeControllerApi {
+
+        @Operation(summary = "챌린지 생성", description = """
+                        챌린지를 생성합니다.
+
+                        - `totalDays`는 입력한 startDate ~ endDate 범위 내 **주말(토·일)을 제외한 평일 수**로 자동 계산됩니다. 별도로 전달하지 않아도 됩니다.
+
+                        **요청 필드:**
+                        - `name` (필수): 챌린지 이름
+                        - `generation` (필수, 양수): 챌린지 기수
+                        - `startDate` (필수): 챌린지 시작일 (yyyy-MM-dd)
+                        - `endDate` (필수): 챌린지 종료일 (yyyy-MM-dd)
+                        - `totalDays`는 입력한 startDate ~ endDate 범위 내 **주말(토·일)을 제외한 평일 수**로 자동 계산됩니다
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "201", description = "생성 성공"),
+                        @ApiResponse(responseCode = "400", description = "잘못된 입력 (필수 필드 누락, generation이 0 이하 등)", content = @Content)
+        })
+        @PostMapping
+        @ResponseStatus(HttpStatus.CREATED)
+        void createChallenge(@RequestBody @Valid CreateChallengeRequest request);
+
+        @Operation(summary = "챌린지 수정", description = """
+                        챌린지 정보를 부분 수정합니다.
+
+                        - 전달하지 않은 필드(null)는 기존 값이 유지됩니다.
+                        - `startDate` 또는 `endDate` 중 하나만 변경해도 `totalDays`는 두 값 모두를 기준으로 **자동 재계산**됩니다.
+
+                        **요청 필드 (모두 선택):**
+                        - `name`: 챌린지 이름
+                        - `generation`: 챌린지 기수 (양수)
+                        - `startDate`: 챌린지 시작일 (yyyy-MM-dd)
+                        - `endDate`: 챌린지 종료일 (yyyy-MM-dd)
+                        - `totalDays`는 입력한 startDate ~ endDate 범위 내 **주말(토·일)을 제외한 평일 수**로 자동 계산됩니다
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "수정 성공"),
+                        @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지", content = @Content)
+        })
+        @PatchMapping("/{challengeId}")
+        void updateChallenge(
+                        @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId,
+                        @RequestBody @Valid UpdateChallengeRequest request);
+
+        @Operation(summary = "챌린지 삭제", description = """
+                        챌린지를 삭제합니다.
+
+                        - **참여자가 한 명이라도 존재하면 삭제할 수 없습니다.** (400 반환)
+                        - 삭제 전 참여자 목록을 확인한 후 호출하세요.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "삭제 성공"),
+                        @ApiResponse(responseCode = "400", description = "참여자가 존재하여 삭제 불가", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "존재하지 않는 챌린지", content = @Content)
+        })
+        @DeleteMapping("/{challengeId}")
+        void deleteChallenge(
+                        @Parameter(description = "챌린지 ID", required = true) @PathVariable Long challengeId);
 
         @Operation(summary = "챌린지 목록 조회", description = """
                         챌린지 목록을 조회합니다.
