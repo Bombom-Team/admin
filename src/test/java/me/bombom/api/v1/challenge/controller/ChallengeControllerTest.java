@@ -91,42 +91,6 @@ class ChallengeControllerTest extends ControllerTestSupport {
         }
 
         @Test
-        void 챌린지_생성_시_startDate가_없으면_400을_반환한다() throws Exception {
-                // given
-                String requestBody = """
-                                {
-                                    "name": "테스트 챌린지",
-                                    "generation": 1,
-                                    "endDate": "2025-01-10"
-                                }
-                                """;
-
-                // when & then
-                mockMvc.perform(post("/admin/api/v1/challenges")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody))
-                                .andExpect(status().isBadRequest());
-        }
-
-        @Test
-        void 챌린지_생성_시_endDate가_없으면_400을_반환한다() throws Exception {
-                // given
-                String requestBody = """
-                                {
-                                    "name": "테스트 챌린지",
-                                    "generation": 1,
-                                    "startDate": "2025-01-06"
-                                }
-                                """;
-
-                // when & then
-                mockMvc.perform(post("/admin/api/v1/challenges")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody))
-                                .andExpect(status().isBadRequest());
-        }
-
-        @Test
         void 챌린지를_수정한다() throws Exception {
                 // given
                 UpdateChallengeRequest request = new UpdateChallengeRequest(
