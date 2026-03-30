@@ -16,7 +16,7 @@ public class FileController implements FileControllerApi {
 
     @Override
     public UploadFileResponse upload(MultipartFile multipartFile) {
-        String url = s3FileService.uploadToNoticeBucket(multipartFile);
+        String url = s3FileService.uploadToPublicBucketWithMetadata(multipartFile, "notices").fileUrl();
         return new UploadFileResponse(url);
     }
 }
