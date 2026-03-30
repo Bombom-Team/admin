@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -43,15 +44,14 @@ public class Challenge extends BaseEntity {
             @NonNull String name,
             int generation,
             @NonNull LocalDate startDate,
-            @NonNull LocalDate endDate,
-            int totalDays
+            @NonNull LocalDate endDate
     ) {
         this.id = id;
         this.name = name;
         this.generation = generation;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.totalDays = totalDays;
+        this.totalDays = countWeekdays(startDate, endDate);
     }
 
     public ChallengeStatus getStatus(LocalDate now) {
@@ -70,5 +70,34 @@ public class Challenge extends BaseEntity {
 
     public boolean hasStarted(LocalDate now) {
         return !now.isBefore(this.startDate);
+    }
+
+    public void update(String name, Integer generation, LocalDate startDate, LocalDate endDate) {
+        if (name != null) {
+            this.name = name;
+        }
+        if (generation != null) {
+            this.generation = generation;
+        }
+        if (startDate != null || endDate != null) {
+            LocalDate effectiveStart = startDate != null ? startDate : this.startDate;
+            LocalDate effectiveEnd = endDate != null ? endDate : this.endDate;
+            this.startDate = effectiveStart;
+            this.endDate = effectiveEnd;
+            this.totalDays = countWeekdays(effectiveStart, effectiveEnd);
+        }
+    }
+
+    private static int countWeekdays(LocalDate startDate, LocalDate endDate) {
+        int count = 0;
+        LocalDate date = startDate;
+        while (!date.isAfter(endDate)) {
+            DayOfWeek dayOfWeek = date.getDayOfWeek();
+            if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+                count++;
+            }
+            date = date.plusDays(1);
+        }
+        return count;
     }
 }
