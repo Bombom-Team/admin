@@ -10,6 +10,8 @@ public record UpdateChallengeRequest(
 
         LocalDate startDate,
 
-        LocalDate endDate
+        LocalDate endDate,
+
+        Long newsletterGroupId
 ) {
 }

@@ -29,29 +29,38 @@ public class Challenge extends BaseEntity {
     @Column(nullable = false)
     private int generation;
 
-    @Column(nullable = false)
     private LocalDate startDate;
 
-    @Column(nullable = false)
     private LocalDate endDate;
 
     @Column(nullable = false)
     private int totalDays;
+
+    @Column(nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    private boolean isBadgeIssued = false;
+
+    @Column(nullable = false)
+    private Long newsletterGroupId;
 
     @Builder
     public Challenge(
             Long id,
             @NonNull String name,
             int generation,
-            @NonNull LocalDate startDate,
-            @NonNull LocalDate endDate
+            LocalDate startDate,
+            LocalDate endDate,
+            int totalDays,
+            boolean isBadgeIssued,
+            @NonNull Long newsletterGroupId
     ) {
         this.id = id;
         this.name = name;
         this.generation = generation;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.totalDays = countWeekdays(startDate, endDate);
+        this.totalDays = (startDate != null && endDate != null) ? countWeekdays(startDate, endDate) : 0;
+        this.isBadgeIssued = isBadgeIssued;
+        this.newsletterGroupId = newsletterGroupId;
     }
 
     public ChallengeStatus getStatus(LocalDate now) {
@@ -64,15 +73,7 @@ public class Challenge extends BaseEntity {
         return ChallengeStatus.ONGOING;
     }
 
-    public boolean isEnded(LocalDate now) {
-        return now.isAfter(this.endDate);
-    }
-
-    public boolean hasStarted(LocalDate now) {
-        return !now.isBefore(this.startDate);
-    }
-
-    public void update(String name, Integer generation, LocalDate startDate, LocalDate endDate) {
+    public void update(String name, Integer generation, LocalDate startDate, LocalDate endDate, Long newsletterGroupId) {
         if (name != null) {
             this.name = name;
         }
@@ -84,7 +85,10 @@ public class Challenge extends BaseEntity {
             LocalDate effectiveEnd = endDate != null ? endDate : this.endDate;
             this.startDate = effectiveStart;
             this.endDate = effectiveEnd;
-            this.totalDays = countWeekdays(effectiveStart, effectiveEnd);
+            this.totalDays = (effectiveStart != null && effectiveEnd != null) ? countWeekdays(effectiveStart, effectiveEnd) : 0;
+        }
+        if (newsletterGroupId != null) {
+            this.newsletterGroupId = newsletterGroupId;
         }
     }
 

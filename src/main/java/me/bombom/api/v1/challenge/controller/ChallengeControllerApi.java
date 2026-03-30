@@ -52,6 +52,7 @@ public interface ChallengeControllerApi {
                         - `generation` (필수, 양수): 챌린지 기수
                         - `startDate` (필수): 챌린지 시작일 (yyyy-MM-dd)
                         - `endDate` (필수): 챌린지 종료일 (yyyy-MM-dd)
+                        - `newsletterGroupId` (필수): 뉴스레터 그룹 ID
                         - `totalDays`는 입력한 startDate ~ endDate 범위 내 **주말(토·일)을 제외한 평일 수**로 자동 계산됩니다
                         """)
         @ApiResponses({
@@ -73,6 +74,7 @@ public interface ChallengeControllerApi {
                         - `generation`: 챌린지 기수 (양수)
                         - `startDate`: 챌린지 시작일 (yyyy-MM-dd)
                         - `endDate`: 챌린지 종료일 (yyyy-MM-dd)
+                        - `newsletterGroupId`: 뉴스레터 그룹 ID
                         - `totalDays`는 입력한 startDate ~ endDate 범위 내 **주말(토·일)을 제외한 평일 수**로 자동 계산됩니다
                         """)
         @ApiResponses({

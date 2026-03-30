@@ -42,7 +42,8 @@ class ChallengeControllerTest extends ControllerTestSupport {
                                     "name": "테스트 챌린지",
                                     "generation": 1,
                                     "startDate": "2025-01-06",
-                                    "endDate": "2025-01-10"
+                                    "endDate": "2025-01-10",
+                                    "newsletterGroupId": 1
                                 }
                                 """;
 
@@ -94,7 +95,7 @@ class ChallengeControllerTest extends ControllerTestSupport {
         void 챌린지를_수정한다() throws Exception {
                 // given
                 UpdateChallengeRequest request = new UpdateChallengeRequest(
-                                "수정된 챌린지", 2, LocalDate.of(2025, 1, 6), LocalDate.of(2025, 1, 10));
+                                "수정된 챌린지", 2, LocalDate.of(2025, 1, 6), LocalDate.of(2025, 1, 10), null);
 
                 // when & then
                 mockMvc.perform(patch("/admin/api/v1/challenges/1")
@@ -108,7 +109,7 @@ class ChallengeControllerTest extends ControllerTestSupport {
                 // given
                 doThrow(new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND))
                                 .when(challengeService).updateChallenge(any(), any());
-                UpdateChallengeRequest request = new UpdateChallengeRequest("수정된 챌린지", null, null, null);
+                UpdateChallengeRequest request = new UpdateChallengeRequest("수정된 챌린지", null, null, null, null);
 
                 // when & then
                 mockMvc.perform(patch("/admin/api/v1/challenges/999")
