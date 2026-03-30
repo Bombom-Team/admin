@@ -36,7 +36,7 @@ public class Challenge extends BaseEntity {
     @Column(nullable = false)
     private int totalDays;
 
-    @Column(nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    @Column(nullable = false)
     private boolean isBadgeIssued = false;
 
     @Column(nullable = false)

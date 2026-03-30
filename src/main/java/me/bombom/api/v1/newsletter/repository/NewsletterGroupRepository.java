@@ -11,7 +11,7 @@ public interface NewsletterGroupRepository extends JpaRepository<NewsletterGroup
     @Query("""
         SELECT new me.bombom.api.v1.newsletter.dto.GetNewsletterGroupResponse(g.id, g.name)
         FROM NewsletterGroup g
-        ORDER BY g.id ASC
+        ORDER BY g.id
     """)
     List<GetNewsletterGroupResponse> findAllAsResponse();
 }
