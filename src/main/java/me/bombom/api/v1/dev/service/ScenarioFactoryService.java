@@ -36,7 +36,6 @@ public class ScenarioFactoryService {
                 .generation(1)
                 .startDate(startDate)
                 .endDate(endDate)
-                .totalDays(10)
                 .build();
 
         challengeRepository.save(stoppedChallenge);
