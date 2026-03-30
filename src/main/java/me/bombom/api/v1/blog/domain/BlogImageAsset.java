@@ -63,4 +63,14 @@ public class BlogImageAsset extends BaseEntity {
         this.status = status;
         this.deleteRequestedAt = deleteRequestedAt;
     }
+
+    public void attach() {
+        this.status = BlogImageAssetStatus.ATTACHED;
+        this.deleteRequestedAt = null;
+    }
+
+    public void markDeletePending(LocalDateTime deleteRequestedAt) {
+        this.status = BlogImageAssetStatus.DELETE_PENDING;
+        this.deleteRequestedAt = deleteRequestedAt;
+    }
 }

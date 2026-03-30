@@ -74,4 +74,16 @@ public class BlogPost extends BaseEntity {
         this.categoryId = categoryId;
         this.publishedAt = publishedAt;
     }
+
+    public void updateDraft(
+            String title,
+            String content,
+            String description,
+            Long categoryId
+    ) {
+        this.title = title;
+        this.content = content;
+        this.description = description;
+        this.categoryId = categoryId;
+    }
 }
