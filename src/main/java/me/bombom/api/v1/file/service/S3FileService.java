@@ -1,18 +1,6 @@
 package me.bombom.api.v1.file.service;
 
-import me.bombom.api.v1.common.exception.CServerErrorException;
-import me.bombom.api.v1.common.exception.ErrorContextKeys;
-import me.bombom.api.v1.common.exception.ErrorDetail;
-
 import io.awspring.cloud.s3.S3Template;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -21,6 +9,17 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import me.bombom.api.v1.common.exception.CServerErrorException;
+import me.bombom.api.v1.common.exception.ErrorContextKeys;
+import me.bombom.api.v1.common.exception.ErrorDetail;
+import me.bombom.api.v1.file.dto.StoredFile;
+import net.coobird.thumbnailator.Thumbnails;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -45,11 +44,7 @@ public class S3FileService {
     @Value("${spring.cloud.aws.cloudfront.domain:}")
     private String cloudFrontDomain;
 
-    public String uploadToNoticeBucket(MultipartFile file) {
-        return uploadToNoticeBucket(file, "notices");
-    }
-
-    public String uploadToNoticeBucket(MultipartFile file, String prefix) {
+    public StoredFile uploadToPublicBucketWithMetadata(MultipartFile file, String prefix) {
         String storeFileName = createStoreFileName(file, prefix);
 
         try (InputStream inputStream = file.getInputStream()) {
@@ -60,9 +55,9 @@ public class S3FileService {
             }
 
             s3Template.upload(bucketName, storeFileName, uploadStream);
-            String fileUrl = getNoticeBucketFileUrl(storeFileName);
+            String fileUrl = getPublicBucketFileUrl(storeFileName);
             log.info("S3 Upload Success: {}", fileUrl);
-            return fileUrl;
+            return new StoredFile(storeFileName, fileUrl);
         } catch (IOException e) {
             throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
                     .addContext(ErrorContextKeys.OPERATION, "s3Upload");
@@ -95,7 +90,7 @@ public class S3FileService {
         }
     }
 
-    private String getNoticeBucketFileUrl(String storeFileName) {
+    private String getPublicBucketFileUrl(String storeFileName) {
         if (StringUtils.hasText(cloudFrontDomain)) {
             return cloudFrontDomain + "/" + storeFileName;
         }
@@ -141,14 +136,18 @@ public class S3FileService {
             return "jpg";
         }
 
-        if (contentType.contains("png"))
+        if (contentType.contains("png")) {
             return "png";
-        if (contentType.contains("gif"))
+        }
+        if (contentType.contains("gif")) {
             return "gif";
-        if (contentType.contains("webp"))
+        }
+        if (contentType.contains("webp")) {
             return "webp";
-        if (contentType.contains("jpeg"))
+        }
+        if (contentType.contains("jpeg")) {
             return "jpg";
+        }
 
         return "jpg";
     }
