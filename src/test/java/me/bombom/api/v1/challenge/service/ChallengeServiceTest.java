@@ -440,6 +440,74 @@ class ChallengeServiceTest {
     }
 
     @Test
+    void 존재하지_않는_챌린지를_조회하면_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> challengeService.getChallenge(999L))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_챌린지에_팀을_생성하면_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> challengeService.createChallengeTeams(999L, new CreateChallengeTeamsRequest(3)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_참여자의_팀을_수정하면_예외가_발생한다() {
+        // given
+        Challenge challenge = challengeRepository.save(ChallengeFixture.createChallenge());
+        ChallengeTeam team = challengeTeamRepository.save(ChallengeFixture.createTeam(challenge.getId()));
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.updateParticipantTeam(
+                challenge.getId(), 999L, new UpdateParticipantTeamRequest(team.getId())))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 다른_챌린지의_팀으로_참여자_팀을_수정하면_예외가_발생한다() {
+        // given
+        Challenge challenge1 = challengeRepository.save(ChallengeFixture.createChallenge());
+        Challenge challenge2 = challengeRepository.save(ChallengeFixture.createChallenge());
+        ChallengeTeam teamOfChallenge2 = challengeTeamRepository.save(ChallengeFixture.createTeam(challenge2.getId()));
+
+        Member member = memberRepository.save(MemberFixture.createMember("user_cross"));
+        ChallengeParticipant participant = challengeParticipantRepository
+                .save(ChallengeFixture.createParticipant(challenge1.getId(), member.getId()));
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.updateParticipantTeam(
+                challenge1.getId(), participant.getId(), new UpdateParticipantTeamRequest(teamOfChallenge2.getId())))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.INVALID_INPUT_VALUE.getMessage());
+    }
+
+    @Test
+    void 다른_챌린지의_팀을_삭제하면_예외가_발생한다() {
+        // given
+        Challenge challenge1 = challengeRepository.save(ChallengeFixture.createChallenge());
+        Challenge challenge2 = challengeRepository.save(ChallengeFixture.createChallenge());
+        ChallengeTeam teamOfChallenge2 = challengeTeamRepository.save(ChallengeFixture.createTeam(challenge2.getId()));
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.deleteChallengeTeam(challenge1.getId(), teamOfChallenge2.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_챌린지에_쉴드를_지급하면_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> challengeService.grantShield(999L, new GrantShieldRequest(2)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
     void 챌린지를_생성한다() {
         // given
         LocalDate startDate = LocalDate.of(2025, 1, 6); // Monday
