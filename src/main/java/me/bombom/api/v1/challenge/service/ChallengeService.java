@@ -244,7 +244,9 @@ public class ChallengeService {
     public void updateChallenge(Long challengeId, UpdateChallengeRequest request) {
         Challenge challenge = challengeRepository.findById(challengeId)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
-                        .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge"));
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge")
+                        .addContext(ErrorContextKeys.OPERATION, "updateChallenge")
+                        .addContext("challengeId", challengeId));
         challenge.update(request.name(), request.generation(), request.startDate(), request.endDate());
     }
 
@@ -252,10 +254,14 @@ public class ChallengeService {
     public void deleteChallenge(Long challengeId) {
         if (!challengeRepository.existsById(challengeId)) {
             throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
-                    .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge");
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge")
+                    .addContext(ErrorContextKeys.OPERATION, "deleteChallenge")
+                    .addContext("challengeId", challengeId);
         }
         if (challengeParticipantRepository.existsByChallengeId(challengeId)) {
-            throw new CIllegalArgumentException(ErrorDetail.CHALLENGE_HAS_PARTICIPANTS);
+            throw new CIllegalArgumentException(ErrorDetail.CHALLENGE_HAS_PARTICIPANTS)
+                    .addContext(ErrorContextKeys.OPERATION, "deleteChallenge")
+                    .addContext("challengeId", challengeId);
         }
         challengeRepository.deleteById(challengeId);
     }
