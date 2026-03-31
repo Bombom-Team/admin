@@ -22,7 +22,8 @@ public enum ErrorDetail {
     DUPLICATED_DATA(HttpStatus.BAD_REQUEST, "M009", "이미 존재하는 데이터입니다."),
     BLANK_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "M010", "공백은 허용하지 않습니다"),
     CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "M011", "해당 카테고리에 속한 뉴스레터가 있어 삭제할 수 없습니다."),
-    RESOURCE_CONFLICT(HttpStatus.CONFLICT, "M012", "요청을 처리할 수 없는 상태입니다."),
+    CHALLENGE_HAS_PARTICIPANTS(HttpStatus.BAD_REQUEST, "M012", "참여자가 있는 챌린지는 삭제할 수 없습니다."),
+    RESOURCE_CONFLICT(HttpStatus.CONFLICT, "M013", "요청을 처리할 수 없는 상태입니다."),
 
     /*
     * J : 인증

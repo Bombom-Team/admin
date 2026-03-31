@@ -24,7 +24,9 @@ import me.bombom.api.v1.challenge.dto.GetChallengeTeamResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengesRequest;
 import me.bombom.api.v1.challenge.dto.GetDailyGuideResponse;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
+import me.bombom.api.v1.challenge.dto.request.CreateChallengeRequest;
 import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
+import me.bombom.api.v1.challenge.dto.request.UpdateChallengeRequest;
 import me.bombom.api.v1.challenge.repository.ChallengeDailyGuideRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
@@ -32,6 +34,7 @@ import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
+import me.bombom.api.v1.newsletter.repository.NewsletterGroupRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,6 +50,7 @@ public class ChallengeService {
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeTeamRepository challengeTeamRepository;
     private final ChallengeDailyGuideRepository dailyGuideRepository;
+    private final NewsletterGroupRepository newsletterGroupRepository;
     private final Clock clock;
 
     public Page<GetChallengeResponse> getChallenges(GetChallengesRequest request, Pageable pageable) {
@@ -225,6 +229,56 @@ public class ChallengeService {
             ChallengeTeam team = teams.get(i % teamCount);
             participant.assignTeam(team.getId());
         }
+    }
+
+    @Transactional
+    public void createChallenge(CreateChallengeRequest request) {
+        validateNewsletterGroupExists(request.newsletterGroupId());
+        Challenge challenge = Challenge.builder()
+                .name(request.name())
+                .generation(request.generation())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .newsletterGroupId(request.newsletterGroupId())
+                .build();
+        challengeRepository.save(challenge);
+    }
+
+    @Transactional
+    public void updateChallenge(Long challengeId, UpdateChallengeRequest request) {
+        if (request.newsletterGroupId() != null) {
+            validateNewsletterGroupExists(request.newsletterGroupId());
+        }
+        Challenge challenge = challengeRepository.findById(challengeId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge")
+                        .addContext(ErrorContextKeys.OPERATION, "updateChallenge")
+                        .addContext("challengeId", challengeId));
+        challenge.update(request.name(), request.generation(), request.startDate(), request.endDate(), request.newsletterGroupId());
+    }
+
+    private void validateNewsletterGroupExists(Long newsletterGroupId) {
+        if (!newsletterGroupRepository.existsById(newsletterGroupId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "newsletterGroup")
+                    .addContext("newsletterGroupId", newsletterGroupId);
+        }
+    }
+
+    @Transactional
+    public void deleteChallenge(Long challengeId) {
+        if (!challengeRepository.existsById(challengeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "challenge")
+                    .addContext(ErrorContextKeys.OPERATION, "deleteChallenge")
+                    .addContext("challengeId", challengeId);
+        }
+        if (challengeParticipantRepository.existsByChallengeId(challengeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.CHALLENGE_HAS_PARTICIPANTS)
+                    .addContext(ErrorContextKeys.OPERATION, "deleteChallenge")
+                    .addContext("challengeId", challengeId);
+        }
+        challengeRepository.deleteById(challengeId);
     }
 
     @Transactional

@@ -10,7 +10,8 @@ public record GetChallengeDetailResponse(
         String name,
         int generation,
         LocalDate startDate,
-        LocalDate endDate
+        LocalDate endDate,
+        int totalDays
 ) {
 
     public static GetChallengeDetailResponse from(Challenge challenge) {
@@ -20,6 +21,7 @@ public record GetChallengeDetailResponse(
                 .generation(challenge.getGeneration())
                 .startDate(challenge.getStartDate())
                 .endDate(challenge.getEndDate())
+                .totalDays(challenge.getTotalDays())
                 .build();
     }
 }

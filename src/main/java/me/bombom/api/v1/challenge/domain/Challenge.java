@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -28,30 +29,38 @@ public class Challenge extends BaseEntity {
     @Column(nullable = false)
     private int generation;
 
-    @Column(nullable = false)
     private LocalDate startDate;
 
-    @Column(nullable = false)
     private LocalDate endDate;
 
     @Column(nullable = false)
     private int totalDays;
+
+    @Column(nullable = false)
+    private boolean isBadgeIssued = false;
+
+    @Column(nullable = false)
+    private Long newsletterGroupId;
 
     @Builder
     public Challenge(
             Long id,
             @NonNull String name,
             int generation,
-            @NonNull LocalDate startDate,
-            @NonNull LocalDate endDate,
-            int totalDays
+            LocalDate startDate,
+            LocalDate endDate,
+            int totalDays,
+            boolean isBadgeIssued,
+            @NonNull Long newsletterGroupId
     ) {
         this.id = id;
         this.name = name;
         this.generation = generation;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.totalDays = totalDays;
+        this.totalDays = (startDate != null && endDate != null) ? countWeekdays(startDate, endDate) : 0;
+        this.isBadgeIssued = isBadgeIssued;
+        this.newsletterGroupId = newsletterGroupId;
     }
 
     public ChallengeStatus getStatus(LocalDate now) {
@@ -64,11 +73,35 @@ public class Challenge extends BaseEntity {
         return ChallengeStatus.ONGOING;
     }
 
-    public boolean isEnded(LocalDate now) {
-        return now.isAfter(this.endDate);
+    public void update(String name, Integer generation, LocalDate startDate, LocalDate endDate, Long newsletterGroupId) {
+        if (name != null) {
+            this.name = name;
+        }
+        if (generation != null) {
+            this.generation = generation;
+        }
+        if (startDate != null || endDate != null) {
+            LocalDate effectiveStart = startDate != null ? startDate : this.startDate;
+            LocalDate effectiveEnd = endDate != null ? endDate : this.endDate;
+            this.startDate = effectiveStart;
+            this.endDate = effectiveEnd;
+            this.totalDays = (effectiveStart != null && effectiveEnd != null) ? countWeekdays(effectiveStart, effectiveEnd) : 0;
+        }
+        if (newsletterGroupId != null) {
+            this.newsletterGroupId = newsletterGroupId;
+        }
     }
 
-    public boolean hasStarted(LocalDate now) {
-        return !now.isBefore(this.startDate);
+    private static int countWeekdays(LocalDate startDate, LocalDate endDate) {
+        int count = 0;
+        LocalDate date = startDate;
+        while (!date.isAfter(endDate)) {
+            DayOfWeek dayOfWeek = date.getDayOfWeek();
+            if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+                count++;
+            }
+            date = date.plusDays(1);
+        }
+        return count;
     }
 }

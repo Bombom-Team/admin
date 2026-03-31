@@ -1,6 +1,7 @@
 package me.bombom.api.v1.challenge.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import java.time.Clock;
@@ -15,16 +16,22 @@ import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantsRequest;
 import me.bombom.api.v1.challenge.dto.UpdateParticipantTeamRequest;
+import me.bombom.api.v1.challenge.dto.request.CreateChallengeRequest;
 import me.bombom.api.v1.challenge.dto.request.GrantShieldRequest;
+import me.bombom.api.v1.challenge.dto.request.UpdateChallengeRequest;
 import me.bombom.api.v1.challenge.fixture.ChallengeFixture;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.common.config.TimeConfig;
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
+import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.member.domain.Member;
 import me.bombom.api.v1.member.fixture.MemberFixture;
 import me.bombom.api.v1.member.repository.MemberRepository;
+import me.bombom.api.v1.newsletter.domain.NewsletterGroup;
+import me.bombom.api.v1.newsletter.repository.NewsletterGroupRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -58,6 +65,9 @@ class ChallengeServiceTest {
 
     @Autowired
     private MemberRepository memberRepository;
+
+    @Autowired
+    private NewsletterGroupRepository newsletterGroupRepository;
 
     @Test
     void 참여자가_15명일_때_1개의_팀이_생성된다() {
@@ -432,6 +442,266 @@ class ChallengeServiceTest {
         // then
         List<ChallengeParticipant> tomorrowParticipants = challengeParticipantRepository.findAllByChallengeId(tomorrowChallenge.getId());
         assertThat(tomorrowParticipants).allMatch(p -> p.getChallengeTeamId() == null);
+    }
+
+    @Test
+    void 존재하지_않는_챌린지를_조회하면_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> challengeService.getChallenge(999L))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_챌린지에_팀을_생성하면_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> challengeService.createChallengeTeams(999L, new CreateChallengeTeamsRequest(3)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_참여자의_팀을_수정하면_예외가_발생한다() {
+        // given
+        Challenge challenge = challengeRepository.save(ChallengeFixture.createChallenge());
+        ChallengeTeam team = challengeTeamRepository.save(ChallengeFixture.createTeam(challenge.getId()));
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.updateParticipantTeam(
+                challenge.getId(), 999L, new UpdateParticipantTeamRequest(team.getId())))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 다른_챌린지의_팀으로_참여자_팀을_수정하면_예외가_발생한다() {
+        // given
+        Challenge challenge1 = challengeRepository.save(ChallengeFixture.createChallenge());
+        Challenge challenge2 = challengeRepository.save(ChallengeFixture.createChallenge());
+        ChallengeTeam teamOfChallenge2 = challengeTeamRepository.save(ChallengeFixture.createTeam(challenge2.getId()));
+
+        Member member = memberRepository.save(MemberFixture.createMember("user_cross"));
+        ChallengeParticipant participant = challengeParticipantRepository
+                .save(ChallengeFixture.createParticipant(challenge1.getId(), member.getId()));
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.updateParticipantTeam(
+                challenge1.getId(), participant.getId(), new UpdateParticipantTeamRequest(teamOfChallenge2.getId())))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.INVALID_INPUT_VALUE.getMessage());
+    }
+
+    @Test
+    void 다른_챌린지의_팀을_삭제하면_예외가_발생한다() {
+        // given
+        Challenge challenge1 = challengeRepository.save(ChallengeFixture.createChallenge());
+        Challenge challenge2 = challengeRepository.save(ChallengeFixture.createChallenge());
+        ChallengeTeam teamOfChallenge2 = challengeTeamRepository.save(ChallengeFixture.createTeam(challenge2.getId()));
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.deleteChallengeTeam(challenge1.getId(), teamOfChallenge2.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_챌린지에_쉴드를_지급하면_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> challengeService.grantShield(999L, new GrantShieldRequest(2)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 챌린지를_생성한다() {
+        // given
+        Long groupId = saveNewsletterGroup();
+        LocalDate startDate = LocalDate.of(2025, 1, 6); // Monday
+        LocalDate endDate = LocalDate.of(2025, 1, 10); // Friday
+        CreateChallengeRequest request = new CreateChallengeRequest("테스트 챌린지", 1, startDate, endDate, groupId);
+
+        // when
+        challengeService.createChallenge(request);
+
+        // then
+        List<Challenge> challenges = challengeRepository.findAll();
+        assertThat(challenges).hasSize(1);
+        assertSoftly(softly -> {
+            softly.assertThat(challenges.get(0).getName()).isEqualTo("테스트 챌린지");
+            softly.assertThat(challenges.get(0).getGeneration()).isEqualTo(1);
+            softly.assertThat(challenges.get(0).getStartDate()).isEqualTo(startDate);
+            softly.assertThat(challenges.get(0).getEndDate()).isEqualTo(endDate);
+            softly.assertThat(challenges.get(0).getNewsletterGroupId()).isEqualTo(groupId);
+        });
+    }
+
+    @Test
+    void 챌린지_생성_시_주말을_제외한_평일_수로_totalDays가_계산된다() {
+        // given: 2025-01-06(월) ~ 2025-01-12(일) → 평일 5일
+        Long groupId = saveNewsletterGroup();
+        CreateChallengeRequest request = new CreateChallengeRequest(
+                "테스트 챌린지", 1, LocalDate.of(2025, 1, 6), LocalDate.of(2025, 1, 12), groupId);
+
+        // when
+        challengeService.createChallenge(request);
+
+        // then
+        assertThat(challengeRepository.findAll().get(0).getTotalDays()).isEqualTo(5);
+    }
+
+    @Test
+    void 챌린지를_수정한다() {
+        // given
+        Challenge challenge = challengeRepository.save(ChallengeFixture.createChallenge());
+        Long newGroupId = saveNewsletterGroup();
+        LocalDate newStart = LocalDate.of(2025, 1, 6); // Monday
+        LocalDate newEnd = LocalDate.of(2025, 1, 10); // Friday
+        UpdateChallengeRequest request = new UpdateChallengeRequest("수정된 챌린지", 2, newStart, newEnd, newGroupId);
+
+        // when
+        challengeService.updateChallenge(challenge.getId(), request);
+
+        // then
+        Challenge updated = challengeRepository.findById(challenge.getId()).get();
+        assertSoftly(softly -> {
+            softly.assertThat(updated.getName()).isEqualTo("수정된 챌린지");
+            softly.assertThat(updated.getGeneration()).isEqualTo(2);
+            softly.assertThat(updated.getStartDate()).isEqualTo(newStart);
+            softly.assertThat(updated.getEndDate()).isEqualTo(newEnd);
+            softly.assertThat(updated.getTotalDays()).isEqualTo(5);
+            softly.assertThat(updated.getNewsletterGroupId()).isEqualTo(newGroupId);
+        });
+    }
+
+    @Test
+    void 챌린지_수정_시_null_필드는_기존_값이_유지된다() {
+        // given
+        Challenge challenge = challengeRepository.save(ChallengeFixture.createChallenge());
+        String originalName = challenge.getName();
+        int originalGeneration = challenge.getGeneration();
+        UpdateChallengeRequest request = new UpdateChallengeRequest(null, null, null, null, null);
+
+        // when
+        challengeService.updateChallenge(challenge.getId(), request);
+
+        // then
+        Challenge updated = challengeRepository.findById(challenge.getId()).get();
+        assertSoftly(softly -> {
+            softly.assertThat(updated.getName()).isEqualTo(originalName);
+            softly.assertThat(updated.getGeneration()).isEqualTo(originalGeneration);
+        });
+    }
+
+    @Test
+    void 챌린지_수정_시_날짜가_변경되면_totalDays가_재계산된다() {
+        // given: 2025-01-06(월) ~ 2025-01-10(금) → 평일 5일
+        Challenge challenge = challengeRepository.save(ChallengeFixture.createChallenge());
+        UpdateChallengeRequest request = new UpdateChallengeRequest(
+                null, null, LocalDate.of(2025, 1, 6), LocalDate.of(2025, 1, 10), null);
+
+        // when
+        challengeService.updateChallenge(challenge.getId(), request);
+
+        // then
+        assertThat(challengeRepository.findById(challenge.getId()).get().getTotalDays()).isEqualTo(5);
+    }
+
+    @Test
+    void 챌린지_생성_시_startDate가_null이면_totalDays가_0이다() {
+        // given
+        Long groupId = saveNewsletterGroup();
+        CreateChallengeRequest request = new CreateChallengeRequest("테스트 챌린지", 1, null, null, groupId);
+
+        // when
+        challengeService.createChallenge(request);
+
+        // then
+        assertThat(challengeRepository.findAll().get(0).getTotalDays()).isEqualTo(0);
+    }
+
+    @Test
+    void 챌린지_수정_시_기존_startDate가_null이면_totalDays가_0이다() {
+        // given: startDate가 null인 챌린지 생성
+        Long groupId = saveNewsletterGroup();
+        challengeService.createChallenge(new CreateChallengeRequest("테스트 챌린지", 1, null, null, groupId));
+        Challenge challenge = challengeRepository.findAll().get(0);
+        UpdateChallengeRequest request = new UpdateChallengeRequest(
+                null, null, null, LocalDate.of(2025, 1, 10), null);
+
+        // when
+        challengeService.updateChallenge(challenge.getId(), request);
+
+        // then
+        assertThat(challengeRepository.findById(challenge.getId()).get().getTotalDays()).isEqualTo(0);
+    }
+
+    @Test
+    void 존재하지_않는_newsletterGroupId로_챌린지_생성_시_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> challengeService.createChallenge(
+                new CreateChallengeRequest("테스트 챌린지", 1, null, null, 999L)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_newsletterGroupId로_챌린지_수정_시_예외가_발생한다() {
+        // given
+        Challenge challenge = challengeRepository.save(ChallengeFixture.createChallenge());
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.updateChallenge(challenge.getId(),
+                new UpdateChallengeRequest(null, null, null, null, 999L)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 존재하지_않는_챌린지_수정_시_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> challengeService.updateChallenge(999L,
+                new UpdateChallengeRequest(null, null, null, null, null)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 챌린지를_삭제한다() {
+        // given
+        Challenge challenge = challengeRepository.save(ChallengeFixture.createChallenge());
+
+        // when
+        challengeService.deleteChallenge(challenge.getId());
+
+        // then
+        assertThat(challengeRepository.existsById(challenge.getId())).isFalse();
+    }
+
+    @Test
+    void 존재하지_않는_챌린지_삭제_시_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> challengeService.deleteChallenge(999L))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 참여자가_있는_챌린지는_삭제할_수_없다() {
+        // given
+        Challenge challenge = challengeRepository.save(ChallengeFixture.createChallenge());
+        Member member = memberRepository.save(MemberFixture.createMember("user_delete"));
+        challengeParticipantRepository.save(ChallengeFixture.createParticipant(challenge.getId(), member.getId()));
+
+        // when & then
+        assertThatThrownBy(() -> challengeService.deleteChallenge(challenge.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.CHALLENGE_HAS_PARTICIPANTS.getMessage());
+    }
+
+    private Long saveNewsletterGroup() {
+        return newsletterGroupRepository.save(
+                NewsletterGroup.builder().name("테스트 그룹").build()
+        ).getId();
     }
 
     private void createParticipants(Long challengeId, int count) {
