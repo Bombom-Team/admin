@@ -13,6 +13,7 @@ import me.bombom.api.v1.blog.domain.BlogPost;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
 import me.bombom.api.v1.blog.domain.BlogPostTag;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
+import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.repository.BlogCategoryRepository;
@@ -109,7 +110,8 @@ class BlogDraftServiceTest {
     void 초안_저장_시_referencedImageIds에_포함된_이미지가_ATTACHED로_전환() {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
-        BlogImageAsset uploadedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.UPLOADED));
+        BlogImageAsset uploadedImage = blogImageAssetRepository.save(
+                createImage(blogPost.getId(), BlogImageAssetStatus.UPLOADED));
 
         UpdateBlogDraftRequest request = new UpdateBlogDraftRequest(
                 null,
@@ -135,7 +137,8 @@ class BlogDraftServiceTest {
     void 기존_ATTACHED_이미지가_요청에서_빠지면_DELETE_PENDING으로_전환() {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
-        BlogImageAsset attachedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
+        BlogImageAsset attachedImage = blogImageAssetRepository.save(
+                createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
 
         UpdateBlogDraftRequest request = new UpdateBlogDraftRequest(
                 null,
@@ -161,7 +164,8 @@ class BlogDraftServiceTest {
     void UPLOADED_이미지가_요청에서_빠지면_그대로_UPLOADED_유지() {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
-        BlogImageAsset uploadedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.UPLOADED));
+        BlogImageAsset uploadedImage = blogImageAssetRepository.save(
+                createImage(blogPost.getId(), BlogImageAssetStatus.UPLOADED));
 
         UpdateBlogDraftRequest request = new UpdateBlogDraftRequest(
                 null,
@@ -188,7 +192,8 @@ class BlogDraftServiceTest {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
         BlogPost anotherBlogPost = blogPostRepository.save(createDraftPost(1L));
-        BlogImageAsset anotherPostImage = blogImageAssetRepository.save(createImage(anotherBlogPost.getId(), BlogImageAssetStatus.UPLOADED));
+        BlogImageAsset anotherPostImage = blogImageAssetRepository.save(
+                createImage(anotherBlogPost.getId(), BlogImageAssetStatus.UPLOADED));
 
         UpdateBlogDraftRequest request = new UpdateBlogDraftRequest(
                 null,
@@ -259,15 +264,95 @@ class BlogDraftServiceTest {
         });
     }
 
+    @Test
+    void 내_DRAFT_글만_조회된다() {
+        // given
+        BlogPost myDraftPost = blogPostRepository.save(createDraftPost(1L));
+        blogPostRepository.save(createDraftPost(2L));
+
+        // when
+        List<BlogDraftListItemResponse> responses = blogDraftService.getDrafts(1L);
+
+        // then
+        assertThat(responses).extracting(BlogDraftListItemResponse::postId)
+                .containsExactly(myDraftPost.getId());
+        assertThat(responses.getFirst().updatedAt()).isNotNull();
+    }
+
+    @Test
+    void PUBLISHED_DELETED_글은_제외된다() {
+        // given
+        BlogPost draftPost = blogPostRepository.save(createDraftPost(1L));
+        blogPostRepository.save(createBlogPost(1L, BlogPostStatus.PUBLISHED, "발행글"));
+        blogPostRepository.save(createBlogPost(1L, BlogPostStatus.DELETED, "삭제글"));
+
+        // when
+        List<BlogDraftListItemResponse> responses = blogDraftService.getDrafts(1L);
+
+        // then
+        assertThat(responses).extracting(BlogDraftListItemResponse::postId)
+                .containsExactly(draftPost.getId());
+    }
+
+    @Test
+    void updated_at_DESC_순으로_내려온다() {
+        // given
+        BlogPost olderDraftPost = blogPostRepository.save(createDraftPost(1L, "이전 제목"));
+        BlogPost newerDraftPost = blogPostRepository.save(createDraftPost(1L, "최신 제목"));
+
+        // when
+        List<BlogDraftListItemResponse> responses = blogDraftService.getDrafts(1L);
+
+        // then
+        assertThat(responses).extracting(BlogDraftListItemResponse::postId)
+                .containsExactly(newerDraftPost.getId(), olderDraftPost.getId());
+    }
+
+    @Test
+    void title이_null인_초안도_조회된다() {
+        // given
+        BlogPost draftPost = blogPostRepository.save(createDraftPost(1L));
+
+        // when
+        List<BlogDraftListItemResponse> responses = blogDraftService.getDrafts(1L);
+
+        // then
+        assertThat(responses).singleElement()
+                .satisfies(response -> {
+                    assertThat(response.postId()).isEqualTo(draftPost.getId());
+                    assertThat(response.title()).isNull();
+                    assertThat(response.updatedAt()).isNotNull();
+                });
+    }
+
     private BlogPost createDraftPost(Long memberId) {
+        return createBlogPost(memberId, BlogPostStatus.DRAFT, null);
+    }
+
+    private BlogPost createDraftPost(
+            Long memberId,
+            String title
+    ) {
+        return createBlogPost(memberId, BlogPostStatus.DRAFT, title);
+    }
+
+    private BlogPost createBlogPost(
+            Long memberId,
+            BlogPostStatus status,
+            String title
+    ) {
         return BlogPost.builder()
                 .memberId(memberId)
-                .status(BlogPostStatus.DRAFT)
+                .title(title)
+                .status(status)
                 .visibility(BlogVisibility.PRIVATE)
                 .build();
     }
 
-    private BlogImageAsset createImage(Long postId, BlogImageAssetStatus status) {
+    private BlogImageAsset createImage(
+            Long postId,
+            BlogImageAssetStatus status
+    ) {
         return BlogImageAsset.builder()
                 .blogPostId(postId)
                 .objectKey("blog/drafts/" + postId + "/" + status + ".png")

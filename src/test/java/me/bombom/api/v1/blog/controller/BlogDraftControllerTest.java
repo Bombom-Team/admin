@@ -3,13 +3,16 @@ package me.bombom.api.v1.blog.controller;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
@@ -43,6 +46,23 @@ class BlogDraftControllerTest extends ControllerTestSupport {
 
     @MockitoBean
     private BlogImageService blogImageService;
+
+    @Test
+    void 초안_목록_조회_API_성공() throws Exception {
+        // given
+        given(blogDraftService.getDrafts(1L)).willReturn(List.of(
+                new BlogDraftListItemResponse(123L, "제목1", LocalDateTime.of(2026, 3, 19, 21, 0, 0)),
+                new BlogDraftListItemResponse(122L, null, LocalDateTime.of(2026, 3, 18, 20, 0, 0))
+        ));
+
+        // when // then
+        mockMvc.perform(get("/admin/api/v1/blog/drafts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].postId").value(123L))
+                .andExpect(jsonPath("$[0].title").value("제목1"))
+                .andExpect(jsonPath("$[0].updatedAt").value("2026-03-19T21:00:00"))
+                .andExpect(jsonPath("$[1].postId").value(122L));
+    }
 
     @Test
     void 초안_생성_API_성공() throws Exception {
