@@ -1,7 +1,9 @@
 package me.bombom.api.v1.blog.controller;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
@@ -11,6 +13,7 @@ import me.bombom.api.v1.common.resolver.LoginMember;
 import me.bombom.api.v1.member.domain.Member;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -52,5 +55,10 @@ public class BlogDraftController {
             @Valid @RequestBody UpdateBlogDraftRequest request
     ) {
         blogDraftService.updateDraft(member.getId(), postId, request);
+    }
+
+    @GetMapping
+    public List<BlogDraftListItemResponse> getDrafts(@LoginMember Member member) {
+        return blogDraftService.getDrafts(member.getId());
     }
 }

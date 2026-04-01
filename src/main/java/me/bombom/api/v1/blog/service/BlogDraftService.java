@@ -13,6 +13,7 @@ import me.bombom.api.v1.blog.domain.BlogPost;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
 import me.bombom.api.v1.blog.domain.BlogPostTag;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
+import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.repository.BlogCategoryRepository;
@@ -68,6 +69,13 @@ public class BlogDraftService {
 
         replaceHashTags(postId, request.normalizedHashTags());
         updateReferencedImages(postId, request.distinctReferencedImageIds());
+    }
+
+    public List<BlogDraftListItemResponse> getDrafts(Long memberId) {
+        return blogPostRepository.findAllDraftListItemByMemberIdAndStatus(
+                memberId,
+                BlogPostStatus.DRAFT
+        );
     }
 
     private BlogPost findBlogPost(Long postId) {
