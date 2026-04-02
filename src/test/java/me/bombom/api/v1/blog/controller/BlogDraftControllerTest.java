@@ -12,10 +12,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDateTime;
 import java.util.List;
+import me.bombom.api.v1.blog.dto.BlogDraftCategoryResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftHashtagResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftReferenceImageResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftThumbnailImageResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
+import me.bombom.api.v1.blog.domain.BlogPostStatus;
+import me.bombom.api.v1.blog.domain.BlogVisibility;
 import me.bombom.api.v1.blog.service.BlogDraftService;
 import me.bombom.api.v1.blog.service.BlogImageService;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
@@ -62,6 +69,36 @@ class BlogDraftControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$[0].title").value("제목1"))
                 .andExpect(jsonPath("$[0].updatedAt").value("2026-03-19T21:00:00"))
                 .andExpect(jsonPath("$[1].postId").value(122L));
+    }
+
+    @Test
+    void 초안_상세_조회_API_성공() throws Exception {
+        // given
+        given(blogDraftService.getDraft(1L, 123L)).willReturn(new BlogDraftDetailResponse(
+                123L,
+                "제목",
+                "설명",
+                "<p>본문</p>",
+                BlogPostStatus.DRAFT,
+                BlogVisibility.PRIVATE,
+                new BlogDraftThumbnailImageResponse(10L, "https://cdn.bombom.me/blog/10.png"),
+                new BlogDraftCategoryResponse(1L, "Backend"),
+                List.of(new BlogDraftHashtagResponse(1L, "spring")),
+                List.of(new BlogDraftReferenceImageResponse(10L, "https://cdn.bombom.me/blog/10.png")),
+                LocalDateTime.of(2026, 3, 19, 21, 0, 0)
+        ));
+
+        // when // then
+        mockMvc.perform(get("/admin/api/v1/blog/drafts/{postId}", 123L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.postId").value(123L))
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.visibility").value("PRIVATE"))
+                .andExpect(jsonPath("$.thumbnailImage.imageId").value(10L))
+                .andExpect(jsonPath("$.category.id").value(1L))
+                .andExpect(jsonPath("$.hashtags[0].name").value("spring"))
+                .andExpect(jsonPath("$.referenceImages[0].imageId").value(10L))
+                .andExpect(jsonPath("$.updatedAt").value("2026-03-19T21:00:00"));
     }
 
     @Test

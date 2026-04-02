@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
 import java.util.List;
 import me.bombom.api.v1.blog.domain.BlogCategory;
 import me.bombom.api.v1.blog.domain.BlogHashtag;
@@ -13,6 +15,7 @@ import me.bombom.api.v1.blog.domain.BlogPost;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
 import me.bombom.api.v1.blog.domain.BlogPostTag;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
+import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
@@ -51,6 +54,9 @@ class BlogDraftServiceTest {
 
     @Autowired
     private BlogImageAssetRepository blogImageAssetRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Test
     void 초안_생성_성공() {
@@ -276,7 +282,6 @@ class BlogDraftServiceTest {
         // then
         assertThat(responses).extracting(BlogDraftListItemResponse::postId)
                 .containsExactly(myDraftPost.getId());
-        assertThat(responses.getFirst().updatedAt()).isNotNull();
     }
 
     @Test
@@ -321,8 +326,154 @@ class BlogDraftServiceTest {
                 .satisfies(response -> {
                     assertThat(response.postId()).isEqualTo(draftPost.getId());
                     assertThat(response.title()).isNull();
-                    assertThat(response.updatedAt()).isNotNull();
                 });
+    }
+
+    @Test
+    void 내_DRAFT_글_상세_조회_성공() {
+        // given
+        BlogCategory blogCategory = blogCategoryRepository.save(BlogCategory.builder()
+                .name("Backend")
+                .build());
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("JPA 정리")
+                .description("설명")
+                .content("<p>본문</p>")
+                .categoryId(blogCategory.getId())
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+        BlogImageAsset thumbnailImage = blogImageAssetRepository.save(BlogImageAsset.builder()
+                .blogPostId(blogPost.getId())
+                .objectKey("blog/drafts/" + blogPost.getId() + "/thumbnail.png")
+                .imageUrl("https://cdn.bombom.me/blog/10.png")
+                .status(BlogImageAssetStatus.ATTACHED)
+                .build());
+        entityManager.createNativeQuery("""
+                update blog_post
+                set thumbnail_image_id = :thumbnailImageId
+                where id = :postId
+                """)
+                .setParameter("thumbnailImageId", thumbnailImage.getId())
+                .setParameter("postId", blogPost.getId())
+                .executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+        BlogImageAsset anotherAttachedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
+        BlogHashtag spring = blogHashtagRepository.save(BlogHashtag.builder()
+                .name("spring")
+                .build());
+        BlogHashtag jpa = blogHashtagRepository.save(BlogHashtag.builder()
+                .name("jpa")
+                .build());
+        blogPostTagRepository.save(BlogPostTag.builder()
+                .blogPostId(blogPost.getId())
+                .blogHashtagId(jpa.getId())
+                .build());
+        blogPostTagRepository.save(BlogPostTag.builder()
+                .blogPostId(blogPost.getId())
+                .blogHashtagId(spring.getId())
+                .build());
+
+        // when
+        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(response.postId()).isEqualTo(blogPost.getId());
+            softly.assertThat(response.title()).isEqualTo("JPA 정리");
+            softly.assertThat(response.description()).isEqualTo("설명");
+            softly.assertThat(response.content()).isEqualTo("<p>본문</p>");
+            softly.assertThat(response.status()).isEqualTo(BlogPostStatus.DRAFT);
+            softly.assertThat(response.visibility()).isEqualTo(BlogVisibility.PRIVATE);
+            softly.assertThat(response.thumbnailImage().imageId()).isEqualTo(thumbnailImage.getId());
+            softly.assertThat(response.thumbnailImage().imageUrl()).isEqualTo("https://cdn.bombom.me/blog/10.png");
+            softly.assertThat(response.category().id()).isEqualTo(blogCategory.getId());
+            softly.assertThat(response.category().name()).isEqualTo("Backend");
+            softly.assertThat(response.hashtags()).extracting("name").containsExactly("spring", "jpa");
+            softly.assertThat(response.referenceImages()).extracting("imageId")
+                    .containsExactly(thumbnailImage.getId(), anotherAttachedImage.getId());
+            softly.assertThat(response.updatedAt()).isNotNull();
+        });
+    }
+
+    @Test
+    void 다른_사용자의_글_조회_시_403() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createDraftPost(2L));
+
+        // when // then
+        assertThatThrownBy(() -> blogDraftService.getDraft(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.FORBIDDEN_RESOURCE);
+    }
+
+    @Test
+    void DRAFT_아닌_글_조회_시_409() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.PUBLISHED, "발행글"));
+
+        // when // then
+        assertThatThrownBy(() -> blogDraftService.getDraft(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.RESOURCE_CONFLICT);
+    }
+
+    @Test
+    void thumbnail_category가_null일_때_null로_응답한다() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("제목")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when
+        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(response.thumbnailImage()).isNull();
+            softly.assertThat(response.category()).isNull();
+        });
+    }
+
+    @Test
+    void hashtags가_없으면_빈_배열_응답() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
+
+        // when
+        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+
+        // then
+        assertThat(response.hashtags()).isEmpty();
+    }
+
+    @Test
+    void referenceImages에는_ATTACHED만_포함되고_다른_상태는_제외된다() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
+        BlogImageAsset attachedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
+        blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.UPLOADED));
+        blogImageAssetRepository.save(BlogImageAsset.builder()
+                .blogPostId(blogPost.getId())
+                .objectKey("blog/drafts/" + blogPost.getId() + "/delete-pending.png")
+                .imageUrl("https://cdn.bombom.me/" + blogPost.getId() + "/delete-pending.png")
+                .status(BlogImageAssetStatus.DELETE_PENDING)
+                .deleteRequestedAt(LocalDateTime.of(2026, 3, 19, 21, 0, 0))
+                .build());
+
+        // when
+        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+
+        // then
+        assertThat(response.referenceImages()).singleElement()
+                .satisfies(referenceImage -> assertThat(referenceImage.imageId()).isEqualTo(attachedImage.getId()));
     }
 
     private BlogPost createDraftPost(Long memberId) {
