@@ -3,6 +3,7 @@ package me.bombom.api.v1.blog.controller;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
@@ -60,5 +61,13 @@ public class BlogDraftController {
     @GetMapping
     public List<BlogDraftListItemResponse> getDrafts(@LoginMember Member member) {
         return blogDraftService.getDrafts(member.getId());
+    }
+
+    @GetMapping("/{postId}")
+    public BlogDraftDetailResponse getDraft(
+            @LoginMember Member member,
+            @PathVariable Long postId
+    ) {
+        return blogDraftService.getDraft(member.getId(), postId);
     }
 }
