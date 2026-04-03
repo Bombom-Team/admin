@@ -100,6 +100,23 @@ public class BlogDraftService {
         );
     }
 
+    @Transactional
+    public void publishDraft(Long memberId, Long postId) {
+        String operation = "publishDraft";
+        BlogPost blogPost = findBlogPost(postId, operation);
+        validateOwner(blogPost, memberId, operation);
+        validateDraftStatus(blogPost, operation);
+        validatePublishableDraft(blogPost, operation);
+
+        LocalDateTime publishedAt = LocalDateTime.now(clock);
+        blogPost.publish(publishedAt);
+
+        List<BlogImageAsset> blogImageAssets = blogImageAssetRepository.findAllByBlogPostId(postId);
+        for (BlogImageAsset blogImageAsset : blogImageAssets) {
+            blogImageAsset.attach();
+        }
+    }
+
     private BlogPost findBlogPost(
             Long postId,
             String operation
@@ -200,6 +217,56 @@ public class BlogDraftService {
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "blogCategory")
                         .addContext("categoryId", categoryId));
+    }
+
+    private void validatePublishableDraft(
+            BlogPost blogPost,
+            String operation
+    ) {
+        validatePublishedTitle(blogPost.getTitle());
+        validatePublishedContent(blogPost.getContent());
+        validateThumbnailImage(blogPost, operation);
+    }
+
+    private void validatePublishedTitle(String title) {
+        if (title != null && !title.isBlank()) {
+            return;
+        }
+
+        throw invalidInput("title");
+    }
+
+    private void validatePublishedContent(String content) {
+        if (content != null && !content.isBlank()) {
+            return;
+        }
+
+        throw invalidInput("content");
+    }
+
+    private void validateThumbnailImage(
+            BlogPost blogPost,
+            String operation
+    ) {
+        Long thumbnailImageId = blogPost.getThumbnailImageId();
+        if (thumbnailImageId == null) {
+            return;
+        }
+
+        BlogImageAsset thumbnailImage = blogImageAssetRepository.findById(thumbnailImageId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "blogImageAsset")
+                        .addContext(ErrorContextKeys.OPERATION, operation));
+
+        boolean isForeignThumbnailImage = thumbnailImage.getBlogPostId().equals(blogPost.getId()) == false;
+        if (isForeignThumbnailImage) {
+            throw invalidInput("thumbnailImageId");
+        }
+
+        boolean isDeletePendingThumbnailImage = thumbnailImage.getStatus() == BlogImageAssetStatus.DELETE_PENDING;
+        if (isDeletePendingThumbnailImage) {
+            throw invalidInput("thumbnailImageId");
+        }
     }
 
     private void replaceHashTags(Long postId, List<String> hashTags) {

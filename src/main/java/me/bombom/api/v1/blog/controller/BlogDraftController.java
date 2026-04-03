@@ -70,4 +70,13 @@ public class BlogDraftController {
     ) {
         return blogDraftService.getDraft(member.getId(), postId);
     }
+
+    @PostMapping("/{postId}/publish")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void publishDraft(
+            @LoginMember Member member,
+            @PathVariable Long postId
+    ) {
+        blogDraftService.publishDraft(member.getId(), postId);
+    }
 }
