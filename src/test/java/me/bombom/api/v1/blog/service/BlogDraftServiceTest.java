@@ -476,6 +476,222 @@ class BlogDraftServiceTest {
                 .satisfies(referenceImage -> assertThat(referenceImage.imageId()).isEqualTo(attachedImage.getId()));
     }
 
+    @Test
+    void DRAFT_글_발행_성공() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("제목")
+                .content("<p>본문</p>")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when
+        blogDraftService.publishDraft(1L, blogPost.getId());
+
+        // then
+        BlogPost publishedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(publishedPost.getStatus()).isEqualTo(BlogPostStatus.PUBLISHED);
+    }
+
+    @Test
+    void 발행_시_status가_PUBLISHED로_바뀐다() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("제목")
+                .content("본문")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when
+        blogDraftService.publishDraft(1L, blogPost.getId());
+
+        // then
+        BlogPost publishedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(publishedPost.getStatus()).isEqualTo(BlogPostStatus.PUBLISHED);
+    }
+
+    @Test
+    void 발행_시_published_at이_세팅된다() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("제목")
+                .content("본문")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when
+        blogDraftService.publishDraft(1L, blogPost.getId());
+
+        // then
+        BlogPost publishedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(publishedPost.getPublishedAt()).isNotNull();
+    }
+
+    @Test
+    void 발행_시_해당_post의_모든_image_asset이_ATTACHED로_바뀐다() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("제목")
+                .content("본문")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+        BlogImageAsset uploadedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.UPLOADED));
+        BlogImageAsset attachedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
+        BlogImageAsset deletePendingImage = blogImageAssetRepository.save(BlogImageAsset.builder()
+                .blogPostId(blogPost.getId())
+                .objectKey("blog/drafts/" + blogPost.getId() + "/delete-pending.png")
+                .imageUrl("https://cdn.bombom.me/" + blogPost.getId() + "/delete-pending.png")
+                .status(BlogImageAssetStatus.DELETE_PENDING)
+                .deleteRequestedAt(LocalDateTime.of(2026, 3, 19, 21, 0, 0))
+                .build());
+
+        // when
+        blogDraftService.publishDraft(1L, blogPost.getId());
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(blogImageAssetRepository.findById(uploadedImage.getId()).orElseThrow().getStatus())
+                    .isEqualTo(BlogImageAssetStatus.ATTACHED);
+            softly.assertThat(blogImageAssetRepository.findById(attachedImage.getId()).orElseThrow().getStatus())
+                    .isEqualTo(BlogImageAssetStatus.ATTACHED);
+            softly.assertThat(blogImageAssetRepository.findById(deletePendingImage.getId()).orElseThrow().getStatus())
+                    .isEqualTo(BlogImageAssetStatus.ATTACHED);
+            softly.assertThat(blogImageAssetRepository.findById(deletePendingImage.getId()).orElseThrow().getDeleteRequestedAt())
+                    .isNull();
+        });
+    }
+
+    @Test
+    void 다른_사용자의_draft_발행_시_403() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(2L)
+                .title("제목")
+                .content("본문")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when // then
+        assertThatThrownBy(() -> blogDraftService.publishDraft(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.FORBIDDEN_RESOURCE);
+    }
+
+    @Test
+    void DRAFT_아닌_글_발행_시_409() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("제목")
+                .content("본문")
+                .status(BlogPostStatus.PUBLISHED)
+                .visibility(BlogVisibility.PRIVATE)
+                .publishedAt(LocalDateTime.of(2026, 3, 19, 21, 0, 0))
+                .build());
+
+        // when // then
+        assertThatThrownBy(() -> blogDraftService.publishDraft(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.RESOURCE_CONFLICT);
+    }
+
+    @Test
+    void title이_비어_있으면_400() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("   ")
+                .content("본문")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when // then
+        assertThatThrownBy(() -> blogDraftService.publishDraft(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.INVALID_INPUT_VALUE);
+    }
+
+    @Test
+    void content가_비어_있으면_400() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("제목")
+                .content("   ")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when // then
+        assertThatThrownBy(() -> blogDraftService.publishDraft(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.INVALID_INPUT_VALUE);
+    }
+
+    @Test
+    void thumbnail_image_id가_다른_글_이미지면_400() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("제목")
+                .content("본문")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+        BlogPost anotherPost = blogPostRepository.save(createDraftPost(1L));
+        BlogImageAsset anotherPostImage = blogImageAssetRepository.save(createImage(anotherPost.getId(), BlogImageAssetStatus.ATTACHED));
+
+        entityManager.createNativeQuery("""
+                update blog_post
+                set thumbnail_image_id = :thumbnailImageId
+                where id = :postId
+                """)
+                .setParameter("thumbnailImageId", anotherPostImage.getId())
+                .setParameter("postId", blogPost.getId())
+                .executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+
+        // when // then
+        assertThatThrownBy(() -> blogDraftService.publishDraft(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.INVALID_INPUT_VALUE);
+    }
+
+    @Test
+    void thumbnail_image_id가_존재하지_않으면_404() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("제목")
+                .content("본문")
+                .thumbnailImageId(999L)
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when // then
+        assertThatThrownBy(() -> blogDraftService.publishDraft(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.ENTITY_NOT_FOUND);
+    }
+
     private BlogPost createDraftPost(Long memberId) {
         return createBlogPost(memberId, BlogPostStatus.DRAFT, null);
     }

@@ -102,6 +102,14 @@ class BlogDraftControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    void 초안_발행_API_성공() throws Exception {
+        // when // then
+        mockMvc.perform(post("/admin/api/v1/blog/drafts/{postId}/publish", 123L)
+                        .with(csrf()))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void 초안_생성_API_성공() throws Exception {
         // given
         given(blogDraftService.createDraft(1L)).willReturn(new CreateBlogDraftResponse(123L));
