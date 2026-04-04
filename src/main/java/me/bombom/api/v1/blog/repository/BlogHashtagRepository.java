@@ -10,5 +10,7 @@ public interface BlogHashtagRepository extends JpaRepository<BlogHashtag, Long> 
 
     List<BlogHashtag> findAllByNameIn(Collection<String> names);
 
+    List<BlogHashtag> findAllByIdInOrderById(Collection<Long> ids);
+
     Optional<BlogHashtag> findByName(String name);
 }

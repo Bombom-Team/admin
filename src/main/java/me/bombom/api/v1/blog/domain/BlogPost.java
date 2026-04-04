@@ -86,4 +86,9 @@ public class BlogPost extends BaseEntity {
         this.description = description;
         this.categoryId = categoryId;
     }
+
+    public void publish(LocalDateTime publishedAt) {
+        this.status = BlogPostStatus.PUBLISHED;
+        this.publishedAt = publishedAt;
+    }
 }

@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.blog.domain.BlogCategory;
 import me.bombom.api.v1.blog.domain.BlogHashtag;
 import me.bombom.api.v1.blog.domain.BlogImageAsset;
 import me.bombom.api.v1.blog.domain.BlogImageAssetStatus;
@@ -13,6 +14,12 @@ import me.bombom.api.v1.blog.domain.BlogPost;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
 import me.bombom.api.v1.blog.domain.BlogPostTag;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
+import me.bombom.api.v1.blog.dto.BlogDraftCategoryResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftHashtagResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftReferenceImageResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftThumbnailImageResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.repository.BlogCategoryRepository;
@@ -53,9 +60,10 @@ public class BlogDraftService {
     public void updateDraft(Long memberId, Long postId, UpdateBlogDraftRequest request) {
         request.validate();
 
-        BlogPost blogPost = findBlogPost(postId);
-        validateOwner(blogPost, memberId);
-        validateDraftStatus(blogPost);
+        String operation = "updateDraft";
+        BlogPost blogPost = findBlogPost(postId, operation);
+        validateOwner(blogPost, memberId, operation);
+        validateDraftStatus(blogPost, operation);
 
         validateCategory(request.categoryId());
 
@@ -70,31 +78,134 @@ public class BlogDraftService {
         updateReferencedImages(postId, request.distinctReferencedImageIds());
     }
 
-    private BlogPost findBlogPost(Long postId) {
+    public List<BlogDraftListItemResponse> getDrafts(Long memberId) {
+        return blogPostRepository.findAllDraftListItemByMemberIdAndStatus(
+                memberId,
+                BlogPostStatus.DRAFT
+        );
+    }
+
+    public BlogDraftDetailResponse getDraft(Long memberId, Long postId) {
+        String operation = "getDraft";
+        BlogPost blogPost = findBlogPost(postId, operation);
+        validateOwner(blogPost, memberId, operation);
+        validateDraftStatus(blogPost, operation);
+
+        return BlogDraftDetailResponse.of(
+                blogPost,
+                getThumbnailImage(blogPost.getThumbnailImageId(), operation),
+                getCategory(blogPost.getCategoryId(), operation),
+                getHashTags(postId),
+                getReferenceImages(postId)
+        );
+    }
+
+    @Transactional
+    public void publishDraft(Long memberId, Long postId) {
+        String operation = "publishDraft";
+        BlogPost blogPost = findBlogPost(postId, operation);
+        validateOwner(blogPost, memberId, operation);
+        validateDraftStatus(blogPost, operation);
+        validatePublishableDraft(blogPost, operation);
+
+        LocalDateTime publishedAt = LocalDateTime.now(clock);
+        blogPost.publish(publishedAt);
+
+        List<BlogImageAsset> blogImageAssets = blogImageAssetRepository.findAllByBlogPostId(postId);
+        for (BlogImageAsset blogImageAsset : blogImageAssets) {
+            blogImageAsset.attach();
+        }
+    }
+
+    private BlogPost findBlogPost(
+            Long postId,
+            String operation
+    ) {
         return blogPostRepository.findById(postId)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "blogPost")
-                        .addContext(ErrorContextKeys.OPERATION, "updateDraft"));
+                        .addContext(ErrorContextKeys.OPERATION, operation));
     }
 
-    private void validateOwner(BlogPost blogPost, Long memberId) {
+    private void validateOwner(
+            BlogPost blogPost,
+            Long memberId,
+            String operation
+    ) {
         if (blogPost.getMemberId().equals(memberId)) {
             return;
         }
 
         throw new CIllegalArgumentException(ErrorDetail.FORBIDDEN_RESOURCE)
                 .addContext(ErrorContextKeys.ENTITY_TYPE, "blogPost")
-                .addContext(ErrorContextKeys.OPERATION, "updateDraft");
+                .addContext(ErrorContextKeys.OPERATION, operation);
     }
 
-    private void validateDraftStatus(BlogPost blogPost) {
+    private void validateDraftStatus(
+            BlogPost blogPost,
+            String operation
+    ) {
         if (blogPost.getStatus() == BlogPostStatus.DRAFT) {
             return;
         }
 
         throw new CIllegalArgumentException(ErrorDetail.RESOURCE_CONFLICT)
                 .addContext(ErrorContextKeys.ENTITY_TYPE, "blogPost")
-                .addContext(ErrorContextKeys.OPERATION, "updateDraft");
+                .addContext(ErrorContextKeys.OPERATION, operation);
+    }
+
+    private BlogDraftThumbnailImageResponse getThumbnailImage(
+            Long thumbnailImageId,
+            String operation
+    ) {
+        if (thumbnailImageId == null) {
+            return null;
+        }
+
+        BlogImageAsset blogImageAsset = blogImageAssetRepository.findById(thumbnailImageId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "blogImageAsset")
+                        .addContext(ErrorContextKeys.OPERATION, operation));
+
+        return BlogDraftThumbnailImageResponse.from(blogImageAsset);
+    }
+
+    private BlogDraftCategoryResponse getCategory(
+            Long categoryId,
+            String operation
+    ) {
+        if (categoryId == null) {
+            return null;
+        }
+
+        BlogCategory blogCategory = blogCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "blogCategory")
+                        .addContext(ErrorContextKeys.OPERATION, operation));
+
+        return BlogDraftCategoryResponse.from(blogCategory);
+    }
+
+    private List<BlogDraftHashtagResponse> getHashTags(Long postId) {
+        List<Long> hashTagIds = blogPostTagRepository.findAllByBlogPostIdOrderByBlogHashtagId(postId).stream()
+                .map(BlogPostTag::getBlogHashtagId)
+                .toList();
+        if (hashTagIds.isEmpty()) {
+            return List.of();
+        }
+
+        return blogHashtagRepository.findAllByIdInOrderById(hashTagIds).stream()
+                .map(BlogDraftHashtagResponse::from)
+                .toList();
+    }
+
+    private List<BlogDraftReferenceImageResponse> getReferenceImages(Long postId) {
+        return blogImageAssetRepository.findAllByBlogPostIdAndStatusOrderById(
+                        postId,
+                        BlogImageAssetStatus.ATTACHED
+                ).stream()
+                .map(BlogDraftReferenceImageResponse::from)
+                .toList();
     }
 
     private void validateCategory(Long categoryId) {
@@ -106,6 +217,56 @@ public class BlogDraftService {
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "blogCategory")
                         .addContext("categoryId", categoryId));
+    }
+
+    private void validatePublishableDraft(
+            BlogPost blogPost,
+            String operation
+    ) {
+        validatePublishedTitle(blogPost.getTitle());
+        validatePublishedContent(blogPost.getContent());
+        validateThumbnailImage(blogPost, operation);
+    }
+
+    private void validatePublishedTitle(String title) {
+        if (title != null && !title.isBlank()) {
+            return;
+        }
+
+        throw invalidInput("title");
+    }
+
+    private void validatePublishedContent(String content) {
+        if (content != null && !content.isBlank()) {
+            return;
+        }
+
+        throw invalidInput("content");
+    }
+
+    private void validateThumbnailImage(
+            BlogPost blogPost,
+            String operation
+    ) {
+        Long thumbnailImageId = blogPost.getThumbnailImageId();
+        if (thumbnailImageId == null) {
+            return;
+        }
+
+        BlogImageAsset thumbnailImage = blogImageAssetRepository.findById(thumbnailImageId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "blogImageAsset")
+                        .addContext(ErrorContextKeys.OPERATION, operation));
+
+        boolean isForeignThumbnailImage = thumbnailImage.getBlogPostId().equals(blogPost.getId()) == false;
+        if (isForeignThumbnailImage) {
+            throw invalidInput("thumbnailImageId");
+        }
+
+        boolean isDeletePendingThumbnailImage = thumbnailImage.getStatus() == BlogImageAssetStatus.DELETE_PENDING;
+        if (isDeletePendingThumbnailImage) {
+            throw invalidInput("thumbnailImageId");
+        }
     }
 
     private void replaceHashTags(Long postId, List<String> hashTags) {

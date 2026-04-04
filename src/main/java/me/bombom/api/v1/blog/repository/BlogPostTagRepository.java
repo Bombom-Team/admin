@@ -9,4 +9,6 @@ public interface BlogPostTagRepository extends JpaRepository<BlogPostTag, Long> 
     void deleteAllByBlogPostId(Long blogPostId);
 
     List<BlogPostTag> findAllByBlogPostId(Long blogPostId);
+
+    List<BlogPostTag> findAllByBlogPostIdOrderByBlogHashtagId(Long blogPostId);
 }
