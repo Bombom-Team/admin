@@ -99,4 +99,8 @@ public class BlogPost extends BaseEntity {
     public void updateVisibility(BlogVisibility visibility) {
         this.visibility = visibility;
     }
+
+    public void assignThumbnailImage(Long thumbnailImageId) {
+        this.thumbnailImageId = thumbnailImageId;
+    }
 }

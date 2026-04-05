@@ -2,12 +2,14 @@ package me.bombom.api.v1.blog.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.blog.dto.AssignBlogPostThumbnailRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
 import me.bombom.api.v1.blog.service.BlogDraftService;
 import me.bombom.api.v1.blog.service.BlogImageService;
 import me.bombom.api.v1.blog.service.BlogPostService;
+import me.bombom.api.v1.blog.service.BlogThumbnailService;
 import me.bombom.api.v1.common.resolver.LoginMember;
 import me.bombom.api.v1.member.domain.Member;
 import org.springframework.http.HttpStatus;
@@ -32,6 +34,7 @@ public class BlogPostController {
     private final BlogDraftService blogDraftService;
     private final BlogImageService blogImageService;
     private final BlogPostService blogPostService;
+    private final BlogThumbnailService blogThumbnailService;
 
     @PutMapping("/{postId}")
     public void updatePost(
@@ -68,5 +71,15 @@ public class BlogPostController {
             @Valid @RequestBody UpdateBlogPostVisibilityRequest request
     ) {
         blogPostService.updatePostVisibility(member.getId(), postId, request.visibility());
+    }
+
+    @PostMapping("/{postId}/thumbnail")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void assignThumbnail(
+            @LoginMember Member member,
+            @PathVariable Long postId,
+            @Valid @RequestBody AssignBlogPostThumbnailRequest request
+    ) {
+        blogThumbnailService.assignThumbnail(member.getId(), postId, request.imageId());
     }
 }
