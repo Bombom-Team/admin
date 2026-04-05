@@ -3,6 +3,7 @@ package me.bombom.api.v1.blog.controller;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -13,6 +14,7 @@ import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
 import me.bombom.api.v1.blog.service.BlogDraftService;
 import me.bombom.api.v1.blog.service.BlogImageService;
+import me.bombom.api.v1.blog.service.BlogPostService;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.common.resolver.LoginMember;
@@ -41,6 +43,9 @@ class BlogPostControllerTest extends ControllerTestSupport {
 
     @MockitoBean
     private BlogImageService blogImageService;
+
+    @MockitoBean
+    private BlogPostService blogPostService;
 
     @Test
     void 블로그_글_수정_API_성공() throws Exception {
@@ -104,6 +109,14 @@ class BlogPostControllerTest extends ControllerTestSupport {
                         .file(imageFile)
                         .with(csrf()))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void 블로그_글_삭제_API_성공() throws Exception {
+        // when // then
+        mockMvc.perform(delete("/admin/api/v1/blog/posts/{postId}", 123L)
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
     }
 
     @TestConfiguration
