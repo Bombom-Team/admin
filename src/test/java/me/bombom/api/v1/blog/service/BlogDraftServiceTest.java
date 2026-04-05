@@ -100,7 +100,7 @@ class BlogDraftServiceTest {
         );
 
         // when
-        blogDraftService.updateDraft(1L, blogPost.getId(), request);
+        blogDraftService.updatePost(1L, blogPost.getId(), request);
 
         // then
         List<String> savedHashTagNames = blogPostTagRepository.findAllByBlogPostId(blogPost.getId()).stream()
@@ -129,7 +129,7 @@ class BlogDraftServiceTest {
         );
 
         // when
-        blogDraftService.updateDraft(1L, blogPost.getId(), request);
+        blogDraftService.updatePost(1L, blogPost.getId(), request);
 
         // then
         BlogImageAsset savedImage = blogImageAssetRepository.findById(uploadedImage.getId()).orElseThrow();
@@ -156,7 +156,7 @@ class BlogDraftServiceTest {
         );
 
         // when
-        blogDraftService.updateDraft(1L, blogPost.getId(), request);
+        blogDraftService.updatePost(1L, blogPost.getId(), request);
 
         // then
         BlogImageAsset savedImage = blogImageAssetRepository.findById(attachedImage.getId()).orElseThrow();
@@ -183,7 +183,7 @@ class BlogDraftServiceTest {
         );
 
         // when
-        blogDraftService.updateDraft(1L, blogPost.getId(), request);
+        blogDraftService.updatePost(1L, blogPost.getId(), request);
 
         // then
         BlogImageAsset savedImage = blogImageAssetRepository.findById(uploadedImage.getId()).orElseThrow();
@@ -211,7 +211,7 @@ class BlogDraftServiceTest {
         );
 
         // when // then
-        assertThatThrownBy(() -> blogDraftService.updateDraft(1L, blogPost.getId(), request))
+        assertThatThrownBy(() -> blogDraftService.updatePost(1L, blogPost.getId(), request))
                 .isInstanceOf(CIllegalArgumentException.class)
                 .extracting("errorDetail")
                 .isEqualTo(ErrorDetail.INVALID_INPUT_VALUE);
@@ -231,7 +231,7 @@ class BlogDraftServiceTest {
         );
 
         // when // then
-        assertThatThrownBy(() -> blogDraftService.updateDraft(1L, blogPost.getId(), request))
+        assertThatThrownBy(() -> blogDraftService.updatePost(1L, blogPost.getId(), request))
                 .isInstanceOf(CIllegalArgumentException.class)
                 .extracting("errorDetail")
                 .isEqualTo(ErrorDetail.ENTITY_NOT_FOUND);
@@ -255,7 +255,7 @@ class BlogDraftServiceTest {
         );
 
         // when
-        blogDraftService.updateDraft(1L, blogPost.getId(), request);
+        blogDraftService.updatePost(1L, blogPost.getId(), request);
 
         // then
         BlogPost savedBlogPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
@@ -268,6 +268,63 @@ class BlogDraftServiceTest {
             softly.assertThat(savedBlogPost.getStatus()).isEqualTo(BlogPostStatus.DRAFT);
             softly.assertThat(savedBlogPost.getVisibility()).isEqualTo(BlogVisibility.PRIVATE);
         });
+    }
+
+    @Test
+    void 발행_글도_수정_성공() {
+        // given
+        LocalDateTime publishedAt = LocalDateTime.of(2026, 3, 19, 21, 0, 0);
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("기존 제목")
+                .content("기존 본문")
+                .description("기존 설명")
+                .status(BlogPostStatus.PUBLISHED)
+                .visibility(BlogVisibility.PRIVATE)
+                .publishedAt(publishedAt)
+                .build());
+
+        UpdateBlogDraftRequest request = new UpdateBlogDraftRequest(
+                "수정된 제목",
+                "수정된 본문",
+                "수정된 설명",
+                null,
+                null,
+                List.of()
+        );
+
+        // when
+        blogDraftService.updatePost(1L, blogPost.getId(), request);
+
+        // then
+        BlogPost savedBlogPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertSoftly(softly -> {
+            softly.assertThat(savedBlogPost.getTitle()).isEqualTo("수정된 제목");
+            softly.assertThat(savedBlogPost.getContent()).isEqualTo("수정된 본문");
+            softly.assertThat(savedBlogPost.getDescription()).isEqualTo("수정된 설명");
+            softly.assertThat(savedBlogPost.getStatus()).isEqualTo(BlogPostStatus.PUBLISHED);
+            softly.assertThat(savedBlogPost.getPublishedAt()).isEqualTo(publishedAt);
+        });
+    }
+
+    @Test
+    void 삭제된_글_수정_시_409() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.DELETED, "삭제글"));
+        UpdateBlogDraftRequest request = new UpdateBlogDraftRequest(
+                "수정된 제목",
+                "수정된 본문",
+                "수정된 설명",
+                null,
+                null,
+                List.of()
+        );
+
+        // when // then
+        assertThatThrownBy(() -> blogDraftService.updatePost(1L, blogPost.getId(), request))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.RESOURCE_CONFLICT);
     }
 
     @Test

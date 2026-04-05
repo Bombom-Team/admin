@@ -75,7 +75,7 @@ public class BlogPost extends BaseEntity {
         this.publishedAt = publishedAt;
     }
 
-    public void updateDraft(
+    public void updatePost(
             String title,
             String content,
             String description,
@@ -90,5 +90,21 @@ public class BlogPost extends BaseEntity {
     public void publish(LocalDateTime publishedAt) {
         this.status = BlogPostStatus.PUBLISHED;
         this.publishedAt = publishedAt;
+    }
+
+    public void delete() {
+        this.status = BlogPostStatus.DELETED;
+    }
+
+    public void updateVisibility(BlogVisibility visibility) {
+        this.visibility = visibility;
+    }
+
+    public void assignThumbnailImage(Long thumbnailImageId) {
+        this.thumbnailImageId = thumbnailImageId;
+    }
+
+    public void clearThumbnailImage() {
+        this.thumbnailImageId = null;
     }
 }

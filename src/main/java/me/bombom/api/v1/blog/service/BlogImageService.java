@@ -22,31 +22,32 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class BlogImageService {
 
-    private static final String BLOG_IMAGE_PREFIX = "blog/drafts";
+    private static final String BLOG_IMAGE_PREFIX = "blog/posts";
 
     private final BlogPostRepository blogPostRepository;
     private final BlogImageAssetRepository blogImageAssetRepository;
     private final S3FileService s3FileService;
 
     @Transactional
-    public UploadBlogDraftImageResponse uploadDraftImage(
+    public UploadBlogDraftImageResponse uploadPostImage(
             Long memberId,
             Long postId,
             MultipartFile imageFile
     ) {
-        BlogPost blogPost = getDraftPost(postId);
+        BlogPost blogPost = getPost(postId);
         validateOwner(blogPost, memberId);
-        validateDraftStatus(blogPost);
+        validateEditableStatus(blogPost);
         validateImageFile(imageFile);
 
         StoredFile storedFile = s3FileService.uploadToPublicBucketWithMetadata(imageFile, BLOG_IMAGE_PREFIX);
 
         try {
+            BlogImageAssetStatus imageStatus = resolveImageStatus(blogPost);
             BlogImageAsset blogImageAsset = blogImageAssetRepository.save(BlogImageAsset.builder()
                     .blogPostId(postId)
                     .objectKey(storedFile.objectKey())
                     .imageUrl(storedFile.fileUrl())
-                    .status(BlogImageAssetStatus.UPLOADED)
+                    .status(imageStatus)
                     .build());
 
             return UploadBlogDraftImageResponse.from(blogImageAsset);
@@ -56,11 +57,11 @@ public class BlogImageService {
         }
     }
 
-    private BlogPost getDraftPost(Long postId) {
+    private BlogPost getPost(Long postId) {
         return blogPostRepository.findById(postId)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "blogPost")
-                        .addContext(ErrorContextKeys.OPERATION, "uploadDraftImage"));
+                        .addContext(ErrorContextKeys.OPERATION, "uploadPostImage"));
     }
 
     private void validateOwner(BlogPost blogPost, Long memberId) {
@@ -70,17 +71,18 @@ public class BlogImageService {
 
         throw new CIllegalArgumentException(ErrorDetail.FORBIDDEN_RESOURCE)
                 .addContext(ErrorContextKeys.ENTITY_TYPE, "blogPost")
-                .addContext(ErrorContextKeys.OPERATION, "uploadDraftImage");
+                .addContext(ErrorContextKeys.OPERATION, "uploadPostImage");
     }
 
-    private void validateDraftStatus(BlogPost blogPost) {
-        if (blogPost.getStatus() == BlogPostStatus.DRAFT) {
+    private void validateEditableStatus(BlogPost blogPost) {
+        BlogPostStatus status = blogPost.getStatus();
+        if (status == BlogPostStatus.DRAFT || status == BlogPostStatus.PUBLISHED) {
             return;
         }
 
         throw new CIllegalArgumentException(ErrorDetail.RESOURCE_CONFLICT)
                 .addContext(ErrorContextKeys.ENTITY_TYPE, "blogPost")
-                .addContext(ErrorContextKeys.OPERATION, "uploadDraftImage");
+                .addContext(ErrorContextKeys.OPERATION, "uploadPostImage");
     }
 
     private void validateImageFile(MultipartFile imageFile) {
@@ -88,5 +90,13 @@ public class BlogImageService {
             throw new CIllegalArgumentException(ErrorDetail.INVALID_INPUT_VALUE)
                     .addContext("field", "imageFile");
         }
+    }
+
+    private BlogImageAssetStatus resolveImageStatus(BlogPost blogPost) {
+        if (blogPost.getStatus() == BlogPostStatus.PUBLISHED) {
+            return BlogImageAssetStatus.ATTACHED;
+        }
+
+        return BlogImageAssetStatus.UPLOADED;
     }
 }

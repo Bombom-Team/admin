@@ -57,17 +57,17 @@ public class BlogDraftService {
     }
 
     @Transactional
-    public void updateDraft(Long memberId, Long postId, UpdateBlogDraftRequest request) {
+    public void updatePost(Long memberId, Long postId, UpdateBlogDraftRequest request) {
         request.validate();
 
-        String operation = "updateDraft";
+        String operation = "updatePost";
         BlogPost blogPost = findBlogPost(postId, operation);
         validateOwner(blogPost, memberId, operation);
-        validateDraftStatus(blogPost, operation);
+        validateEditableStatus(blogPost, operation);
 
         validateCategory(request.categoryId());
 
-        blogPost.updateDraft(
+        blogPost.updatePost(
                 request.title(),
                 request.content(),
                 request.description(),
@@ -146,6 +146,20 @@ public class BlogDraftService {
             String operation
     ) {
         if (blogPost.getStatus() == BlogPostStatus.DRAFT) {
+            return;
+        }
+
+        throw new CIllegalArgumentException(ErrorDetail.RESOURCE_CONFLICT)
+                .addContext(ErrorContextKeys.ENTITY_TYPE, "blogPost")
+                .addContext(ErrorContextKeys.OPERATION, operation);
+    }
+
+    private void validateEditableStatus(
+            BlogPost blogPost,
+            String operation
+    ) {
+        BlogPostStatus status = blogPost.getStatus();
+        if (status == BlogPostStatus.DRAFT || status == BlogPostStatus.PUBLISHED) {
             return;
         }
 
@@ -344,7 +358,7 @@ public class BlogDraftService {
         if (referencedImages.size() != referencedImageIds.size()) {
             throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                     .addContext(ErrorContextKeys.ENTITY_TYPE, "blogImageAsset")
-                    .addContext(ErrorContextKeys.OPERATION, "updateDraft");
+                    .addContext(ErrorContextKeys.OPERATION, "updatePost");
         }
 
         boolean containsForeignImage = referencedImages.stream()
