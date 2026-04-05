@@ -3,6 +3,7 @@ package me.bombom.api.v1.blog.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
+import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
 import me.bombom.api.v1.blog.service.BlogDraftService;
 import me.bombom.api.v1.blog.service.BlogImageService;
@@ -12,6 +13,7 @@ import me.bombom.api.v1.member.domain.Member;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -57,5 +59,14 @@ public class BlogPostController {
             @PathVariable Long postId
     ) {
         blogPostService.deletePost(member.getId(), postId);
+    }
+
+    @PatchMapping("/{postId}/visibility")
+    public void updatePostVisibility(
+            @LoginMember Member member,
+            @PathVariable Long postId,
+            @Valid @RequestBody UpdateBlogPostVisibilityRequest request
+    ) {
+        blogPostService.updatePostVisibility(member.getId(), postId, request.visibility());
     }
 }

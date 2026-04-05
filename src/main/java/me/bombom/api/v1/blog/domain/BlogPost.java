@@ -95,4 +95,8 @@ public class BlogPost extends BaseEntity {
     public void delete() {
         this.status = BlogPostStatus.DELETED;
     }
+
+    public void updateVisibility(BlogVisibility visibility) {
+        this.visibility = visibility;
+    }
 }

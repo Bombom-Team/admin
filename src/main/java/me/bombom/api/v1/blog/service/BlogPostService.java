@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.blog.domain.BlogImageAsset;
 import me.bombom.api.v1.blog.domain.BlogPost;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
+import me.bombom.api.v1.blog.domain.BlogVisibility;
 import me.bombom.api.v1.blog.repository.BlogImageAssetRepository;
 import me.bombom.api.v1.blog.repository.BlogPostRepository;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
@@ -41,6 +42,20 @@ public class BlogPostService {
         for (BlogImageAsset blogImageAsset : blogImageAssets) {
             blogImageAsset.markDeletePending(deleteRequestedAt);
         }
+    }
+
+    @Transactional
+    public void updatePostVisibility(
+            Long memberId,
+            Long postId,
+            BlogVisibility visibility
+    ) {
+        String operation = "updatePostVisibility";
+        BlogPost blogPost = findBlogPost(postId, operation);
+        validateOwner(blogPost, memberId, operation);
+        validateActiveStatus(blogPost, operation);
+
+        blogPost.updateVisibility(visibility);
     }
 
     private BlogPost findBlogPost(
