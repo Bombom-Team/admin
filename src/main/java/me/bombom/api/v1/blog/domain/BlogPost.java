@@ -75,7 +75,7 @@ public class BlogPost extends BaseEntity {
         this.publishedAt = publishedAt;
     }
 
-    public void updateDraft(
+    public void updatePost(
             String title,
             String content,
             String description,
