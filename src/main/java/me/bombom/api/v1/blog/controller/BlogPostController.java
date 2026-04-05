@@ -73,7 +73,7 @@ public class BlogPostController {
         blogPostService.updatePostVisibility(member.getId(), postId, request.visibility());
     }
 
-    @PostMapping("/{postId}/thumbnail")
+    @PutMapping("/{postId}/thumbnail")
     @ResponseStatus(HttpStatus.CREATED)
     public void assignThumbnail(
             @LoginMember Member member,

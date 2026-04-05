@@ -6,7 +6,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -161,7 +160,7 @@ class BlogPostControllerTest extends ControllerTestSupport {
         AssignBlogPostThumbnailRequest request = new AssignBlogPostThumbnailRequest(10L);
 
         // when // then
-        mockMvc.perform(post("/admin/api/v1/blog/posts/{postId}/thumbnail", 123L)
+        mockMvc.perform(put("/admin/api/v1/blog/posts/{postId}/thumbnail", 123L)
                         .with(csrf())
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
@@ -171,7 +170,7 @@ class BlogPostControllerTest extends ControllerTestSupport {
     @Test
     void imageId가_null이면_400을_반환한다() throws Exception {
         // when // then
-        mockMvc.perform(post("/admin/api/v1/blog/posts/{postId}/thumbnail", 123L)
+        mockMvc.perform(put("/admin/api/v1/blog/posts/{postId}/thumbnail", 123L)
                         .with(csrf())
                         .contentType("application/json")
                         .content("""
