@@ -6,11 +6,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import me.bombom.api.v1.blog.dto.AssignBlogPostThumbnailRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
@@ -18,6 +20,7 @@ import me.bombom.api.v1.blog.domain.BlogVisibility;
 import me.bombom.api.v1.blog.service.BlogDraftService;
 import me.bombom.api.v1.blog.service.BlogImageService;
 import me.bombom.api.v1.blog.service.BlogPostService;
+import me.bombom.api.v1.blog.service.BlogThumbnailService;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.common.resolver.LoginMember;
@@ -49,6 +52,9 @@ class BlogPostControllerTest extends ControllerTestSupport {
 
     @MockitoBean
     private BlogPostService blogPostService;
+
+    @MockitoBean
+    private BlogThumbnailService blogThumbnailService;
 
     @Test
     void 블로그_글_수정_API_성공() throws Exception {
@@ -144,6 +150,33 @@ class BlogPostControllerTest extends ControllerTestSupport {
                         .content("""
                                 {
                                   "visibility": "UNKNOWN"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 블로그_썸네일_등록_API_성공() throws Exception {
+        // given
+        AssignBlogPostThumbnailRequest request = new AssignBlogPostThumbnailRequest(10L);
+
+        // when // then
+        mockMvc.perform(post("/admin/api/v1/blog/posts/{postId}/thumbnail", 123L)
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void imageId가_null이면_400을_반환한다() throws Exception {
+        // when // then
+        mockMvc.perform(post("/admin/api/v1/blog/posts/{postId}/thumbnail", 123L)
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "imageId": null
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
