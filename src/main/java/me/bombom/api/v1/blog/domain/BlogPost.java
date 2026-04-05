@@ -91,4 +91,8 @@ public class BlogPost extends BaseEntity {
         this.status = BlogPostStatus.PUBLISHED;
         this.publishedAt = publishedAt;
     }
+
+    public void delete() {
+        this.status = BlogPostStatus.DELETED;
+    }
 }
