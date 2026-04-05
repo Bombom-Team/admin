@@ -182,6 +182,14 @@ class BlogPostControllerTest extends ControllerTestSupport {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void 블로그_썸네일_제거_API_성공() throws Exception {
+        // when // then
+        mockMvc.perform(delete("/admin/api/v1/blog/posts/{postId}/thumbnail", 123L)
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+    }
+
     @TestConfiguration
     static class LoginMemberResolverTestConfig implements WebMvcConfigurer {
 

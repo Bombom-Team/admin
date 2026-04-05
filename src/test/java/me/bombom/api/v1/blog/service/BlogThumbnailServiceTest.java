@@ -127,7 +127,7 @@ class BlogThumbnailServiceTest {
     }
 
     @Test
-    void 이전_썸네일이_본문에_있으면_ATTACHED_유지() {
+    void 이전_썸네일도_즉시_DELETE_PENDING으로_바뀐다() {
         // given
         String oldImageUrl = "https://cdn.bombom.me/blog/old-in-content.png";
         String newImageUrl = "https://cdn.bombom.me/blog/new-in-content.png";
@@ -142,8 +142,8 @@ class BlogThumbnailServiceTest {
         // then
         BlogImageAsset savedOldImage = blogImageAssetRepository.findById(oldImage.getId()).orElseThrow();
         assertSoftly(softly -> {
-            softly.assertThat(savedOldImage.getStatus()).isEqualTo(BlogImageAssetStatus.ATTACHED);
-            softly.assertThat(savedOldImage.getDeleteRequestedAt()).isNull();
+            softly.assertThat(savedOldImage.getStatus()).isEqualTo(BlogImageAssetStatus.DELETE_PENDING);
+            softly.assertThat(savedOldImage.getDeleteRequestedAt()).isNotNull();
         });
     }
 
@@ -171,6 +171,144 @@ class BlogThumbnailServiceTest {
                 .isInstanceOf(CIllegalArgumentException.class)
                 .extracting("errorDetail")
                 .isEqualTo(ErrorDetail.RESOURCE_CONFLICT);
+    }
+
+    @Test
+    void DRAFT_글_썸네일_제거_성공() {
+        // given
+        String imageUrl = "https://cdn.bombom.me/blog/remove-draft.png";
+        BlogPost blogPost = blogPostRepository.save(createPost(1L, BlogPostStatus.DRAFT, "<p>본문</p>", null));
+        BlogImageAsset image = blogImageAssetRepository.save(createImage(blogPost.getId(), imageUrl, BlogImageAssetStatus.ATTACHED));
+        blogPost.assignThumbnailImage(image.getId());
+
+        // when
+        blogThumbnailService.removeThumbnail(1L, blogPost.getId());
+
+        // then
+        BlogPost savedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(savedPost.getThumbnailImageId()).isNull();
+    }
+
+    @Test
+    void PUBLISHED_글_썸네일_제거_성공() {
+        // given
+        String imageUrl = "https://cdn.bombom.me/blog/remove-published.png";
+        BlogPost blogPost = blogPostRepository.save(createPost(1L, BlogPostStatus.PUBLISHED, "<p>본문</p>", null));
+        BlogImageAsset image = blogImageAssetRepository.save(createImage(blogPost.getId(), imageUrl, BlogImageAssetStatus.ATTACHED));
+        blogPost.assignThumbnailImage(image.getId());
+
+        // when
+        blogThumbnailService.removeThumbnail(1L, blogPost.getId());
+
+        // then
+        BlogPost savedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(savedPost.getThumbnailImageId()).isNull();
+    }
+
+    @Test
+    void thumbnail_image_id가_null로_변경된다() {
+        // given
+        String imageUrl = "https://cdn.bombom.me/blog/remove-null.png";
+        BlogPost blogPost = blogPostRepository.save(createPost(1L, BlogPostStatus.DRAFT, "<p>본문</p>", null));
+        BlogImageAsset image = blogImageAssetRepository.save(createImage(blogPost.getId(), imageUrl, BlogImageAssetStatus.ATTACHED));
+        blogPost.assignThumbnailImage(image.getId());
+
+        // when
+        blogThumbnailService.removeThumbnail(1L, blogPost.getId());
+
+        // then
+        BlogPost savedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(savedPost.getThumbnailImageId()).isNull();
+    }
+
+    @Test
+    void 본문에도_없는_기존_썸네일_이미지는_DELETE_PENDING이_된다() {
+        // given
+        String imageUrl = "https://cdn.bombom.me/blog/remove-delete-pending.png";
+        BlogPost blogPost = blogPostRepository.save(createPost(1L, BlogPostStatus.DRAFT, "<p>본문</p>", null));
+        BlogImageAsset image = blogImageAssetRepository.save(createImage(blogPost.getId(), imageUrl, BlogImageAssetStatus.ATTACHED));
+        blogPost.assignThumbnailImage(image.getId());
+
+        // when
+        blogThumbnailService.removeThumbnail(1L, blogPost.getId());
+
+        // then
+        BlogImageAsset savedImage = blogImageAssetRepository.findById(image.getId()).orElseThrow();
+        assertSoftly(softly -> {
+            softly.assertThat(savedImage.getStatus()).isEqualTo(BlogImageAssetStatus.DELETE_PENDING);
+            softly.assertThat(savedImage.getDeleteRequestedAt()).isNotNull();
+        });
+    }
+
+    @Test
+    void 기존_썸네일_이미지는_본문과_무관하게_DELETE_PENDING이_된다() {
+        // given
+        String imageUrl = "https://cdn.bombom.me/blog/remove-attached.png";
+        BlogPost blogPost = blogPostRepository.save(createPost(1L, BlogPostStatus.PUBLISHED, "<p>" + imageUrl + "</p>", null));
+        BlogImageAsset image = blogImageAssetRepository.save(createImage(blogPost.getId(), imageUrl, BlogImageAssetStatus.ATTACHED));
+        blogPost.assignThumbnailImage(image.getId());
+
+        // when
+        blogThumbnailService.removeThumbnail(1L, blogPost.getId());
+
+        // then
+        BlogImageAsset savedImage = blogImageAssetRepository.findById(image.getId()).orElseThrow();
+        assertSoftly(softly -> {
+            softly.assertThat(savedImage.getStatus()).isEqualTo(BlogImageAssetStatus.DELETE_PENDING);
+            softly.assertThat(savedImage.getDeleteRequestedAt()).isNotNull();
+        });
+    }
+
+    @Test
+    void 원래_썸네일이_없어도_204_의미로_성공한다() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createPost(1L, BlogPostStatus.DRAFT, "<p>본문</p>", null));
+
+        // when
+        blogThumbnailService.removeThumbnail(1L, blogPost.getId());
+
+        // then
+        BlogPost savedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(savedPost.getThumbnailImageId()).isNull();
+    }
+
+    @Test
+    void 다른_사용자의_글_썸네일_제거_시_403() {
+        // given
+        String imageUrl = "https://cdn.bombom.me/blog/remove-forbidden.png";
+        BlogPost blogPost = blogPostRepository.save(createPost(2L, BlogPostStatus.DRAFT, "<p>본문</p>", null));
+        BlogImageAsset image = blogImageAssetRepository.save(createImage(blogPost.getId(), imageUrl, BlogImageAssetStatus.ATTACHED));
+        blogPost.assignThumbnailImage(image.getId());
+
+        // when // then
+        assertThatThrownBy(() -> blogThumbnailService.removeThumbnail(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.FORBIDDEN_RESOURCE);
+    }
+
+    @Test
+    void DELETED_글_썸네일_제거_시_409() {
+        // given
+        String imageUrl = "https://cdn.bombom.me/blog/remove-conflict.png";
+        BlogPost blogPost = blogPostRepository.save(createPost(1L, BlogPostStatus.DELETED, "<p>본문</p>", null));
+        BlogImageAsset image = blogImageAssetRepository.save(createImage(blogPost.getId(), imageUrl, BlogImageAssetStatus.ATTACHED));
+        blogPost.assignThumbnailImage(image.getId());
+
+        // when // then
+        assertThatThrownBy(() -> blogThumbnailService.removeThumbnail(1L, blogPost.getId()))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.RESOURCE_CONFLICT);
+    }
+
+    @Test
+    void 존재하지_않는_post는_404() {
+        // when // then
+        assertThatThrownBy(() -> blogThumbnailService.removeThumbnail(1L, 999L))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.ENTITY_NOT_FOUND);
     }
 
     private BlogPost createPost(
