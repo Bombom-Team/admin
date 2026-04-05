@@ -29,13 +29,14 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/api/v1/blog/posts")
-public class BlogPostController {
+public class BlogPostController implements BlogPostControllerApi {
 
     private final BlogDraftService blogDraftService;
     private final BlogImageService blogImageService;
     private final BlogPostService blogPostService;
     private final BlogThumbnailService blogThumbnailService;
 
+    @Override
     @PutMapping("/{postId}")
     public void updatePost(
             @LoginMember Member member,
@@ -45,6 +46,7 @@ public class BlogPostController {
         blogDraftService.updatePost(member.getId(), postId, request);
     }
 
+    @Override
     @PostMapping(value = "/{postId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public UploadBlogDraftImageResponse uploadPostImage(
@@ -55,6 +57,7 @@ public class BlogPostController {
         return blogImageService.uploadPostImage(member.getId(), postId, imageFile);
     }
 
+    @Override
     @DeleteMapping("/{postId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePost(
@@ -64,6 +67,7 @@ public class BlogPostController {
         blogPostService.deletePost(member.getId(), postId);
     }
 
+    @Override
     @PatchMapping("/{postId}/visibility")
     public void updatePostVisibility(
             @LoginMember Member member,
@@ -73,6 +77,7 @@ public class BlogPostController {
         blogPostService.updatePostVisibility(member.getId(), postId, request.visibility());
     }
 
+    @Override
     @PutMapping("/{postId}/thumbnail")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void assignThumbnail(
@@ -83,6 +88,7 @@ public class BlogPostController {
         blogThumbnailService.assignThumbnail(member.getId(), postId, request.imageId());
     }
 
+    @Override
     @DeleteMapping("/{postId}/thumbnail")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeThumbnail(

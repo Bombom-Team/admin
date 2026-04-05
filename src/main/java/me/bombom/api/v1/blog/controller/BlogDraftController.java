@@ -19,21 +19,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/admin/api/v1/blog/drafts")
-public class BlogDraftController {
+public class BlogDraftController implements BlogDraftControllerApi {
 
     private final BlogDraftService blogDraftService;
 
+    @Override
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreateBlogDraftResponse createDraft(@LoginMember Member member) {
         return blogDraftService.createDraft(member.getId());
     }
 
+    @Override
     @GetMapping
     public List<BlogDraftListItemResponse> getDrafts(@LoginMember Member member) {
         return blogDraftService.getDrafts(member.getId());
     }
 
+    @Override
     @GetMapping("/{postId}")
     public BlogDraftDetailResponse getDraft(
             @LoginMember Member member,
@@ -42,6 +45,7 @@ public class BlogDraftController {
         return blogDraftService.getDraft(member.getId(), postId);
     }
 
+    @Override
     @PostMapping("/{postId}/publish")
     @ResponseStatus(HttpStatus.CREATED)
     public void publishDraft(
