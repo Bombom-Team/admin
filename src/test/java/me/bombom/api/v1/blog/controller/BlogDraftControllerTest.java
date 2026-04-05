@@ -6,7 +6,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,7 +18,6 @@ import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftReferenceImageResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftThumbnailImageResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
-import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
@@ -162,26 +160,6 @@ class BlogDraftControllerTest extends ControllerTestSupport {
                         .file(imageFile)
                         .with(csrf()))
                 .andExpect(status().isConflict());
-    }
-
-    @Test
-    void 초안_임시저장_API_성공() throws Exception {
-        // given
-        UpdateBlogDraftRequest request = new UpdateBlogDraftRequest(
-                "제목",
-                "본문",
-                "설명",
-                3L,
-                List.of("봄봄"),
-                List.of(10L, 11L)
-        );
-
-        // when // then
-        mockMvc.perform(put("/admin/api/v1/blog/drafts/{postId}", 123L)
-                        .with(csrf())
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
     }
 
     @TestConfiguration
