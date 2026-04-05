@@ -82,4 +82,13 @@ public class BlogPostController {
     ) {
         blogThumbnailService.assignThumbnail(member.getId(), postId, request.imageId());
     }
+
+    @DeleteMapping("/{postId}/thumbnail")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeThumbnail(
+            @LoginMember Member member,
+            @PathVariable Long postId
+    ) {
+        blogThumbnailService.removeThumbnail(member.getId(), postId);
+    }
 }

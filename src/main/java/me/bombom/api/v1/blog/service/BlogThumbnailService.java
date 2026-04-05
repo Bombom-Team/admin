@@ -46,13 +46,26 @@ public class BlogThumbnailService {
             return;
         }
 
-        BlogImageAsset previousThumbnailImage = findBlogImageAsset(previousThumbnailImageId, operation);
-        if (containsImageUrl(blogPost.getContent(), previousThumbnailImage.getImageUrl())) {
-            previousThumbnailImage.attach();
+        adjustPreviousThumbnailImage(previousThumbnailImageId, operation);
+    }
+
+    @Transactional
+    public void removeThumbnail(
+            Long memberId,
+            Long postId
+    ) {
+        String operation = "removeThumbnail";
+        BlogPost blogPost = findBlogPost(postId, operation);
+        validateOwner(blogPost, memberId, operation);
+        validateActiveStatus(blogPost, operation);
+
+        Long thumbnailImageId = blogPost.getThumbnailImageId();
+        if (thumbnailImageId == null) {
             return;
         }
 
-        previousThumbnailImage.markDeletePending(LocalDateTime.now(clock));
+        blogPost.clearThumbnailImage();
+        adjustPreviousThumbnailImage(thumbnailImageId, operation);
     }
 
     private BlogPost findBlogPost(
@@ -118,15 +131,12 @@ public class BlogThumbnailService {
         }
     }
 
-    private boolean containsImageUrl(
-            String content,
-            String imageUrl
+    private void adjustPreviousThumbnailImage(
+            Long previousThumbnailImageId,
+            String operation
     ) {
-        if (content == null) {
-            return false;
-        }
-
-        return content.contains(imageUrl);
+        BlogImageAsset previousThumbnailImage = findBlogImageAsset(previousThumbnailImageId, operation);
+        previousThumbnailImage.markDeletePending(LocalDateTime.now(clock));
     }
 
     private CIllegalArgumentException invalidInput(String field) {

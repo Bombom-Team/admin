@@ -103,4 +103,8 @@ public class BlogPost extends BaseEntity {
     public void assignThumbnailImage(Long thumbnailImageId) {
         this.thumbnailImageId = thumbnailImageId;
     }
+
+    public void clearThumbnailImage() {
+        this.thumbnailImageId = null;
+    }
 }
