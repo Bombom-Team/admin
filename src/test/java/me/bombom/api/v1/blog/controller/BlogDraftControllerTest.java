@@ -1,10 +1,8 @@
 package me.bombom.api.v1.blog.controller;
 
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -18,20 +16,15 @@ import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftReferenceImageResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftThumbnailImageResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
-import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
 import me.bombom.api.v1.blog.service.BlogDraftService;
-import me.bombom.api.v1.blog.service.BlogImageService;
-import me.bombom.api.v1.common.exception.CIllegalArgumentException;
-import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.common.resolver.LoginMember;
 import me.bombom.api.v1.common.support.ControllerTestSupport;
 import me.bombom.api.v1.member.domain.Member;
 import me.bombom.api.v1.member.enums.Gender;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.MethodParameter;
@@ -48,9 +41,6 @@ class BlogDraftControllerTest extends ControllerTestSupport {
 
     @MockitoBean
     private BlogDraftService blogDraftService;
-
-    @MockitoBean
-    private BlogImageService blogImageService;
 
     @Test
     void 초안_목록_조회_API_성공() throws Exception {
@@ -116,50 +106,6 @@ class BlogDraftControllerTest extends ControllerTestSupport {
         mockMvc.perform(post("/admin/api/v1/blog/drafts").with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.postId").value(123L));
-    }
-
-    @Test
-    void 초안_이미지_업로드_API_성공() throws Exception {
-        // given
-        MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(blogImageService.uploadDraftImage(1L, 123L, imageFile))
-                .willReturn(new UploadBlogDraftImageResponse(10L, "https://cdn.bombom.me/blog/10.png"));
-
-        // when // then
-        mockMvc.perform(multipart("/admin/api/v1/blog/drafts/{postId}/images", 123L)
-                        .file(imageFile)
-                        .with(csrf()))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.imageId").value(10L))
-                .andExpect(jsonPath("$.imageUrl").value("https://cdn.bombom.me/blog/10.png"));
-    }
-
-    @Test
-    void 다른_사용자_초안_이미지_업로드_시_403을_반환한다() throws Exception {
-        // given
-        MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        willThrow(new CIllegalArgumentException(ErrorDetail.FORBIDDEN_RESOURCE))
-                .given(blogImageService).uploadDraftImage(1L, 123L, imageFile);
-
-        // when // then
-        mockMvc.perform(multipart("/admin/api/v1/blog/drafts/{postId}/images", 123L)
-                        .file(imageFile)
-                        .with(csrf()))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void 초안이_아닌_글_이미지_업로드_시_409를_반환한다() throws Exception {
-        // given
-        MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        willThrow(new CIllegalArgumentException(ErrorDetail.RESOURCE_CONFLICT))
-                .given(blogImageService).uploadDraftImage(1L, 123L, imageFile);
-
-        // when // then
-        mockMvc.perform(multipart("/admin/api/v1/blog/drafts/{postId}/images", 123L)
-                        .file(imageFile)
-                        .with(csrf()))
-                .andExpect(status().isConflict());
     }
 
     @TestConfiguration

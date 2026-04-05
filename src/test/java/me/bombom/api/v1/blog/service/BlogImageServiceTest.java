@@ -41,21 +41,21 @@ class BlogImageServiceTest {
     private S3FileService s3FileService;
 
     @Test
-    void 초안_이미지_업로드_성공() {
+    void 글_이미지_업로드_성공() {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(s3FileService.uploadToPublicBucketWithMetadata(imageFile, "blog/drafts"))
-                .willReturn(new StoredFile("blog/drafts/202603/test.png", "https://cdn/test.png"));
+        given(s3FileService.uploadToPublicBucketWithMetadata(imageFile, "blog/posts"))
+                .willReturn(new StoredFile("blog/posts/202603/test.png", "https://cdn/test.png"));
 
         // when
-        UploadBlogDraftImageResponse response = blogImageService.uploadDraftImage(1L, blogPost.getId(), imageFile);
+        UploadBlogDraftImageResponse response = blogImageService.uploadPostImage(1L, blogPost.getId(), imageFile);
 
         // then
         BlogImageAsset blogImageAsset = blogImageAssetRepository.findById(response.imageId()).orElseThrow();
         assertSoftly(softly -> {
             softly.assertThat(blogImageAsset.getBlogPostId()).isEqualTo(blogPost.getId());
-            softly.assertThat(blogImageAsset.getObjectKey()).isEqualTo("blog/drafts/202603/test.png");
+            softly.assertThat(blogImageAsset.getObjectKey()).isEqualTo("blog/posts/202603/test.png");
             softly.assertThat(blogImageAsset.getImageUrl()).isEqualTo("https://cdn/test.png");
             softly.assertThat(blogImageAsset.getStatus()).isEqualTo(BlogImageAssetStatus.UPLOADED);
             softly.assertThat(blogImageAsset.getDeleteRequestedAt()).isNull();
@@ -63,20 +63,20 @@ class BlogImageServiceTest {
     }
 
     @Test
-    void 다른_사용자_초안에_이미지_업로드_시_403() {
+    void 다른_사용자_글에_이미지_업로드_시_403() {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(2L));
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
 
         // when & then
-        assertThatThrownBy(() -> blogImageService.uploadDraftImage(1L, blogPost.getId(), imageFile))
+        assertThatThrownBy(() -> blogImageService.uploadPostImage(1L, blogPost.getId(), imageFile))
                 .isInstanceOf(CIllegalArgumentException.class)
                 .extracting("errorDetail")
                 .isEqualTo(ErrorDetail.FORBIDDEN_RESOURCE);
     }
 
     @Test
-    void DRAFT_아닌_글에_이미지_업로드_시_409() {
+    void 발행_글에도_이미지_업로드_성공() {
         // given
         BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
                 .memberId(1L)
@@ -84,9 +84,33 @@ class BlogImageServiceTest {
                 .visibility(BlogVisibility.PRIVATE)
                 .build());
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
+        given(s3FileService.uploadToPublicBucketWithMetadata(imageFile, "blog/posts"))
+                .willReturn(new StoredFile("blog/posts/202603/test.png", "https://cdn/test.png"));
+
+        // when
+        UploadBlogDraftImageResponse response = blogImageService.uploadPostImage(1L, blogPost.getId(), imageFile);
+
+        // then
+        BlogImageAsset blogImageAsset = blogImageAssetRepository.findById(response.imageId()).orElseThrow();
+        assertSoftly(softly -> {
+            softly.assertThat(blogImageAsset.getBlogPostId()).isEqualTo(blogPost.getId());
+            softly.assertThat(blogImageAsset.getStatus()).isEqualTo(BlogImageAssetStatus.ATTACHED);
+            softly.assertThat(blogImageAsset.getDeleteRequestedAt()).isNull();
+        });
+    }
+
+    @Test
+    void 삭제된_글에_이미지_업로드_시_409() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .status(BlogPostStatus.DELETED)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+        MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
 
         // when & then
-        assertThatThrownBy(() -> blogImageService.uploadDraftImage(1L, blogPost.getId(), imageFile))
+        assertThatThrownBy(() -> blogImageService.uploadPostImage(1L, blogPost.getId(), imageFile))
                 .isInstanceOf(CIllegalArgumentException.class)
                 .extracting("errorDetail")
                 .isEqualTo(ErrorDetail.RESOURCE_CONFLICT);
