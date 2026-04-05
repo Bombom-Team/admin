@@ -164,7 +164,7 @@ class BlogPostControllerTest extends ControllerTestSupport {
                         .with(csrf())
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isNoContent());
     }
 
     @Test

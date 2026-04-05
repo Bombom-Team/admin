@@ -74,7 +74,7 @@ public class BlogPostController {
     }
 
     @PutMapping("/{postId}/thumbnail")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void assignThumbnail(
             @LoginMember Member member,
             @PathVariable Long postId,
