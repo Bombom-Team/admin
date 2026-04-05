@@ -5,13 +5,16 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
+import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
+import me.bombom.api.v1.blog.domain.BlogVisibility;
 import me.bombom.api.v1.blog.service.BlogDraftService;
 import me.bombom.api.v1.blog.service.BlogImageService;
 import me.bombom.api.v1.blog.service.BlogPostService;
@@ -117,6 +120,33 @@ class BlogPostControllerTest extends ControllerTestSupport {
         mockMvc.perform(delete("/admin/api/v1/blog/posts/{postId}", 123L)
                         .with(csrf()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void 블로그_글_공개범위_수정_API_성공() throws Exception {
+        // given
+        UpdateBlogPostVisibilityRequest request = new UpdateBlogPostVisibilityRequest(BlogVisibility.PUBLIC);
+
+        // when // then
+        mockMvc.perform(patch("/admin/api/v1/blog/posts/{postId}/visibility", 123L)
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void 잘못된_visibility_값이면_400을_반환한다() throws Exception {
+        // when // then
+        mockMvc.perform(patch("/admin/api/v1/blog/posts/{postId}/visibility", 123L)
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "visibility": "UNKNOWN"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @TestConfiguration

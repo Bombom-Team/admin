@@ -151,6 +151,86 @@ class BlogPostServiceTest {
                 .isEqualTo(ErrorDetail.ENTITY_NOT_FOUND);
     }
 
+    @Test
+    void DRAFT_글_visibility_변경_성공() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.DRAFT));
+
+        // when
+        blogPostService.updatePostVisibility(1L, blogPost.getId(), BlogVisibility.PUBLIC);
+
+        // then
+        BlogPost updatedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(updatedPost.getVisibility()).isEqualTo(BlogVisibility.PUBLIC);
+    }
+
+    @Test
+    void PUBLISHED_글_visibility_변경_성공() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.PUBLISHED));
+
+        // when
+        blogPostService.updatePostVisibility(1L, blogPost.getId(), BlogVisibility.PUBLIC);
+
+        // then
+        BlogPost updatedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(updatedPost.getVisibility()).isEqualTo(BlogVisibility.PUBLIC);
+    }
+
+    @Test
+    void PRIVATE에서_PUBLIC으로_변경_성공() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.DRAFT));
+
+        // when
+        blogPostService.updatePostVisibility(1L, blogPost.getId(), BlogVisibility.PUBLIC);
+
+        // then
+        BlogPost updatedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(updatedPost.getVisibility()).isEqualTo(BlogVisibility.PUBLIC);
+    }
+
+    @Test
+    void PUBLIC에서_PRIVATE로_변경_성공() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .status(BlogPostStatus.PUBLISHED)
+                .visibility(BlogVisibility.PUBLIC)
+                .build());
+
+        // when
+        blogPostService.updatePostVisibility(1L, blogPost.getId(), BlogVisibility.PRIVATE);
+
+        // then
+        BlogPost updatedPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        assertThat(updatedPost.getVisibility()).isEqualTo(BlogVisibility.PRIVATE);
+    }
+
+    @Test
+    void 다른_사용자_글_visibility_변경_시_403() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createBlogPost(2L, BlogPostStatus.DRAFT));
+
+        // when // then
+        assertThatThrownBy(() -> blogPostService.updatePostVisibility(1L, blogPost.getId(), BlogVisibility.PUBLIC))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.FORBIDDEN_RESOURCE);
+    }
+
+    @Test
+    void DELETED_글_visibility_변경_시_409() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.DELETED));
+
+        // when // then
+        assertThatThrownBy(() -> blogPostService.updatePostVisibility(1L, blogPost.getId(), BlogVisibility.PUBLIC))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.RESOURCE_CONFLICT);
+    }
+
     private BlogPost createBlogPost(
             Long memberId,
             BlogPostStatus status
