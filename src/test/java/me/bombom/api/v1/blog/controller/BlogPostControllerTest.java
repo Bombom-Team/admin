@@ -19,6 +19,7 @@ import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftHashtagResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftReferenceImageResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftThumbnailImageResponse;
+import me.bombom.api.v1.blog.dto.BlogPostDetailResponse;
 import me.bombom.api.v1.blog.dto.BlogPostListItemResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
@@ -127,6 +128,31 @@ class BlogPostControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$[0].postId").value(123L))
                 .andExpect(jsonPath("$[0].description").value("공개 부제"))
                 .andExpect(jsonPath("$[0].visibility").value("PUBLIC"));
+    }
+
+    @Test
+    void 블로그_글_상세_조회_API_성공() throws Exception {
+        // given
+        given(blogPostService.getPost(123L)).willReturn(new BlogPostDetailResponse(
+                "제목",
+                "설명",
+                "<p>본문</p>",
+                "https://cdn.bombom.me/blog/10.png",
+                "Backend",
+                LocalDateTime.of(2026, 3, 19, 21, 0, 0),
+                List.of("spring")
+        ));
+
+        // when // then
+        mockMvc.perform(get("/admin/api/v1/blog/posts/{postId}", 123L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("제목"))
+                .andExpect(jsonPath("$.description").value("설명"))
+                .andExpect(jsonPath("$.content").value("<p>본문</p>"))
+                .andExpect(jsonPath("$.thumbnailImageUrl").value("https://cdn.bombom.me/blog/10.png"))
+                .andExpect(jsonPath("$.categoryName").value("Backend"))
+                .andExpect(jsonPath("$.publishedAt").value("2026-03-19T21:00:00"))
+                .andExpect(jsonPath("$.hashtags[0]").value("spring"));
     }
 
     @Test

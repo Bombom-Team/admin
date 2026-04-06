@@ -6,14 +6,21 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import me.bombom.api.v1.blog.domain.BlogCategory;
+import me.bombom.api.v1.blog.domain.BlogHashtag;
 import me.bombom.api.v1.blog.domain.BlogImageAsset;
 import me.bombom.api.v1.blog.domain.BlogImageAssetStatus;
 import me.bombom.api.v1.blog.domain.BlogPost;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
+import me.bombom.api.v1.blog.domain.BlogPostTag;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
+import me.bombom.api.v1.blog.dto.BlogPostDetailResponse;
 import me.bombom.api.v1.blog.dto.BlogPostListItemResponse;
+import me.bombom.api.v1.blog.repository.BlogCategoryRepository;
+import me.bombom.api.v1.blog.repository.BlogHashtagRepository;
 import me.bombom.api.v1.blog.repository.BlogImageAssetRepository;
 import me.bombom.api.v1.blog.repository.BlogPostRepository;
+import me.bombom.api.v1.blog.repository.BlogPostTagRepository;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.common.config.TimeConfig;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
@@ -32,6 +39,15 @@ class BlogPostServiceTest {
 
     @Autowired
     private BlogPostRepository blogPostRepository;
+
+    @Autowired
+    private BlogCategoryRepository blogCategoryRepository;
+
+    @Autowired
+    private BlogHashtagRepository blogHashtagRepository;
+
+    @Autowired
+    private BlogPostTagRepository blogPostTagRepository;
 
     @Autowired
     private BlogImageAssetRepository blogImageAssetRepository;
@@ -93,6 +109,58 @@ class BlogPostServiceTest {
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).visibility()).isEqualTo(BlogVisibility.PUBLIC);
         assertThat(responses.get(0).description()).isEqualTo("공개 부제");
+    }
+
+    @Test
+    void 블로그_글_상세_조회_성공() {
+        // given
+        BlogCategory blogCategory = blogCategoryRepository.save(BlogCategory.builder()
+                .name("Backend")
+                .build());
+        BlogPost blogPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(2L)
+                .title("제목")
+                .description("설명")
+                .content("<p>본문</p>")
+                .status(BlogPostStatus.PUBLISHED)
+                .visibility(BlogVisibility.PUBLIC)
+                .categoryId(blogCategory.getId())
+                .publishedAt(LocalDateTime.of(2026, 3, 19, 21, 0, 0))
+                .build());
+        BlogHashtag blogHashtag = blogHashtagRepository.save(BlogHashtag.builder()
+                .name("spring")
+                .build());
+        blogPostTagRepository.save(BlogPostTag.builder()
+                .blogPostId(blogPost.getId())
+                .blogHashtagId(blogHashtag.getId())
+                .build());
+        BlogImageAsset thumbnailImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
+
+        BlogPost savedBlogPost = blogPostRepository.findById(blogPost.getId()).orElseThrow();
+        savedBlogPost.assignThumbnailImage(thumbnailImage.getId());
+
+        // when
+        BlogPostDetailResponse response = blogPostService.getPost(blogPost.getId());
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(response.title()).isEqualTo("제목");
+            softly.assertThat(response.description()).isEqualTo("설명");
+            softly.assertThat(response.content()).isEqualTo("<p>본문</p>");
+            softly.assertThat(response.thumbnailImageUrl()).isEqualTo(thumbnailImage.getImageUrl());
+            softly.assertThat(response.categoryName()).isEqualTo("Backend");
+            softly.assertThat(response.publishedAt()).isEqualTo(LocalDateTime.of(2026, 3, 19, 21, 0, 0));
+            softly.assertThat(response.hashtags()).containsExactly("spring");
+        });
+    }
+
+    @Test
+    void 존재하지_않는_블로그_글_상세_조회_시_404() {
+        // when // then
+        assertThatThrownBy(() -> blogPostService.getPost(999L))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.ENTITY_NOT_FOUND);
     }
 
     @Test
