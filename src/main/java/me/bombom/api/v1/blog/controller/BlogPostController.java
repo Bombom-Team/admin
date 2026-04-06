@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.blog.dto.AssignBlogPostThumbnailRequest;
 import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
+import me.bombom.api.v1.blog.dto.BlogPostDetailResponse;
 import me.bombom.api.v1.blog.dto.BlogPostListItemResponse;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
@@ -41,6 +42,12 @@ public class BlogPostController implements BlogPostControllerApi {
     private final BlogImageService blogImageService;
     private final BlogPostService blogPostService;
     private final BlogThumbnailService blogThumbnailService;
+
+    @Override
+    @GetMapping("/{postId}")
+    public BlogPostDetailResponse getPost(@PathVariable Long postId) {
+        return blogPostService.getPost(postId);
+    }
 
     @Override
     @GetMapping("/{postId}/edit")
