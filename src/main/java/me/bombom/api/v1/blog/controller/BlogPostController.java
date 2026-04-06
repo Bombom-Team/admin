@@ -1,9 +1,12 @@
 package me.bombom.api.v1.blog.controller;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.blog.dto.AssignBlogPostThumbnailRequest;
 import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
+import me.bombom.api.v1.blog.dto.BlogPostListItemResponse;
+import me.bombom.api.v1.blog.domain.BlogVisibility;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
@@ -22,8 +25,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -107,5 +111,11 @@ public class BlogPostController implements BlogPostControllerApi {
             @PathVariable Long postId
     ) {
         blogThumbnailService.removeThumbnail(member.getId(), postId);
+    }
+
+    @Override
+    @GetMapping
+    public List<BlogPostListItemResponse> getPosts(@RequestParam(required = false) BlogVisibility visibility) {
+        return blogPostService.getPosts(visibility);
     }
 }

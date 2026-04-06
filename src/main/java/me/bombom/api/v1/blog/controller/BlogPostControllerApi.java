@@ -8,13 +8,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import me.bombom.api.v1.blog.dto.AssignBlogPostThumbnailRequest;
 import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
+import me.bombom.api.v1.blog.dto.BlogPostListItemResponse;
+import me.bombom.api.v1.blog.domain.BlogVisibility;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
 import me.bombom.api.v1.common.resolver.LoginMember;
 import me.bombom.api.v1.member.domain.Member;
+import java.util.List;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Blog Post", description = "블로그 글 공통 관리 API")
@@ -22,6 +26,10 @@ import org.springframework.web.multipart.MultipartFile;
                 @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content)
 })
 public interface BlogPostControllerApi {
+
+    @Operation(summary = "블로그 글 목록 조회", description = "작성자와 관계없이 블로그 글 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    List<BlogPostListItemResponse> getPosts(@RequestParam(required = false) BlogVisibility visibility);
 
     @Operation(summary = "블로그 글 수정용 상세 조회", description = "수정 가능한 블로그 글(DRAFT, PUBLISHED) 상세 정보를 조회합니다.")
     @ApiResponses({

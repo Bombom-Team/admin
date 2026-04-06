@@ -8,6 +8,7 @@ import me.bombom.api.v1.blog.domain.BlogImageAsset;
 import me.bombom.api.v1.blog.domain.BlogPost;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
+import me.bombom.api.v1.blog.dto.BlogPostListItemResponse;
 import me.bombom.api.v1.blog.repository.BlogImageAssetRepository;
 import me.bombom.api.v1.blog.repository.BlogPostRepository;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
@@ -24,6 +25,10 @@ public class BlogPostService {
     private final Clock clock;
     private final BlogPostRepository blogPostRepository;
     private final BlogImageAssetRepository blogImageAssetRepository;
+
+    public List<BlogPostListItemResponse> getPosts(BlogVisibility visibility) {
+        return blogPostRepository.findAllPostListItems(visibility);
+    }
 
     @Transactional
     public void deletePost(

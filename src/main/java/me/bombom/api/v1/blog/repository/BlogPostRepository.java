@@ -3,6 +3,8 @@ package me.bombom.api.v1.blog.repository;
 import java.util.List;
 import me.bombom.api.v1.blog.domain.BlogPost;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
+import me.bombom.api.v1.blog.domain.BlogVisibility;
+import me.bombom.api.v1.blog.dto.BlogPostListItemResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,4 +26,21 @@ public interface BlogPostRepository extends JpaRepository<BlogPost, Long> {
             Long memberId,
             BlogPostStatus status
     );
+
+    @Query("""
+            select new me.bombom.api.v1.blog.dto.BlogPostListItemResponse(
+                blogPost.id,
+                blogPost.memberId,
+                blogPost.title,
+                blogPost.description,
+                blogPost.status,
+                blogPost.visibility,
+                blogPost.publishedAt,
+                blogPost.updatedAt
+            )
+            from BlogPost blogPost
+            where (:visibility is null or blogPost.visibility = :visibility)
+            order by blogPost.updatedAt desc
+            """)
+    List<BlogPostListItemResponse> findAllPostListItems(BlogVisibility visibility);
 }
