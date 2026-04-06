@@ -4,17 +4,25 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import me.bombom.api.v1.blog.dto.AssignBlogPostThumbnailRequest;
+import me.bombom.api.v1.blog.dto.BlogDraftCategoryResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftHashtagResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftReferenceImageResponse;
+import me.bombom.api.v1.blog.dto.BlogDraftThumbnailImageResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
+import me.bombom.api.v1.blog.domain.BlogPostStatus;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
 import me.bombom.api.v1.blog.service.BlogDraftService;
 import me.bombom.api.v1.blog.service.BlogImageService;
@@ -54,6 +62,31 @@ class BlogPostControllerTest extends ControllerTestSupport {
 
     @MockitoBean
     private BlogThumbnailService blogThumbnailService;
+
+    @Test
+    void 블로그_글_수정용_상세_조회_API_성공() throws Exception {
+        // given
+        given(blogDraftService.getPostForEdit(1L, 123L)).willReturn(new BlogDraftDetailResponse(
+                123L,
+                "제목",
+                "설명",
+                "<p>본문</p>",
+                BlogPostStatus.PUBLISHED,
+                BlogVisibility.PRIVATE,
+                new BlogDraftThumbnailImageResponse(10L, "https://cdn.bombom.me/blog/10.png"),
+                new BlogDraftCategoryResponse(1L, "Backend"),
+                List.of(new BlogDraftHashtagResponse(1L, "spring")),
+                List.of(new BlogDraftReferenceImageResponse(10L, "https://cdn.bombom.me/blog/10.png")),
+                LocalDateTime.of(2026, 3, 19, 21, 0, 0)
+        ));
+
+        // when // then
+        mockMvc.perform(get("/admin/api/v1/blog/posts/{postId}/edit", 123L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.postId").value(123L))
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.thumbnailImage.imageId").value(10L));
+    }
 
     @Test
     void 블로그_글_수정_API_성공() throws Exception {

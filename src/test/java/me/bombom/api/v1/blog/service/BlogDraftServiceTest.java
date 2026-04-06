@@ -434,7 +434,7 @@ class BlogDraftServiceTest {
                 .build());
 
         // when
-        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+        BlogDraftDetailResponse response = blogDraftService.getPostForEdit(1L, blogPost.getId());
 
         // then
         assertSoftly(softly -> {
@@ -461,7 +461,7 @@ class BlogDraftServiceTest {
         BlogPost blogPost = blogPostRepository.save(createDraftPost(2L));
 
         // when // then
-        assertThatThrownBy(() -> blogDraftService.getDraft(1L, blogPost.getId()))
+        assertThatThrownBy(() -> blogDraftService.getPostForEdit(1L, blogPost.getId()))
                 .isInstanceOf(CIllegalArgumentException.class)
                 .extracting("errorDetail")
                 .isEqualTo(ErrorDetail.FORBIDDEN_RESOURCE);
@@ -473,7 +473,7 @@ class BlogDraftServiceTest {
         BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.PUBLISHED, "발행글"));
 
         // when
-        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+        BlogDraftDetailResponse response = blogDraftService.getPostForEdit(1L, blogPost.getId());
 
         // then
         assertSoftly(softly -> {
@@ -489,7 +489,7 @@ class BlogDraftServiceTest {
         BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.DELETED, "삭제글"));
 
         // when // then
-        assertThatThrownBy(() -> blogDraftService.getDraft(1L, blogPost.getId()))
+        assertThatThrownBy(() -> blogDraftService.getPostForEdit(1L, blogPost.getId()))
                 .isInstanceOf(CIllegalArgumentException.class)
                 .extracting("errorDetail")
                 .isEqualTo(ErrorDetail.RESOURCE_CONFLICT);
@@ -506,7 +506,7 @@ class BlogDraftServiceTest {
                 .build());
 
         // when
-        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+        BlogDraftDetailResponse response = blogDraftService.getPostForEdit(1L, blogPost.getId());
 
         // then
         assertSoftly(softly -> {
@@ -521,7 +521,7 @@ class BlogDraftServiceTest {
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
 
         // when
-        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+        BlogDraftDetailResponse response = blogDraftService.getPostForEdit(1L, blogPost.getId());
 
         // then
         assertThat(response.hashtags()).isEmpty();
@@ -542,7 +542,7 @@ class BlogDraftServiceTest {
                 .build());
 
         // when
-        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+        BlogDraftDetailResponse response = blogDraftService.getPostForEdit(1L, blogPost.getId());
 
         // then
         assertThat(response.referenceImages()).singleElement()
