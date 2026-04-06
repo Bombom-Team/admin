@@ -19,6 +19,7 @@ import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftHashtagResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftReferenceImageResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftThumbnailImageResponse;
+import me.bombom.api.v1.blog.dto.BlogPostListItemResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
@@ -62,6 +63,71 @@ class BlogPostControllerTest extends ControllerTestSupport {
 
     @MockitoBean
     private BlogThumbnailService blogThumbnailService;
+
+    @Test
+    void 블로그_글_목록_조회_API_성공() throws Exception {
+        // given
+        given(blogPostService.getPosts(null)).willReturn(List.of(
+                new BlogPostListItemResponse(
+                        123L,
+                        2L,
+                        "공개 글",
+                        "공개 부제",
+                        BlogPostStatus.PUBLISHED,
+                        BlogVisibility.PUBLIC,
+                        LocalDateTime.of(2026, 3, 19, 21, 0, 0),
+                        LocalDateTime.of(2026, 3, 20, 9, 0, 0)
+                ),
+                new BlogPostListItemResponse(
+                        122L,
+                        1L,
+                        "비공개 초안",
+                        "비공개 부제",
+                        BlogPostStatus.DRAFT,
+                        BlogVisibility.PRIVATE,
+                        null,
+                        LocalDateTime.of(2026, 3, 18, 20, 0, 0)
+                )
+        ));
+
+        // when // then
+        mockMvc.perform(get("/admin/api/v1/blog/posts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].postId").value(123L))
+                .andExpect(jsonPath("$[0].memberId").value(2L))
+                .andExpect(jsonPath("$[0].title").value("공개 글"))
+                .andExpect(jsonPath("$[0].description").value("공개 부제"))
+                .andExpect(jsonPath("$[0].status").value("PUBLISHED"))
+                .andExpect(jsonPath("$[0].visibility").value("PUBLIC"))
+                .andExpect(jsonPath("$[1].postId").value(122L))
+                .andExpect(jsonPath("$[1].description").value("비공개 부제"))
+                .andExpect(jsonPath("$[1].visibility").value("PRIVATE"));
+    }
+
+    @Test
+    void 블로그_글_목록_조회_API_visibility_필터_성공() throws Exception {
+        // given
+        given(blogPostService.getPosts(BlogVisibility.PUBLIC))
+                .willReturn(List.of(
+                        new BlogPostListItemResponse(
+                                123L,
+                                2L,
+                                "공개 글",
+                                "공개 부제",
+                                BlogPostStatus.PUBLISHED,
+                                BlogVisibility.PUBLIC,
+                                LocalDateTime.of(2026, 3, 19, 21, 0, 0),
+                                LocalDateTime.of(2026, 3, 20, 9, 0, 0)
+                        )
+                ));
+
+        // when // then
+        mockMvc.perform(get("/admin/api/v1/blog/posts").param("visibility", "PUBLIC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].postId").value(123L))
+                .andExpect(jsonPath("$[0].description").value("공개 부제"))
+                .andExpect(jsonPath("$[0].visibility").value("PUBLIC"));
+    }
 
     @Test
     void 블로그_글_수정용_상세_조회_API_성공() throws Exception {

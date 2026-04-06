@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import me.bombom.api.v1.blog.domain.BlogImageAsset;
 import me.bombom.api.v1.blog.domain.BlogImageAssetStatus;
 import me.bombom.api.v1.blog.domain.BlogPost;
 import me.bombom.api.v1.blog.domain.BlogPostStatus;
 import me.bombom.api.v1.blog.domain.BlogVisibility;
+import me.bombom.api.v1.blog.dto.BlogPostListItemResponse;
 import me.bombom.api.v1.blog.repository.BlogImageAssetRepository;
 import me.bombom.api.v1.blog.repository.BlogPostRepository;
 import me.bombom.api.v1.common.config.QuerydslConfig;
@@ -33,6 +35,65 @@ class BlogPostServiceTest {
 
     @Autowired
     private BlogImageAssetRepository blogImageAssetRepository;
+
+    @Test
+    void 블로그_글_목록은_작성자와_무관하게_조회된다() {
+        // given
+        BlogPost firstPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("첫 번째 글")
+                .description("첫 번째 부제")
+                .status(BlogPostStatus.PUBLISHED)
+                .visibility(BlogVisibility.PUBLIC)
+                .publishedAt(LocalDateTime.of(2026, 3, 19, 21, 0, 0))
+                .build());
+        BlogPost secondPost = blogPostRepository.save(BlogPost.builder()
+                .memberId(2L)
+                .title("두 번째 글")
+                .description("두 번째 부제")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when
+        List<BlogPostListItemResponse> responses = blogPostService.getPosts(null);
+
+        // then
+        assertThat(responses).extracting(BlogPostListItemResponse::postId)
+                .contains(firstPost.getId(), secondPost.getId());
+        assertThat(responses).extracting(BlogPostListItemResponse::memberId)
+                .contains(1L, 2L);
+        assertThat(responses).extracting(BlogPostListItemResponse::description)
+                .contains("첫 번째 부제", "두 번째 부제");
+    }
+
+    @Test
+    void 블로그_글_목록은_visibility로_필터링된다() {
+        // given
+        blogPostRepository.save(BlogPost.builder()
+                .memberId(1L)
+                .title("공개 글")
+                .description("공개 부제")
+                .status(BlogPostStatus.PUBLISHED)
+                .visibility(BlogVisibility.PUBLIC)
+                .publishedAt(LocalDateTime.of(2026, 3, 19, 21, 0, 0))
+                .build());
+        blogPostRepository.save(BlogPost.builder()
+                .memberId(2L)
+                .title("비공개 글")
+                .description("비공개 부제")
+                .status(BlogPostStatus.DRAFT)
+                .visibility(BlogVisibility.PRIVATE)
+                .build());
+
+        // when
+        List<BlogPostListItemResponse> responses = blogPostService.getPosts(BlogVisibility.PUBLIC);
+
+        // then
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).visibility()).isEqualTo(BlogVisibility.PUBLIC);
+        assertThat(responses.get(0).description()).isEqualTo("공개 부제");
+    }
 
     @Test
     void DRAFT_글_삭제_성공() {
