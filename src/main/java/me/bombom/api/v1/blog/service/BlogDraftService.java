@@ -85,11 +85,11 @@ public class BlogDraftService {
         );
     }
 
-    public BlogDraftDetailResponse getDraft(Long memberId, Long postId) {
+    public BlogDraftDetailResponse getPostForEdit(Long memberId, Long postId) {
         String operation = "getDraft";
         BlogPost blogPost = findBlogPost(postId, operation);
         validateOwner(blogPost, memberId, operation);
-        validateDraftStatus(blogPost, operation);
+        validateEditableStatus(blogPost, operation);
 
         return BlogDraftDetailResponse.of(
                 blogPost,

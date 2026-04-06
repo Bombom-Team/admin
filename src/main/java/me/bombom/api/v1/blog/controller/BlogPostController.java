@@ -3,6 +3,7 @@ package me.bombom.api.v1.blog.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.blog.dto.AssignBlogPostThumbnailRequest;
+import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
@@ -15,6 +16,7 @@ import me.bombom.api.v1.member.domain.Member;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +37,15 @@ public class BlogPostController implements BlogPostControllerApi {
     private final BlogImageService blogImageService;
     private final BlogPostService blogPostService;
     private final BlogThumbnailService blogThumbnailService;
+
+    @Override
+    @GetMapping("/{postId}/edit")
+    public BlogDraftDetailResponse getPostForEdit(
+            @LoginMember Member member,
+            @PathVariable Long postId
+    ) {
+        return blogDraftService.getPostForEdit(member.getId(), postId);
+    }
 
     @Override
     @PutMapping("/{postId}")

@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import me.bombom.api.v1.blog.dto.AssignBlogPostThumbnailRequest;
+import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
 import me.bombom.api.v1.blog.dto.UpdateBlogDraftRequest;
 import me.bombom.api.v1.blog.dto.UpdateBlogPostVisibilityRequest;
 import me.bombom.api.v1.blog.dto.UploadBlogDraftImageResponse;
@@ -21,6 +22,17 @@ import org.springframework.web.multipart.MultipartFile;
                 @ApiResponse(responseCode = "403", description = "권한 없음", content = @Content)
 })
 public interface BlogPostControllerApi {
+
+    @Operation(summary = "블로그 글 수정용 상세 조회", description = "수정 가능한 블로그 글(DRAFT, PUBLISHED) 상세 정보를 조회합니다.")
+    @ApiResponses({
+                    @ApiResponse(responseCode = "200", description = "조회 성공"),
+                    @ApiResponse(responseCode = "404", description = "블로그 글을 찾을 수 없음", content = @Content),
+                    @ApiResponse(responseCode = "409", description = "수정할 수 없는 상태", content = @Content)
+    })
+    BlogDraftDetailResponse getPostForEdit(
+            @LoginMember Member member,
+            @PathVariable Long postId
+    );
 
     @Operation(summary = "블로그 글 수정", description = "활성 블로그 글(DRAFT, PUBLISHED)을 수정합니다.")
     @ApiResponses({

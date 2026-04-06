@@ -2,7 +2,6 @@ package me.bombom.api.v1.blog.controller;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import me.bombom.api.v1.blog.dto.BlogDraftDetailResponse;
 import me.bombom.api.v1.blog.dto.BlogDraftListItemResponse;
 import me.bombom.api.v1.blog.dto.CreateBlogDraftResponse;
 import me.bombom.api.v1.blog.service.BlogDraftService;
@@ -34,15 +33,6 @@ public class BlogDraftController implements BlogDraftControllerApi {
     @GetMapping
     public List<BlogDraftListItemResponse> getDrafts(@LoginMember Member member) {
         return blogDraftService.getDrafts(member.getId());
-    }
-
-    @Override
-    @GetMapping("/{postId}")
-    public BlogDraftDetailResponse getDraft(
-            @LoginMember Member member,
-            @PathVariable Long postId
-    ) {
-        return blogDraftService.getDraft(member.getId(), postId);
     }
 
     @Override
