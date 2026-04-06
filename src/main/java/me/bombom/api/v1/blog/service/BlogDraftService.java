@@ -86,7 +86,7 @@ public class BlogDraftService {
     }
 
     public BlogDraftDetailResponse getPostForEdit(Long memberId, Long postId) {
-        String operation = "getDraft";
+        String operation = "getPostForEdit";
         BlogPost blogPost = findBlogPost(postId, operation);
         validateOwner(blogPost, memberId, operation);
         validateEditableStatus(blogPost, operation);
@@ -272,7 +272,7 @@ public class BlogDraftService {
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "blogImageAsset")
                         .addContext(ErrorContextKeys.OPERATION, operation));
 
-        boolean isForeignThumbnailImage = thumbnailImage.getBlogPostId().equals(blogPost.getId()) == false;
+        boolean isForeignThumbnailImage = !thumbnailImage.getBlogPostId().equals(blogPost.getId());
         if (isForeignThumbnailImage) {
             throw invalidInput("thumbnailImageId");
         }
