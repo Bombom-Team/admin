@@ -387,7 +387,7 @@ class BlogDraftServiceTest {
     }
 
     @Test
-    void 내_DRAFT_글_상세_조회_성공() {
+    void 내_DRAFT_글_수정용_상세_조회_성공() {
         // given
         BlogCategory blogCategory = blogCategoryRepository.save(BlogCategory.builder()
                 .name("Backend")
@@ -468,9 +468,25 @@ class BlogDraftServiceTest {
     }
 
     @Test
-    void DRAFT_아닌_글_조회_시_409() {
+    void 내_PUBLISHED_글_수정용_상세_조회_성공() {
         // given
         BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.PUBLISHED, "발행글"));
+
+        // when
+        BlogDraftDetailResponse response = blogDraftService.getDraft(1L, blogPost.getId());
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(response.postId()).isEqualTo(blogPost.getId());
+            softly.assertThat(response.title()).isEqualTo("발행글");
+            softly.assertThat(response.status()).isEqualTo(BlogPostStatus.PUBLISHED);
+        });
+    }
+
+    @Test
+    void 삭제된_글_수정용_상세_조회_시_409() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createBlogPost(1L, BlogPostStatus.DELETED, "삭제글"));
 
         // when // then
         assertThatThrownBy(() -> blogDraftService.getDraft(1L, blogPost.getId()))

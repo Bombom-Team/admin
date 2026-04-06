@@ -60,7 +60,7 @@ class BlogDraftControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    void 초안_상세_조회_API_성공() throws Exception {
+    void 수정용_상세_조회_API_성공() throws Exception {
         // given
         given(blogDraftService.getDraft(1L, 123L)).willReturn(new BlogDraftDetailResponse(
                 123L,
