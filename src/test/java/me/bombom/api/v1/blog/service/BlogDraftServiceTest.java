@@ -113,6 +113,32 @@ class BlogDraftServiceTest {
     }
 
     @Test
+    void 초안_저장_후_동일한_해시태그로_다시_저장해도_중복키_예외가_발생하지_않는다() {
+        // given
+        BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
+        UpdateBlogDraftRequest request = new UpdateBlogDraftRequest(
+                "제목",
+                "본문",
+                "설명",
+                null,
+                List.of("뉴스레터"),
+                null
+        );
+
+        // when
+        blogDraftService.updatePost(1L, blogPost.getId(), request);
+        blogDraftService.updatePost(1L, blogPost.getId(), request);
+
+        // then
+        List<String> savedHashTagNames = blogPostTagRepository.findAllByBlogPostId(blogPost.getId()).stream()
+                .map(BlogPostTag::getBlogHashtagId)
+                .map(hashTagId -> blogHashtagRepository.findById(hashTagId).orElseThrow().getName())
+                .toList();
+
+        assertThat(savedHashTagNames).containsExactly("뉴스레터");
+    }
+
+    @Test
     void 초안_저장_시_referencedImageIds에_포함된_이미지가_ATTACHED로_전환() {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
@@ -408,16 +434,17 @@ class BlogDraftServiceTest {
                 .status(BlogImageAssetStatus.ATTACHED)
                 .build());
         entityManager.createNativeQuery("""
-                update blog_post
-                set thumbnail_image_id = :thumbnailImageId
-                where id = :postId
-                """)
+                        update blog_post
+                        set thumbnail_image_id = :thumbnailImageId
+                        where id = :postId
+                        """)
                 .setParameter("thumbnailImageId", thumbnailImage.getId())
                 .setParameter("postId", blogPost.getId())
                 .executeUpdate();
         entityManager.flush();
         entityManager.clear();
-        BlogImageAsset anotherAttachedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
+        BlogImageAsset anotherAttachedImage = blogImageAssetRepository.save(
+                createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
         BlogHashtag spring = blogHashtagRepository.save(BlogHashtag.builder()
                 .name("spring")
                 .build());
@@ -531,7 +558,8 @@ class BlogDraftServiceTest {
     void referenceImages에는_ATTACHED만_포함되고_다른_상태는_제외된다() {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
-        BlogImageAsset attachedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
+        BlogImageAsset attachedImage = blogImageAssetRepository.save(
+                createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
         blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.UPLOADED));
         blogImageAssetRepository.save(BlogImageAsset.builder()
                 .blogPostId(blogPost.getId())
@@ -616,8 +644,10 @@ class BlogDraftServiceTest {
                 .status(BlogPostStatus.DRAFT)
                 .visibility(BlogVisibility.PRIVATE)
                 .build());
-        BlogImageAsset uploadedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.UPLOADED));
-        BlogImageAsset attachedImage = blogImageAssetRepository.save(createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
+        BlogImageAsset uploadedImage = blogImageAssetRepository.save(
+                createImage(blogPost.getId(), BlogImageAssetStatus.UPLOADED));
+        BlogImageAsset attachedImage = blogImageAssetRepository.save(
+                createImage(blogPost.getId(), BlogImageAssetStatus.ATTACHED));
         BlogImageAsset deletePendingImage = blogImageAssetRepository.save(BlogImageAsset.builder()
                 .blogPostId(blogPost.getId())
                 .objectKey("blog/drafts/" + blogPost.getId() + "/delete-pending.png")
@@ -726,13 +756,14 @@ class BlogDraftServiceTest {
                 .visibility(BlogVisibility.PRIVATE)
                 .build());
         BlogPost anotherPost = blogPostRepository.save(createDraftPost(1L));
-        BlogImageAsset anotherPostImage = blogImageAssetRepository.save(createImage(anotherPost.getId(), BlogImageAssetStatus.ATTACHED));
+        BlogImageAsset anotherPostImage = blogImageAssetRepository.save(
+                createImage(anotherPost.getId(), BlogImageAssetStatus.ATTACHED));
 
         entityManager.createNativeQuery("""
-                update blog_post
-                set thumbnail_image_id = :thumbnailImageId
-                where id = :postId
-                """)
+                        update blog_post
+                        set thumbnail_image_id = :thumbnailImageId
+                        where id = :postId
+                        """)
                 .setParameter("thumbnailImageId", anotherPostImage.getId())
                 .setParameter("postId", blogPost.getId())
                 .executeUpdate();
