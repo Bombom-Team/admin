@@ -122,7 +122,10 @@ public class BlogPostController implements BlogPostControllerApi {
 
     @Override
     @GetMapping
-    public List<BlogPostListItemResponse> getPosts(@RequestParam(required = false) BlogVisibility visibility) {
-        return blogPostService.getPosts(visibility);
+    public List<BlogPostListItemResponse> getPosts(
+            @LoginMember Member member,
+            @RequestParam(required = false) BlogVisibility visibility
+    ) {
+        return blogPostService.getPosts(member.getId(), visibility);
     }
 }

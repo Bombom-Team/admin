@@ -72,7 +72,7 @@ class BlogPostServiceTest {
                 .build());
 
         // when
-        List<BlogPostListItemResponse> responses = blogPostService.getPosts(null);
+        List<BlogPostListItemResponse> responses = blogPostService.getPosts(1L, null);
 
         // then
         assertThat(responses).extracting(BlogPostListItemResponse::postId)
@@ -81,6 +81,9 @@ class BlogPostServiceTest {
                 .contains(1L, 2L);
         assertThat(responses).extracting(BlogPostListItemResponse::description)
                 .contains("첫 번째 부제", "두 번째 부제");
+        assertThat(responses).filteredOn(BlogPostListItemResponse::isAuthor)
+                .extracting(BlogPostListItemResponse::memberId)
+                .containsExactly(1L);
     }
 
     @Test
@@ -103,11 +106,12 @@ class BlogPostServiceTest {
                 .build());
 
         // when
-        List<BlogPostListItemResponse> responses = blogPostService.getPosts(BlogVisibility.PUBLIC);
+        List<BlogPostListItemResponse> responses = blogPostService.getPosts(1L, BlogVisibility.PUBLIC);
 
         // then
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).visibility()).isEqualTo(BlogVisibility.PUBLIC);
+        assertThat(responses.get(0).isAuthor()).isTrue();
         assertThat(responses.get(0).description()).isEqualTo("공개 부제");
     }
 
