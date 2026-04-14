@@ -23,7 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class BlogImageService {
 
-    private static final String BLOG_IMAGE_PREFIX = "blog/posts";
+    private static final String BLOG_IMAGE_PREFIX = "posts";
 
     private final BlogPostRepository blogPostRepository;
     private final BlogImageAssetRepository blogImageAssetRepository;
