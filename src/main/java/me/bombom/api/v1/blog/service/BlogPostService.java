@@ -36,8 +36,11 @@ public class BlogPostService {
     private final BlogPostTagRepository blogPostTagRepository;
     private final BlogImageAssetRepository blogImageAssetRepository;
 
-    public List<BlogPostListItemResponse> getPosts(BlogVisibility visibility) {
-        return blogPostRepository.findAllPostListItems(visibility);
+    public List<BlogPostListItemResponse> getPosts(
+            Long memberId,
+            BlogVisibility visibility
+    ) {
+        return blogPostRepository.findAllPostListItems(memberId, visibility);
     }
 
     public BlogPostDetailResponse getPost(Long postId) {

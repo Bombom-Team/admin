@@ -7,6 +7,7 @@ import me.bombom.api.v1.blog.domain.BlogVisibility;
 public record BlogPostListItemResponse(
         Long postId,
         Long memberId,
+        boolean isAuthor,
         String title,
         String description,
         BlogPostStatus status,
