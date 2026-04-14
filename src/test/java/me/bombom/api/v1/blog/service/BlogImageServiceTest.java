@@ -45,8 +45,8 @@ class BlogImageServiceTest {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(s3FileService.uploadToBucketWithMetadata(imageFile, "bombom-notice", "blog/posts"))
-                .willReturn(new StoredFile("blog/posts/202603/test.png", "https://cdn/test.png"));
+        given(s3FileService.uploadToBucketWithMetadata(imageFile, "bombom-notice", "posts"))
+                .willReturn(new StoredFile("posts/202603/test.png", "https://cdn/test.png"));
 
         // when
         UploadBlogDraftImageResponse response = blogImageService.uploadPostImage(1L, blogPost.getId(), imageFile);
@@ -55,7 +55,7 @@ class BlogImageServiceTest {
         BlogImageAsset blogImageAsset = blogImageAssetRepository.findById(response.imageId()).orElseThrow();
         assertSoftly(softly -> {
             softly.assertThat(blogImageAsset.getBlogPostId()).isEqualTo(blogPost.getId());
-            softly.assertThat(blogImageAsset.getObjectKey()).isEqualTo("blog/posts/202603/test.png");
+            softly.assertThat(blogImageAsset.getObjectKey()).isEqualTo("posts/202603/test.png");
             softly.assertThat(blogImageAsset.getImageUrl()).isEqualTo("https://cdn/test.png");
             softly.assertThat(blogImageAsset.getStatus()).isEqualTo(BlogImageAssetStatus.UPLOADED);
             softly.assertThat(blogImageAsset.getDeleteRequestedAt()).isNull();
@@ -84,8 +84,8 @@ class BlogImageServiceTest {
                 .visibility(BlogVisibility.PRIVATE)
                 .build());
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(s3FileService.uploadToBucketWithMetadata(imageFile, "bombom-notice", "blog/posts"))
-                .willReturn(new StoredFile("blog/posts/202603/test.png", "https://cdn/test.png"));
+        given(s3FileService.uploadToBucketWithMetadata(imageFile, "bombom-notice", "posts"))
+                .willReturn(new StoredFile("posts/202603/test.png", "https://cdn/test.png"));
 
         // when
         UploadBlogDraftImageResponse response = blogImageService.uploadPostImage(1L, blogPost.getId(), imageFile);
