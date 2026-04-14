@@ -13,6 +13,7 @@ import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.file.dto.StoredFile;
 import me.bombom.api.v1.file.service.S3FileService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,11 +23,14 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class BlogImageService {
 
-    private static final String BLOG_IMAGE_PREFIX = "blog/posts";
+    private static final String BLOG_IMAGE_PREFIX = "posts";
 
     private final BlogPostRepository blogPostRepository;
     private final BlogImageAssetRepository blogImageAssetRepository;
     private final S3FileService s3FileService;
+
+    @Value("${spring.cloud.aws.s3.blog-bucket}")
+    private String blogBucketName;
 
     @Transactional
     public UploadBlogDraftImageResponse uploadPostImage(
@@ -39,7 +43,7 @@ public class BlogImageService {
         validateEditableStatus(blogPost);
         validateImageFile(imageFile);
 
-        StoredFile storedFile = s3FileService.uploadToPublicBucketWithMetadata(imageFile, BLOG_IMAGE_PREFIX);
+        StoredFile storedFile = s3FileService.uploadToBucketWithMetadata(imageFile, blogBucketName, BLOG_IMAGE_PREFIX);
 
         try {
             BlogImageAssetStatus imageStatus = resolveImageStatus(blogPost);

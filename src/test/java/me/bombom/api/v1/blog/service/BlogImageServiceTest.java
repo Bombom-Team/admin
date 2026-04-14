@@ -45,7 +45,7 @@ class BlogImageServiceTest {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(s3FileService.uploadToPublicBucketWithMetadata(imageFile, "blog/posts"))
+        given(s3FileService.uploadToBucketWithMetadata(imageFile, "bombom-notice", "blog/posts"))
                 .willReturn(new StoredFile("blog/posts/202603/test.png", "https://cdn/test.png"));
 
         // when
@@ -84,7 +84,7 @@ class BlogImageServiceTest {
                 .visibility(BlogVisibility.PRIVATE)
                 .build());
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(s3FileService.uploadToPublicBucketWithMetadata(imageFile, "blog/posts"))
+        given(s3FileService.uploadToBucketWithMetadata(imageFile, "bombom-notice", "blog/posts"))
                 .willReturn(new StoredFile("blog/posts/202603/test.png", "https://cdn/test.png"));
 
         // when
