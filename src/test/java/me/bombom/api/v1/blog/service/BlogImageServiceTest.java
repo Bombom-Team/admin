@@ -3,6 +3,8 @@ package me.bombom.api.v1.blog.service;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 
 import me.bombom.api.v1.blog.domain.BlogImageAsset;
 import me.bombom.api.v1.blog.domain.BlogImageAssetStatus;
@@ -45,7 +47,7 @@ class BlogImageServiceTest {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(s3FileService.uploadToBucketWithMetadata(imageFile, "bombom-notice", "posts"))
+        given(s3FileService.uploadToBucketWithMetadata(eq(imageFile), anyString(), eq("posts")))
                 .willReturn(new StoredFile("posts/202603/test.png", "https://cdn/test.png"));
 
         // when
@@ -84,7 +86,7 @@ class BlogImageServiceTest {
                 .visibility(BlogVisibility.PRIVATE)
                 .build());
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(s3FileService.uploadToBucketWithMetadata(imageFile, "bombom-notice", "posts"))
+        given(s3FileService.uploadToBucketWithMetadata(eq(imageFile), anyString(), eq("posts")))
                 .willReturn(new StoredFile("posts/202603/test.png", "https://cdn/test.png"));
 
         // when
