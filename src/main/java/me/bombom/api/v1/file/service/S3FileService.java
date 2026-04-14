@@ -32,9 +32,6 @@ public class S3FileService {
 
     private final S3Template s3Template;
 
-    @Value("${spring.cloud.aws.s3.bucket}")
-    private String bucketName;
-
     @Value("${spring.cloud.aws.s3.challenge-bucket}")
     private String challengeBucketName;
 
@@ -44,9 +41,21 @@ public class S3FileService {
     @Value("${spring.cloud.aws.cloudfront.domain:}")
     private String cloudFrontDomain;
 
-    public StoredFile uploadToPublicBucketWithMetadata(MultipartFile file, String prefix) {
+    public StoredFile uploadToBucketWithMetadata(
+            MultipartFile file,
+            String targetBucketName,
+            String prefix
+    ) {
         String storeFileName = createStoreFileName(file, prefix);
+        return uploadToBucketWithMetadata(file, targetBucketName, storeFileName, cloudFrontDomain);
+    }
 
+    private StoredFile uploadToBucketWithMetadata(
+            MultipartFile file,
+            String targetBucketName,
+            String objectKey,
+            String publicDomain
+    ) {
         try (InputStream inputStream = file.getInputStream()) {
             InputStream uploadStream = inputStream;
 
@@ -54,10 +63,10 @@ public class S3FileService {
                 uploadStream = resizeImage(inputStream);
             }
 
-            s3Template.upload(bucketName, storeFileName, uploadStream);
-            String fileUrl = getPublicBucketFileUrl(storeFileName);
+            s3Template.upload(targetBucketName, objectKey, uploadStream);
+            String fileUrl = getFileUrl(targetBucketName, objectKey, publicDomain);
             log.info("S3 Upload Success: {}", fileUrl);
-            return new StoredFile(storeFileName, fileUrl);
+            return new StoredFile(objectKey, fileUrl);
         } catch (IOException e) {
             throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
                     .addContext(ErrorContextKeys.OPERATION, "s3Upload");
@@ -90,12 +99,12 @@ public class S3FileService {
         }
     }
 
-    private String getPublicBucketFileUrl(String storeFileName) {
-        if (StringUtils.hasText(cloudFrontDomain)) {
-            return cloudFrontDomain + "/" + storeFileName;
+    private String getFileUrl(String targetBucketName, String objectKey, String publicDomain) {
+        if (StringUtils.hasText(publicDomain)) {
+            return publicDomain + "/" + objectKey;
         }
         try {
-            return s3Template.download(bucketName, storeFileName).getURL().toString();
+            return s3Template.download(targetBucketName, objectKey).getURL().toString();
         } catch (IOException e) {
             throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
                     .addContext(ErrorContextKeys.OPERATION, "s3GetUrl");
