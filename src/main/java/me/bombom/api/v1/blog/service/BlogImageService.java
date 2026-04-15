@@ -43,7 +43,7 @@ public class BlogImageService {
         validateEditableStatus(blogPost);
         validateImageFile(imageFile);
 
-        StoredFile storedFile = s3FileService.uploadToBucketWithMetadata(imageFile, blogBucketName, BLOG_IMAGE_PREFIX);
+        StoredFile storedFile = s3FileService.uploadToBucketWithS3Url(imageFile, blogBucketName, BLOG_IMAGE_PREFIX);
 
         try {
             BlogImageAssetStatus imageStatus = resolveImageStatus(blogPost);

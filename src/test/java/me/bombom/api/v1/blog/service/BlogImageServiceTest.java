@@ -47,8 +47,8 @@ class BlogImageServiceTest {
         // given
         BlogPost blogPost = blogPostRepository.save(createDraftPost(1L));
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(s3FileService.uploadToBucketWithMetadata(eq(imageFile), anyString(), eq("posts")))
-                .willReturn(new StoredFile("posts/202603/test.png", "https://cdn/test.png"));
+        given(s3FileService.uploadToBucketWithS3Url(eq(imageFile), anyString(), eq("posts")))
+                .willReturn(new StoredFile("posts/202603/test.png", "https://bombom-blog.s3.ap-northeast-2.amazonaws.com/posts/202603/test.png"));
 
         // when
         UploadBlogDraftImageResponse response = blogImageService.uploadPostImage(1L, blogPost.getId(), imageFile);
@@ -58,7 +58,7 @@ class BlogImageServiceTest {
         assertSoftly(softly -> {
             softly.assertThat(blogImageAsset.getBlogPostId()).isEqualTo(blogPost.getId());
             softly.assertThat(blogImageAsset.getObjectKey()).isEqualTo("posts/202603/test.png");
-            softly.assertThat(blogImageAsset.getImageUrl()).isEqualTo("https://cdn/test.png");
+            softly.assertThat(blogImageAsset.getImageUrl()).isEqualTo("https://bombom-blog.s3.ap-northeast-2.amazonaws.com/posts/202603/test.png");
             softly.assertThat(blogImageAsset.getStatus()).isEqualTo(BlogImageAssetStatus.UPLOADED);
             softly.assertThat(blogImageAsset.getDeleteRequestedAt()).isNull();
         });
@@ -86,8 +86,8 @@ class BlogImageServiceTest {
                 .visibility(BlogVisibility.PRIVATE)
                 .build());
         MockMultipartFile imageFile = new MockMultipartFile("imageFile", "draft.png", "image/png", "content".getBytes());
-        given(s3FileService.uploadToBucketWithMetadata(eq(imageFile), anyString(), eq("posts")))
-                .willReturn(new StoredFile("posts/202603/test.png", "https://cdn/test.png"));
+        given(s3FileService.uploadToBucketWithS3Url(eq(imageFile), anyString(), eq("posts")))
+                .willReturn(new StoredFile("posts/202603/test.png", "https://bombom-blog.s3.ap-northeast-2.amazonaws.com/posts/202603/test.png"));
 
         // when
         UploadBlogDraftImageResponse response = blogImageService.uploadPostImage(1L, blogPost.getId(), imageFile);

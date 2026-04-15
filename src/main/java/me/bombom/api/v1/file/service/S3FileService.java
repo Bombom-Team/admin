@@ -50,6 +50,15 @@ public class S3FileService {
         return uploadToBucketWithMetadata(file, targetBucketName, storeFileName, cloudFrontDomain);
     }
 
+    public StoredFile uploadToBucketWithS3Url(
+            MultipartFile file,
+            String targetBucketName,
+            String prefix
+    ) {
+        String storeFileName = createStoreFileName(file, prefix);
+        return uploadToBucketWithMetadata(file, targetBucketName, storeFileName, null);
+    }
+
     private StoredFile uploadToBucketWithMetadata(
             MultipartFile file,
             String targetBucketName,
