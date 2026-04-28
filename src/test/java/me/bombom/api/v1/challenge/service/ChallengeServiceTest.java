@@ -11,6 +11,8 @@ import java.util.List;
 import me.bombom.api.v1.challenge.domain.Challenge;
 import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
+import me.bombom.api.v1.challenge.domain.ChallengeTodo;
+import me.bombom.api.v1.challenge.domain.ChallengeTodoType;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
 import me.bombom.api.v1.challenge.dto.CreateChallengeTeamsRequest;
 import me.bombom.api.v1.challenge.dto.GetChallengeParticipantResponse;
@@ -23,6 +25,7 @@ import me.bombom.api.v1.challenge.fixture.ChallengeFixture;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
+import me.bombom.api.v1.challenge.repository.ChallengeTodoRepository;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.common.config.TimeConfig;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
@@ -62,6 +65,9 @@ class ChallengeServiceTest {
 
     @Autowired
     private ChallengeTeamRepository challengeTeamRepository;
+
+    @Autowired
+    private ChallengeTodoRepository challengeTodoRepository;
 
     @Autowired
     private MemberRepository memberRepository;
@@ -532,6 +538,37 @@ class ChallengeServiceTest {
             softly.assertThat(challenges.get(0).getStartDate()).isEqualTo(startDate);
             softly.assertThat(challenges.get(0).getEndDate()).isEqualTo(endDate);
             softly.assertThat(challenges.get(0).getNewsletterGroupId()).isEqualTo(groupId);
+        });
+    }
+
+    @Test
+    void 챌린지_생성_시_기본_todo가_생성된다() {
+        // given
+        Long groupId = saveNewsletterGroup();
+        CreateChallengeRequest request = new CreateChallengeRequest(
+                "테스트 챌린지",
+                1,
+                LocalDate.of(2025, 1, 6),
+                LocalDate.of(2025, 1, 10),
+                groupId);
+
+        // when
+        challengeService.createChallenge(request);
+
+        // then
+        Challenge challenge = challengeRepository.findAll().get(0);
+        List<ChallengeTodo> challengeTodos = challengeTodoRepository.findAll();
+        assertSoftly(softly -> {
+            softly.assertThat(challengeTodos).hasSize(3);
+            softly.assertThat(challengeTodos)
+                    .extracting(ChallengeTodo::getChallengeId)
+                    .containsOnly(challenge.getId());
+            softly.assertThat(challengeTodos)
+                    .extracting(ChallengeTodo::getTodoType)
+                    .containsExactlyInAnyOrder(
+                            ChallengeTodoType.READ,
+                            ChallengeTodoType.COMMENT,
+                            ChallengeTodoType.MINDSET);
         });
     }
 
