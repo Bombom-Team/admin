@@ -1,6 +1,7 @@
 package me.bombom.api.v1.challenge.service;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -11,6 +12,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.bombom.api.v1.challenge.domain.Challenge;
+import me.bombom.api.v1.challenge.domain.ChallengeTodo;
+import me.bombom.api.v1.challenge.domain.ChallengeTodoType;
 import me.bombom.api.v1.challenge.domain.ChallengeParticipant;
 import me.bombom.api.v1.challenge.domain.ChallengeTeam;
 import me.bombom.api.v1.challenge.dto.AssignTeamsRequest;
@@ -31,6 +34,7 @@ import me.bombom.api.v1.challenge.repository.ChallengeDailyGuideRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeParticipantRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeRepository;
 import me.bombom.api.v1.challenge.repository.ChallengeTeamRepository;
+import me.bombom.api.v1.challenge.repository.ChallengeTodoRepository;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
@@ -46,9 +50,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ChallengeService {
 
+    private static final List<ChallengeTodoType> DEFAULT_CHALLENGE_TODO_TYPES = List.of(
+            ChallengeTodoType.READ,
+            ChallengeTodoType.COMMENT,
+            ChallengeTodoType.MINDSET
+    );
+
     private final ChallengeRepository challengeRepository;
     private final ChallengeParticipantRepository challengeParticipantRepository;
     private final ChallengeTeamRepository challengeTeamRepository;
+    private final ChallengeTodoRepository challengeTodoRepository;
     private final ChallengeDailyGuideRepository dailyGuideRepository;
     private final NewsletterGroupRepository newsletterGroupRepository;
     private final Clock clock;
@@ -203,8 +214,8 @@ public class ChallengeService {
     }
 
     private boolean isWeekend(LocalDate date) {
-        return date.getDayOfWeek() == java.time.DayOfWeek.SATURDAY
-                || date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY;
+        return date.getDayOfWeek() == DayOfWeek.SATURDAY
+                || date.getDayOfWeek() == DayOfWeek.SUNDAY;
     }
 
     private int calculateTeamCount(int totalParticipants, int maxTeamSize) {
@@ -241,7 +252,8 @@ public class ChallengeService {
                 .endDate(request.endDate())
                 .newsletterGroupId(request.newsletterGroupId())
                 .build();
-        challengeRepository.save(challenge);
+        Challenge savedChallenge = challengeRepository.save(challenge);
+        challengeTodoRepository.saveAll(createDefaultChallengeTodos(savedChallenge.getId()));
     }
 
     @Transactional
@@ -265,6 +277,15 @@ public class ChallengeService {
         }
     }
 
+    private List<ChallengeTodo> createDefaultChallengeTodos(Long challengeId) {
+        return DEFAULT_CHALLENGE_TODO_TYPES.stream()
+                .map(todoType -> ChallengeTodo.builder()
+                        .challengeId(challengeId)
+                        .todoType(todoType)
+                        .build())
+                .toList();
+    }
+
     @Transactional
     public void deleteChallenge(Long challengeId) {
         if (!challengeRepository.existsById(challengeId)) {
@@ -278,6 +299,7 @@ public class ChallengeService {
                     .addContext(ErrorContextKeys.OPERATION, "deleteChallenge")
                     .addContext("challengeId", challengeId);
         }
+        challengeTodoRepository.deleteByChallengeId(challengeId);
         challengeRepository.deleteById(challengeId);
     }
 
