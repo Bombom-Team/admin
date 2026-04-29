@@ -715,6 +715,24 @@ class ChallengeServiceTest {
     }
 
     @Test
+    void 챌린지_삭제_시_기본_todo도_삭제된다() {
+        // given
+        Long groupId = saveNewsletterGroup();
+        CreateChallengeRequest request = new CreateChallengeRequest("테스트 챌린지", 1, null, null, groupId);
+        challengeService.createChallenge(request);
+        Challenge challenge = challengeRepository.findAll().get(0);
+
+        // when
+        challengeService.deleteChallenge(challenge.getId());
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(challengeRepository.existsById(challenge.getId())).isFalse();
+            softly.assertThat(challengeTodoRepository.findAll()).isEmpty();
+        });
+    }
+
+    @Test
     void 존재하지_않는_챌린지_삭제_시_예외가_발생한다() {
         // when & then
         assertThatThrownBy(() -> challengeService.deleteChallenge(999L))

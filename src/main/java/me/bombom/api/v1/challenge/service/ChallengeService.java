@@ -299,6 +299,7 @@ public class ChallengeService {
                     .addContext(ErrorContextKeys.OPERATION, "deleteChallenge")
                     .addContext("challengeId", challengeId);
         }
+        challengeTodoRepository.deleteByChallengeId(challengeId);
         challengeRepository.deleteById(challengeId);
     }
 
