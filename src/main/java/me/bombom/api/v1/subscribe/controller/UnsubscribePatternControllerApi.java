@@ -2,6 +2,7 @@ package me.bombom.api.v1.subscribe.controller;
 
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternRequest;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternUpdateRequest;
+import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternType;
 import me.bombom.api.v1.subscribe.dto.response.UnsubscribePatternResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -29,12 +31,19 @@ public interface UnsubscribePatternControllerApi {
     @PostMapping
     void createUnsubscribePattern(@RequestBody @Valid UnsubscribePatternRequest request);
 
-    @Operation(summary = "구독 해지 패턴 목록 조회", description = "시스템에 등록된 모든 구독 해지 패턴 목록을 조회합니다.")
+    @Operation(
+            summary = "구독 해지 패턴 목록 조회",
+            description = "patternType에 따라 구독 해지 패턴 목록을 조회합니다. "
+                    + "AUTO_UNSUBSCRIBE는 구독 자동 취소 Lambda 호출 시 사용하는 패턴으로, patternKey가 parse.로 시작하지 않는 데이터를 조회합니다. "
+                    + "PARSE는 구독 취소 URL 파싱 시 감지하는 패턴으로, patternKey가 parse.로 시작하는 데이터를 조회합니다."
+    )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공")
     })
     @GetMapping
-    List<UnsubscribePatternResponse> getUnsubscribePatterns();
+    List<UnsubscribePatternResponse> getUnsubscribePatterns(
+            @Parameter(description = "패턴 목록 타입", example = "AUTO_UNSUBSCRIBE")
+            @RequestParam(defaultValue = "AUTO_UNSUBSCRIBE") UnsubscribePatternType patternType);
 
     @Operation(summary = "구독 해지 패턴 상세 조회", description = "ID를 통해 특정 구독 해지 패턴의 상세 정보를 조회합니다.")
     @ApiResponses(value = {

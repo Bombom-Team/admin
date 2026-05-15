@@ -8,6 +8,7 @@ import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.subscribe.domain.UnsubscribePattern;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternRequest;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternUpdateRequest;
+import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternType;
 import me.bombom.api.v1.subscribe.dto.response.UnsubscribePatternResponse;
 import me.bombom.api.v1.subscribe.repository.UnsubscribePatternRepository;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UnsubscribePatternService {
+
+    private static final String PARSE_PATTERN_KEY_PREFIX = "parse.";
+    private static final String PARSE_PATTERN_KEY_PATTERN = "parse.%";
 
     private final UnsubscribePatternRepository unsubscribePatternRepository;
 
@@ -29,8 +33,20 @@ public class UnsubscribePatternService {
         unsubscribePatternRepository.save(pattern);
     }
 
-    public List<UnsubscribePatternResponse> getUnsubscribePatterns() {
-        return unsubscribePatternRepository.findAll().stream()
+    public List<UnsubscribePatternResponse> getUnsubscribePatterns(UnsubscribePatternType patternType) {
+        if (patternType.isParse()) {
+            return getParseUnsubscribePatterns();
+        }
+
+        return unsubscribePatternRepository.findByPatternKeyNotLike(PARSE_PATTERN_KEY_PATTERN)
+                .stream()
+                .map(UnsubscribePatternResponse::from)
+                .toList();
+    }
+
+    private List<UnsubscribePatternResponse> getParseUnsubscribePatterns() {
+        return unsubscribePatternRepository.findByPatternKeyStartingWith(PARSE_PATTERN_KEY_PREFIX)
+                .stream()
                 .map(UnsubscribePatternResponse::from)
                 .toList();
     }

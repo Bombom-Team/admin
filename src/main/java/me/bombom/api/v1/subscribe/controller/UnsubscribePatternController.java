@@ -2,6 +2,7 @@ package me.bombom.api.v1.subscribe.controller;
 
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternRequest;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternUpdateRequest;
+import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternType;
 import me.bombom.api.v1.subscribe.dto.response.UnsubscribePatternResponse;
 import me.bombom.api.v1.subscribe.service.UnsubscribePatternService;
 
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,8 +30,10 @@ public class UnsubscribePatternController implements UnsubscribePatternControlle
 
     @Override
     @GetMapping
-    public List<UnsubscribePatternResponse> getUnsubscribePatterns() {
-        return unsubscribePatternService.getUnsubscribePatterns();
+    public List<UnsubscribePatternResponse> getUnsubscribePatterns(
+            @RequestParam(defaultValue = "AUTO_UNSUBSCRIBE") UnsubscribePatternType patternType
+    ) {
+        return unsubscribePatternService.getUnsubscribePatterns(patternType);
     }
 
     @Override

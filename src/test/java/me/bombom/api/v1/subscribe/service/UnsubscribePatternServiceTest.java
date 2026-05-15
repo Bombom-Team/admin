@@ -11,6 +11,7 @@ import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.subscribe.domain.UnsubscribePattern;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternRequest;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternUpdateRequest;
+import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternType;
 import me.bombom.api.v1.subscribe.dto.response.UnsubscribePatternResponse;
 import me.bombom.api.v1.subscribe.fixture.UnsubscribePatternFixture;
 import me.bombom.api.v1.subscribe.repository.UnsubscribePatternRepository;
@@ -55,21 +56,47 @@ class UnsubscribePatternServiceTest {
     }
 
     @Test
-    @DisplayName("구독_해지_패턴_목록을_조회한다")
-    void 구독_해지_패턴_목록을_조회한다() {
+    @DisplayName("일반_구독_해지_패턴_목록을_조회한다")
+    void 일반_구독_해지_패턴_목록을_조회한다() {
         // given
         unsubscribePatternRepository
                 .save(UnsubscribePatternFixture.createUnsubscribePattern("pattern-key-1", "pattern-value-1"));
         unsubscribePatternRepository
                 .save(UnsubscribePatternFixture.createUnsubscribePattern("pattern-key-2", "pattern-value-2"));
+        unsubscribePatternRepository
+                .save(UnsubscribePatternFixture.createUnsubscribePattern("parse.pattern-key", "pattern-value"));
 
         // when
-        List<UnsubscribePatternResponse> responses = unsubscribePatternService.getUnsubscribePatterns();
+        List<UnsubscribePatternResponse> responses =
+                unsubscribePatternService.getUnsubscribePatterns(UnsubscribePatternType.AUTO_UNSUBSCRIBE);
 
         // then
         assertSoftly(softly -> {
             softly.assertThat(responses).hasSize(2);
             softly.assertThat(responses.getFirst().patternKey()).isEqualTo("pattern-key-1");
+            softly.assertThat(responses.getFirst().patternValue()).isEqualTo("pattern-value-1");
+        });
+    }
+
+    @Test
+    @DisplayName("파싱_구독_해지_패턴_목록을_조회한다")
+    void 파싱_구독_해지_패턴_목록을_조회한다() {
+        // given
+        unsubscribePatternRepository
+                .save(UnsubscribePatternFixture.createUnsubscribePattern("pattern-key", "pattern-value"));
+        unsubscribePatternRepository
+                .save(UnsubscribePatternFixture.createUnsubscribePattern("parse.pattern-key-1", "pattern-value-1"));
+        unsubscribePatternRepository
+                .save(UnsubscribePatternFixture.createUnsubscribePattern("parse.pattern-key-2", "pattern-value-2"));
+
+        // when
+        List<UnsubscribePatternResponse> responses =
+                unsubscribePatternService.getUnsubscribePatterns(UnsubscribePatternType.PARSE);
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(responses).hasSize(2);
+            softly.assertThat(responses.getFirst().patternKey()).isEqualTo("parse.pattern-key-1");
             softly.assertThat(responses.getFirst().patternValue()).isEqualTo("pattern-value-1");
         });
     }
