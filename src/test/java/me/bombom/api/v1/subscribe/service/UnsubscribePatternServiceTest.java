@@ -1,6 +1,5 @@
 package me.bombom.api.v1.subscribe.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
@@ -21,10 +20,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.context.TestPropertySource;
 
 @DataJpaTest
 @EnableJpaAuditing
+@RecordApplicationEvents
 @Import({ UnsubscribePatternService.class, QuerydslConfig.class })
 @TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class UnsubscribePatternServiceTest {
@@ -35,13 +37,17 @@ class UnsubscribePatternServiceTest {
     @Autowired
     private UnsubscribePatternRepository unsubscribePatternRepository;
 
+    @Autowired
+    private ApplicationEvents applicationEvents;
+
     @Test
     @DisplayName("구독_해지_패턴을_생성한다")
     void 구독_해지_패턴을_생성한다() {
         // given
         UnsubscribePatternRequest request = new UnsubscribePatternRequest(
                 "pattern-key",
-                "pattern-value");
+                "pattern-value"
+        );
 
         // when
         unsubscribePatternService.createUnsubscribePattern(request);
@@ -141,7 +147,29 @@ class UnsubscribePatternServiceTest {
 
         // then
         UnsubscribePattern updated = unsubscribePatternRepository.findById(saved.getId()).orElseThrow();
-        assertThat(updated.getPatternValue()).isEqualTo("updated-pattern-value");
+        assertSoftly(softly -> {
+            softly.assertThat(updated.getPatternValue()).isEqualTo("updated-pattern-value");
+            softly.assertThat(parseUnsubscribePatternUpdatedEventCount()).isZero();
+        });
+    }
+
+    @Test
+    @DisplayName("파싱_구독_해지_패턴_수정시_리로드를_요청한다")
+    void 파싱_구독_해지_패턴_수정시_리로드를_요청한다() {
+        // given
+        UnsubscribePattern saved = unsubscribePatternRepository
+                .save(UnsubscribePatternFixture.createUnsubscribePattern("parse.pattern-key", "pattern-value"));
+        UnsubscribePatternUpdateRequest request = new UnsubscribePatternUpdateRequest("updated-pattern-value");
+
+        // when
+        unsubscribePatternService.updateUnsubscribePattern(saved.getId(), request);
+
+        // then
+        UnsubscribePattern updated = unsubscribePatternRepository.findById(saved.getId()).orElseThrow();
+        assertSoftly(softly -> {
+            softly.assertThat(updated.getPatternValue()).isEqualTo("updated-pattern-value");
+            softly.assertThat(parseUnsubscribePatternUpdatedEventCount()).isEqualTo(1);
+        });
     }
 
     @Test
@@ -154,5 +182,10 @@ class UnsubscribePatternServiceTest {
         assertThatThrownBy(() -> unsubscribePatternService.updateUnsubscribePattern(0L, request))
                 .isInstanceOf(CIllegalArgumentException.class)
                 .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    private long parseUnsubscribePatternUpdatedEventCount() {
+        return applicationEvents.stream(ParseUnsubscribePatternUpdatedEvent.class)
+                .count();
     }
 }
