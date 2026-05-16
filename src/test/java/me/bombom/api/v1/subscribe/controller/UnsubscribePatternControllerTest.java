@@ -3,6 +3,7 @@ package me.bombom.api.v1.subscribe.controller;
 import me.bombom.api.v1.common.support.ControllerTestSupport;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternRequest;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternUpdateRequest;
+import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternType;
 import me.bombom.api.v1.subscribe.dto.response.UnsubscribePatternResponse;
 import me.bombom.api.v1.subscribe.service.UnsubscribePatternService;
 
@@ -33,14 +34,15 @@ class UnsubscribePatternControllerTest extends ControllerTestSupport {
     private UnsubscribePatternService unsubscribePatternService;
 
     @Test
-    @DisplayName("구독_해지_패턴_목록을_조회한다")
-    void 구독_해지_패턴_목록을_조회한다() throws Exception {
+    @DisplayName("일반_구독_해지_패턴_목록을_조회한다")
+    void 일반_구독_해지_패턴_목록을_조회한다() throws Exception {
         // given
         List<UnsubscribePatternResponse> responses = List.of(
                 new UnsubscribePatternResponse(1L, "pattern-key-1", "pattern-value-1"),
                 new UnsubscribePatternResponse(2L, "pattern-key-2", "pattern-value-2")
         );
-        given(unsubscribePatternService.getUnsubscribePatterns()).willReturn(responses);
+        given(unsubscribePatternService.getUnsubscribePatterns(UnsubscribePatternType.AUTO_UNSUBSCRIBE))
+                .willReturn(responses);
 
         // when & then
         mockMvc.perform(get("/admin/api/v1/unsubscribe-patterns"))
@@ -48,6 +50,26 @@ class UnsubscribePatternControllerTest extends ControllerTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1L))
                 .andExpect(jsonPath("$[0].patternKey").value("pattern-key-1"))
+                .andExpect(jsonPath("$[0].patternValue").value("pattern-value-1"));
+    }
+
+    @Test
+    @DisplayName("파싱_구독_해지_패턴_목록을_조회한다")
+    void 파싱_구독_해지_패턴_목록을_조회한다() throws Exception {
+        // given
+        List<UnsubscribePatternResponse> responses = List.of(
+                new UnsubscribePatternResponse(1L, "parse.pattern-key-1", "pattern-value-1"),
+                new UnsubscribePatternResponse(2L, "parse.pattern-key-2", "pattern-value-2")
+        );
+        given(unsubscribePatternService.getUnsubscribePatterns(UnsubscribePatternType.PARSE)).willReturn(responses);
+
+        // when & then
+        mockMvc.perform(get("/admin/api/v1/unsubscribe-patterns")
+                        .param("patternType", "PARSE"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1L))
+                .andExpect(jsonPath("$[0].patternKey").value("parse.pattern-key-1"))
                 .andExpect(jsonPath("$[0].patternValue").value("pattern-value-1"));
     }
 
