@@ -35,12 +35,12 @@ public class EmailServerUnsubscribePatternReloadClient {
                     .bodyToMono(Void.class)
                     .block();
         } catch (WebClientResponseException e) {
-            log.error("Email server unsubscribe pattern reload API error", e);
+            log.error("이메일 서버 구독 해지 패턴 리로드 API 호출 중 오류가 발생했습니다.", e);
             throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
                     .addContext(ErrorContextKeys.OPERATION, "emailServerUnsubscribePatternReload")
                     .addContext("status", e.getStatusCode().value());
         } catch (Exception e) {
-            log.error("Unexpected error when reloading email server unsubscribe patterns", e);
+            log.error("이메일 서버 구독 해지 패턴 리로드 중 예상하지 못한 오류가 발생했습니다.", e);
             throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
                     .addContext(ErrorContextKeys.OPERATION, "emailServerUnsubscribePatternReload");
         }

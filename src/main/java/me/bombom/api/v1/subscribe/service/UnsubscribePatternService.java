@@ -11,6 +11,7 @@ import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternUpdateRequest;
 import me.bombom.api.v1.subscribe.dto.request.UnsubscribePatternType;
 import me.bombom.api.v1.subscribe.dto.response.UnsubscribePatternResponse;
 import me.bombom.api.v1.subscribe.repository.UnsubscribePatternRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class UnsubscribePatternService {
     private static final String PARSE_PATTERN_KEY_PREFIX = "parse.";
 
     private final UnsubscribePatternRepository unsubscribePatternRepository;
-    private final UnsubscribePatternReloadService unsubscribePatternReloadService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public void createUnsubscribePattern(UnsubscribePatternRequest request) {
@@ -66,7 +67,7 @@ public class UnsubscribePatternService {
         pattern.update(request.patternValue());
 
         if (isParsePattern(pattern)) {
-            unsubscribePatternReloadService.reloadAfterCommit();
+            applicationEventPublisher.publishEvent(new ParseUnsubscribePatternUpdatedEvent());
         }
     }
 
