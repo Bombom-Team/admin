@@ -104,6 +104,8 @@ jobs:
 
       - name: .env 파일 생성
         if: env.skip_deploy == 'false'
+        env:
+          MAIL_SERVER_INTERNAL_API_KEY: ${{ secrets.MAIL_SERVER_INTERNAL_API_KEY }}
         run: |
           # docker-compose-admin.yml에서 사용하는 환경변수 매핑
           echo "RDS_ENDPOINT=${{ secrets.PROD_RDS_ENDPOINT }}" >> .env
@@ -111,6 +113,7 @@ jobs:
           echo "MYSQL_USER=${{ secrets.PROD_MYSQL_USER }}" >> .env
           echo "MYSQL_PASSWORD=${{ secrets.PROD_MYSQL_PASSWORD }}" >> .env
           echo "PERSONAL_ACCESS_TOKEN=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> .env
+          printf 'MAIL_SERVER_INTERNAL_API_KEY=%s\n' "$MAIL_SERVER_INTERNAL_API_KEY" >> .env
 
       - name: 컨테이너 재배포
         if: env.skip_deploy == 'false'
