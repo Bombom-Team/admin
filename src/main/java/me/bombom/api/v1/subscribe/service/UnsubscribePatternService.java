@@ -20,9 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class UnsubscribePatternService {
 
     private static final String PARSE_PATTERN_KEY_PREFIX = "parse.";
-    private static final String PARSE_PATTERN_KEY_PATTERN = "parse.%";
 
     private final UnsubscribePatternRepository unsubscribePatternRepository;
+    private final UnsubscribePatternReloadService unsubscribePatternReloadService;
 
     @Transactional
     public void createUnsubscribePattern(UnsubscribePatternRequest request) {
@@ -38,7 +38,7 @@ public class UnsubscribePatternService {
             return getParseUnsubscribePatterns();
         }
 
-        return unsubscribePatternRepository.findByPatternKeyNotLike(PARSE_PATTERN_KEY_PATTERN)
+        return unsubscribePatternRepository.findByPatternKeyNotLike(PARSE_PATTERN_KEY_PREFIX + "%")
                 .stream()
                 .map(UnsubscribePatternResponse::from)
                 .toList();
@@ -64,5 +64,14 @@ public class UnsubscribePatternService {
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "unsubscribePattern"));
         pattern.update(request.patternValue());
+
+        if (isParsePattern(pattern)) {
+            unsubscribePatternReloadService.reloadAfterCommit();
+        }
+    }
+
+    private boolean isParsePattern(UnsubscribePattern pattern) {
+        return pattern.getPatternKey()
+                .startsWith(PARSE_PATTERN_KEY_PREFIX);
     }
 }
