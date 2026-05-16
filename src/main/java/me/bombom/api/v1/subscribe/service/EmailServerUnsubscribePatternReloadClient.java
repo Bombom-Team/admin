@@ -8,6 +8,7 @@ import me.bombom.api.v1.common.exception.ErrorDetail;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Slf4j
@@ -35,14 +36,36 @@ public class EmailServerUnsubscribePatternReloadClient {
                     .bodyToMono(Void.class)
                     .block();
         } catch (WebClientResponseException e) {
-            log.error("이메일 서버 구독 해지 패턴 리로드 API 호출 중 오류가 발생했습니다.", e);
+            log.error(
+                    "이메일 서버 구독 해지 패턴 리로드 API가 실패 응답을 반환했습니다. url: {}, status: {}, body: {}",
+                    emailServerBaseUrl + RELOAD_PATH,
+                    e.getStatusCode().value(),
+                    e.getResponseBodyAsString(),
+                    e
+            );
             throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
                     .addContext(ErrorContextKeys.OPERATION, "emailServerUnsubscribePatternReload")
                     .addContext("status", e.getStatusCode().value());
-        } catch (Exception e) {
-            log.error("이메일 서버 구독 해지 패턴 리로드 중 예상하지 못한 오류가 발생했습니다.", e);
+        } catch (WebClientRequestException e) {
+            log.error(
+                    "이메일 서버 구독 해지 패턴 리로드 API 요청에 실패했습니다. DNS, SG, 네트워크 연결 상태를 확인해주세요. url: {}, exceptionType: {}",
+                    emailServerBaseUrl + RELOAD_PATH,
+                    e.getClass().getSimpleName(),
+                    e
+            );
             throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
-                    .addContext(ErrorContextKeys.OPERATION, "emailServerUnsubscribePatternReload");
+                    .addContext(ErrorContextKeys.OPERATION, "emailServerUnsubscribePatternReload")
+                    .addContext("exceptionType", e.getClass().getSimpleName());
+        } catch (Exception e) {
+            log.error(
+                    "이메일 서버 구독 해지 패턴 리로드 중 예상하지 못한 오류가 발생했습니다. url: {}, exceptionType: {}",
+                    emailServerBaseUrl + RELOAD_PATH,
+                    e.getClass().getSimpleName(),
+                    e
+            );
+            throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
+                    .addContext(ErrorContextKeys.OPERATION, "emailServerUnsubscribePatternReload")
+                    .addContext("exceptionType", e.getClass().getSimpleName());
         }
     }
 
