@@ -32,12 +32,8 @@ public class CustomMaeilMailContentAnswerRepositoryImpl implements CustomMaeilMa
         List<GetMaeilMailContentAnswerResponse> content = queryFactory
                 .select(new QGetMaeilMailContentAnswerResponse(
                         maeilMailContentAnswer.id,
-                        maeilMailContentAnswer.contentId,
                         maeilMailContent.title,
-                        maeilMailTopic.track,
-                        maeilMailTopic.name,
-                        maeilMailContentAnswer.answer,
-                        maeilMailContentAnswer.createdAt))
+                        maeilMailTopic.track))
                 .from(maeilMailContentAnswer)
                 .join(maeilMailContent).on(maeilMailContentAnswer.contentId.eq(maeilMailContent.id))
                 .join(maeilMailTopic).on(maeilMailContent.topicId.eq(maeilMailTopic.id))

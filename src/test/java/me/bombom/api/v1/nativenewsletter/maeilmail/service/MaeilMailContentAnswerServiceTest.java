@@ -146,9 +146,9 @@ class MaeilMailContentAnswerServiceTest {
     }
 
     @Test
-    void 응답에_topicName과_track이_포함된다() {
+    void 응답에_track과_contentTitle이_포함된다() {
         // given
-        MaeilMailTopic topic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE, "BE 기초", 1));
+        MaeilMailTopic topic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
         MaeilMailContent content = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "자바 기초"));
         contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content.getId()));
 

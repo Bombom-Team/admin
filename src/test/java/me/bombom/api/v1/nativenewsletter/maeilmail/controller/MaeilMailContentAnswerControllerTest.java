@@ -80,7 +80,7 @@ class MaeilMailContentAnswerControllerTest extends ControllerTestSupport {
     }
 
     private GetMaeilMailContentAnswerResponse createResponse() {
-        return new GetMaeilMailContentAnswerResponse(
-                1L, 1L, "자바 기초", MaeilMailTrack.BE, "BE 기초", "테스트 답변", LocalDateTime.now());
+        return new GetMaeilMailContentAnswerResponse(1L, "자바 기초", MaeilMailTrack.BE);
+    }
     }
 }
