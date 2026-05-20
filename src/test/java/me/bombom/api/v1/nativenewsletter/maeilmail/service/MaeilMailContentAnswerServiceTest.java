@@ -10,9 +10,11 @@ import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailContent;
 import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailContentAnswer;
 import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTopic;
 import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTrack;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.CreateMaeilMailContentAnswerRequest;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerDetailResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswersRequest;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.UpdateMaeilMailContentAnswerRequest;
 import me.bombom.api.v1.nativenewsletter.maeilmail.fixture.MaeilMailFixture;
 import me.bombom.api.v1.nativenewsletter.maeilmail.repository.MaeilMailContentAnswerRepository;
 import me.bombom.api.v1.nativenewsletter.maeilmail.repository.MaeilMailContentRepository;
@@ -237,5 +239,81 @@ class MaeilMailContentAnswerServiceTest {
         // when & then
         assertThatThrownBy(() -> contentAnswerService.getContentAnswer(999L))
                 .isInstanceOf(CIllegalArgumentException.class);
+    }
+
+    @Test
+    void 답변을_생성하면_콘텐츠와_답변이_함께_저장된다() {
+        // given
+        topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+        CreateMaeilMailContentAnswerRequest request = new CreateMaeilMailContentAnswerRequest(
+                MaeilMailTrack.BE, "자바 기초", "콘텐츠 내용", "콘텐츠 텍스트", "요약", 5, "정답입니다.");
+
+        // when
+        contentAnswerService.createContentAnswer(request);
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(contentRepository.findAll()).hasSize(1);
+            softly.assertThat(contentAnswerRepository.findAll()).hasSize(1);
+            softly.assertThat(contentRepository.findAll().get(0).getTitle()).isEqualTo("자바 기초");
+        });
+    }
+
+    @Test
+    void topic이_없는_track으로_생성_시_예외가_발생한다() {
+        // given: topic 미등록 상태
+        CreateMaeilMailContentAnswerRequest request = new CreateMaeilMailContentAnswerRequest(
+                MaeilMailTrack.BE, "자바 기초", "콘텐츠 내용", "콘텐츠 텍스트", "요약", 5, "정답입니다.");
+
+        // when & then
+        assertThatThrownBy(() -> contentAnswerService.createContentAnswer(request))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 답변을_수정한다() {
+        // given
+        MaeilMailTopic topic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+        MaeilMailContent content = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "자바 기초"));
+        MaeilMailContentAnswer answer = contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content.getId()));
+
+        // when
+        contentAnswerService.updateContentAnswer(answer.getId(), new UpdateMaeilMailContentAnswerRequest("수정된 답변입니다."));
+
+        // then
+        MaeilMailContentAnswer updated = contentAnswerRepository.findById(answer.getId()).get();
+        assertThat(updated.getAnswer()).isEqualTo("수정된 답변입니다.");
+    }
+
+    @Test
+    void 존재하지_않는_답변_수정_시_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> contentAnswerService.updateContentAnswer(
+                999L, new UpdateMaeilMailContentAnswerRequest("수정된 답변")))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    void 답변을_삭제한다() {
+        // given
+        MaeilMailTopic topic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+        MaeilMailContent content = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "자바 기초"));
+        MaeilMailContentAnswer answer = contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content.getId()));
+
+        // when
+        contentAnswerService.deleteContentAnswer(answer.getId());
+
+        // then
+        assertThat(contentAnswerRepository.existsById(answer.getId())).isFalse();
+    }
+
+    @Test
+    void 존재하지_않는_답변_삭제_시_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> contentAnswerService.deleteContentAnswer(999L))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
     }
 }
