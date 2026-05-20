@@ -1,0 +1,212 @@
+package me.bombom.api.v1.nativenewsletter.maeilmail.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+
+import me.bombom.api.v1.common.config.QuerydslConfig;
+import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailContent;
+import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTopic;
+import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTrack;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerResponse;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswersRequest;
+import me.bombom.api.v1.nativenewsletter.maeilmail.fixture.MaeilMailFixture;
+import me.bombom.api.v1.nativenewsletter.maeilmail.repository.MaeilMailContentAnswerRepository;
+import me.bombom.api.v1.nativenewsletter.maeilmail.repository.MaeilMailContentRepository;
+import me.bombom.api.v1.nativenewsletter.maeilmail.repository.MaeilMailTopicRepository;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.TestPropertySource;
+
+@DataJpaTest
+@TestPropertySource(properties = {
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
+})
+@Import({ MaeilMailContentAnswerService.class, QuerydslConfig.class })
+class MaeilMailContentAnswerServiceTest {
+
+    @Autowired
+    private MaeilMailContentAnswerService contentAnswerService;
+
+    @Autowired
+    private MaeilMailContentAnswerRepository contentAnswerRepository;
+
+    @Autowired
+    private MaeilMailContentRepository contentRepository;
+
+    @Autowired
+    private MaeilMailTopicRepository topicRepository;
+
+    @Test
+    void 필터_없이_전체_답변_목록을_조회한다() {
+        // given
+        MaeilMailTopic beTopic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+        MaeilMailTopic feTopic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.FE));
+
+        MaeilMailContent beContent = contentRepository.save(MaeilMailFixture.createContent(beTopic.getId(), "자바 기초"));
+        MaeilMailContent feContent = contentRepository.save(MaeilMailFixture.createContent(feTopic.getId(), "리액트 기초"));
+
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(beContent.getId()));
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(feContent.getId()));
+
+        GetMaeilMailContentAnswersRequest request = new GetMaeilMailContentAnswersRequest(null, null);
+
+        // when
+        Page<GetMaeilMailContentAnswerResponse> result = contentAnswerService.getContentAnswers(
+                request, PageRequest.of(0, 10));
+
+        // then
+        assertThat(result.getTotalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void track_필터로_BE_답변만_조회한다() {
+        // given
+        MaeilMailTopic beTopic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+        MaeilMailTopic feTopic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.FE));
+
+        MaeilMailContent beContent = contentRepository.save(MaeilMailFixture.createContent(beTopic.getId(), "자바 기초"));
+        MaeilMailContent feContent = contentRepository.save(MaeilMailFixture.createContent(feTopic.getId(), "리액트 기초"));
+
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(beContent.getId()));
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(feContent.getId()));
+
+        GetMaeilMailContentAnswersRequest request = new GetMaeilMailContentAnswersRequest(MaeilMailTrack.BE, null);
+
+        // when
+        Page<GetMaeilMailContentAnswerResponse> result = contentAnswerService.getContentAnswers(
+                request, PageRequest.of(0, 10));
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result.getTotalElements()).isEqualTo(1);
+            softly.assertThat(result.getContent().get(0).track()).isEqualTo(MaeilMailTrack.BE);
+            softly.assertThat(result.getContent().get(0).contentTitle()).isEqualTo("자바 기초");
+        });
+    }
+
+    @Test
+    void title_검색으로_부분_일치하는_답변만_조회한다() {
+        // given
+        MaeilMailTopic topic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+
+        MaeilMailContent content1 = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "자바 기초"));
+        MaeilMailContent content2 = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "자바 OOP"));
+        MaeilMailContent content3 = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "스프링 입문"));
+
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content1.getId()));
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content2.getId()));
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content3.getId()));
+
+        GetMaeilMailContentAnswersRequest request = new GetMaeilMailContentAnswersRequest(null, "자바");
+
+        // when
+        Page<GetMaeilMailContentAnswerResponse> result = contentAnswerService.getContentAnswers(
+                request, PageRequest.of(0, 10));
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result.getTotalElements()).isEqualTo(2);
+            softly.assertThat(result.getContent())
+                    .extracting(GetMaeilMailContentAnswerResponse::contentTitle)
+                    .containsExactlyInAnyOrder("자바 기초", "자바 OOP");
+        });
+    }
+
+    @Test
+    void track과_title_복합_필터로_조회한다() {
+        // given
+        MaeilMailTopic beTopic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+        MaeilMailTopic feTopic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.FE));
+
+        MaeilMailContent beJavaContent = contentRepository.save(MaeilMailFixture.createContent(beTopic.getId(), "자바 기초"));
+        MaeilMailContent feJavaContent = contentRepository.save(MaeilMailFixture.createContent(feTopic.getId(), "자바스크립트 기초"));
+        MaeilMailContent beSpringContent = contentRepository.save(MaeilMailFixture.createContent(beTopic.getId(), "스프링 입문"));
+
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(beJavaContent.getId()));
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(feJavaContent.getId()));
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(beSpringContent.getId()));
+
+        GetMaeilMailContentAnswersRequest request = new GetMaeilMailContentAnswersRequest(MaeilMailTrack.BE, "자바");
+
+        // when
+        Page<GetMaeilMailContentAnswerResponse> result = contentAnswerService.getContentAnswers(
+                request, PageRequest.of(0, 10));
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result.getTotalElements()).isEqualTo(1);
+            softly.assertThat(result.getContent().get(0).contentTitle()).isEqualTo("자바 기초");
+            softly.assertThat(result.getContent().get(0).track()).isEqualTo(MaeilMailTrack.BE);
+        });
+    }
+
+    @Test
+    void 응답에_topicName과_track이_포함된다() {
+        // given
+        MaeilMailTopic topic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE, "BE 기초", 1));
+        MaeilMailContent content = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "자바 기초"));
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content.getId()));
+
+        GetMaeilMailContentAnswersRequest request = new GetMaeilMailContentAnswersRequest(null, null);
+
+        // when
+        Page<GetMaeilMailContentAnswerResponse> result = contentAnswerService.getContentAnswers(
+                request, PageRequest.of(0, 10));
+
+        // then
+        GetMaeilMailContentAnswerResponse response = result.getContent().get(0);
+        assertSoftly(softly -> {
+            softly.assertThat(response.track()).isEqualTo(MaeilMailTrack.BE);
+            softly.assertThat(response.topicName()).isEqualTo("BE 기초");
+            softly.assertThat(response.contentTitle()).isEqualTo("자바 기초");
+        });
+    }
+
+    @Test
+    void 페이지네이션이_동작한다() {
+        // given
+        MaeilMailTopic topic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+
+        for (int i = 1; i <= 5; i++) {
+            MaeilMailContent content = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "콘텐츠 " + i));
+            contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content.getId()));
+        }
+
+        GetMaeilMailContentAnswersRequest request = new GetMaeilMailContentAnswersRequest(null, null);
+
+        // when
+        Page<GetMaeilMailContentAnswerResponse> firstPage = contentAnswerService.getContentAnswers(
+                request, PageRequest.of(0, 3));
+        Page<GetMaeilMailContentAnswerResponse> secondPage = contentAnswerService.getContentAnswers(
+                request, PageRequest.of(1, 3));
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(firstPage.getTotalElements()).isEqualTo(5);
+            softly.assertThat(firstPage.getContent()).hasSize(3);
+            softly.assertThat(secondPage.getContent()).hasSize(2);
+        });
+    }
+
+    @Test
+    void 조건에_맞는_답변이_없으면_빈_목록을_반환한다() {
+        // given
+        MaeilMailTopic topic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+        MaeilMailContent content = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "자바 기초"));
+        contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content.getId()));
+
+        GetMaeilMailContentAnswersRequest request = new GetMaeilMailContentAnswersRequest(MaeilMailTrack.FE, null);
+
+        // when
+        Page<GetMaeilMailContentAnswerResponse> result = contentAnswerService.getContentAnswers(
+                request, PageRequest.of(0, 10));
+
+        // then
+        assertThat(result.getTotalElements()).isZero();
+    }
+}
