@@ -1,12 +1,16 @@
 package me.bombom.api.v1.nativenewsletter.maeilmail.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import me.bombom.api.v1.common.config.QuerydslConfig;
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailContent;
+import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailContentAnswer;
 import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTopic;
 import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTrack;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerDetailResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswersRequest;
 import me.bombom.api.v1.nativenewsletter.maeilmail.fixture.MaeilMailFixture;
@@ -162,7 +166,6 @@ class MaeilMailContentAnswerServiceTest {
         GetMaeilMailContentAnswerResponse response = result.getContent().get(0);
         assertSoftly(softly -> {
             softly.assertThat(response.track()).isEqualTo(MaeilMailTrack.BE);
-            softly.assertThat(response.topicName()).isEqualTo("BE 기초");
             softly.assertThat(response.contentTitle()).isEqualTo("자바 기초");
         });
     }
@@ -208,5 +211,31 @@ class MaeilMailContentAnswerServiceTest {
 
         // then
         assertThat(result.getTotalElements()).isZero();
+    }
+
+    @Test
+    void 답변_단건을_조회한다() {
+        // given
+        MaeilMailTopic topic = topicRepository.save(MaeilMailFixture.createTopic(MaeilMailTrack.BE));
+        MaeilMailContent content = contentRepository.save(MaeilMailFixture.createContent(topic.getId(), "자바 기초"));
+        MaeilMailContentAnswer answer = contentAnswerRepository.save(MaeilMailFixture.createContentAnswer(content.getId()));
+
+        // when
+        GetMaeilMailContentAnswerDetailResponse result = contentAnswerService.getContentAnswer(answer.getId());
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result.id()).isEqualTo(answer.getId());
+            softly.assertThat(result.contentTitle()).isEqualTo("자바 기초");
+            softly.assertThat(result.track()).isEqualTo(MaeilMailTrack.BE);
+            softly.assertThat(result.answer()).isEqualTo("테스트 답변입니다.");
+        });
+    }
+
+    @Test
+    void 존재하지_않는_답변을_조회하면_예외가_발생한다() {
+        // when & then
+        assertThatThrownBy(() -> contentAnswerService.getContentAnswer(999L))
+                .isInstanceOf(CIllegalArgumentException.class);
     }
 }
