@@ -5,7 +5,7 @@ import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailContent;
 import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailContentAnswer;
-import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTopic;
+import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTrack;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.CreateMaeilMailContentAnswerRequest;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerDetailResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerResponse;
@@ -43,13 +43,10 @@ public class MaeilMailContentAnswerService {
 
     @Transactional
     public void createContentAnswer(CreateMaeilMailContentAnswerRequest request) {
-        MaeilMailTopic topic = topicRepository.findByTrack(request.track())
-                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
-                        .addContext("track", request.track()));
-
+        Long topicId = resolveTopicId(request.track());
         MaeilMailContent content = contentRepository.save(
                 MaeilMailContent.builder()
-                .topicId(topic.getId())
+                .topicId(topicId)
                 .title(request.title())
                 .content(request.content())
                 .contentsText(request.contentsText())
@@ -70,7 +67,27 @@ public class MaeilMailContentAnswerService {
         MaeilMailContentAnswer answer = contentAnswerRepository.findById(id)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext("maeilMailContentAnswerId", id));
-        answer.update(request.answer());
+
+        Long newTopicId = resolveTopicId(request.track());
+        MaeilMailContent content = contentRepository.findById(answer.getContentId())
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext("contentId", answer.getContentId()));
+        content.update(newTopicId, request.title(), request.content(), request.contentsText(),
+                request.contentsSummary(), request.expectedReadTime());
+
+        if (request.answer() != null) {
+            answer.update(request.answer());
+        }
+    }
+
+    private Long resolveTopicId(MaeilMailTrack track) {
+        if (track == null) {
+            return null;
+        }
+        return topicRepository.findByTrack(track)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext("track", track))
+                .getId();
     }
 
     @Transactional

@@ -39,6 +39,27 @@ public class MaeilMailContent extends BaseEntity {
     @Column(columnDefinition = "TINYINT", nullable = false)
     private int expectedReadTime;
 
+    public void update(Long topicId, String title, String content, String contentsText, String contentsSummary, Integer expectedReadTime) {
+        if (topicId != null) {
+            this.topicId = topicId;
+        }
+        if (title != null) {
+            this.title = title;
+        }
+        if (content != null) {
+            this.content = content;
+        }
+        if (contentsText != null) {
+            this.contentsText = contentsText;
+        }
+        if (contentsSummary != null) {
+            this.contentsSummary = contentsSummary;
+        }
+        if (expectedReadTime != null) {
+            this.expectedReadTime = expectedReadTime;
+        }
+    }
+
     @Builder
     public MaeilMailContent(
             @NonNull Long topicId,
