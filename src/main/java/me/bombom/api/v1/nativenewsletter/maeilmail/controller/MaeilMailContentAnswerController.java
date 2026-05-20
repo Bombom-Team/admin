@@ -36,4 +36,13 @@ public class MaeilMailContentAnswerController implements MaeilMailContentAnswerC
     public GetMaeilMailContentAnswerDetailResponse getContentAnswer(@PathVariable Long id) {
         return contentAnswerService.getContentAnswer(id);
     }
+
+    @Override
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createContentAnswer(@Valid @RequestBody CreateMaeilMailContentAnswerRequest request) {
+        contentAnswerService.createContentAnswer(request);
+    }
+
+    }
 }

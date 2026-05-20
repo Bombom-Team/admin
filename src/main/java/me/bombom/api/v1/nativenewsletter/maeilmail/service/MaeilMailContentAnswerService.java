@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class MaeilMailContentAnswerService {
 
     private final MaeilMailContentAnswerRepository contentAnswerRepository;
+    private final MaeilMailContentRepository contentRepository;
+    private final MaeilMailTopicRepository topicRepository;
 
     public Page<GetMaeilMailContentAnswerResponse> getContentAnswers(
             GetMaeilMailContentAnswersRequest request,
@@ -30,5 +32,29 @@ public class MaeilMailContentAnswerService {
         return contentAnswerRepository.findDetailById(id)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext("maeilMailContentAnswerId", id));
+    }
+
+    @Transactional
+    public void createContentAnswer(CreateMaeilMailContentAnswerRequest request) {
+        MaeilMailTopic topic = topicRepository.findByTrack(request.track())
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext("track", request.track()));
+
+        MaeilMailContent content = contentRepository.save(
+                MaeilMailContent.builder()
+                .topicId(topic.getId())
+                .title(request.title())
+                .content(request.content())
+                .contentsText(request.contentsText())
+                .contentsSummary(request.contentsSummary())
+                .expectedReadTime(request.expectedReadTime())
+                .build());
+
+        contentAnswerRepository.save(
+                MaeilMailContentAnswer.builder()
+                .contentId(content.getId())
+                .answer(request.answer())
+                .build()
+        );
     }
 }

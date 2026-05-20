@@ -50,4 +50,20 @@ public interface MaeilMailContentAnswerControllerApi {
     })
     GetMaeilMailContentAnswerDetailResponse getContentAnswer(
             @Parameter(description = "답변 ID", required = true) @PathVariable Long id);
+
+    @Operation(summary = "매일메일 콘텐츠 답변 생성", description = """
+            매일메일 콘텐츠 답변을 생성합니다.
+
+            - 콘텐츠 1개당 답변은 1개만 등록할 수 있습니다.
+            """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "생성 성공"),
+            @ApiResponse(responseCode = "400", description = "이미 답변이 존재하는 콘텐츠", content = @Content),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 콘텐츠", content = @Content)
+    })
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    void createContentAnswer(@RequestBody @Valid CreateMaeilMailContentAnswerRequest request);
+
+            @Parameter(description = "답변 ID", required = true) @PathVariable Long id);
 }
