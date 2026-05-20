@@ -1,6 +1,9 @@
 package me.bombom.api.v1.nativenewsletter.maeilmail.service;
 
 import lombok.RequiredArgsConstructor;
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
+import me.bombom.api.v1.common.exception.ErrorDetail;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerDetailResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswersRequest;
 import me.bombom.api.v1.nativenewsletter.maeilmail.repository.MaeilMailContentAnswerRepository;
@@ -21,5 +24,11 @@ public class MaeilMailContentAnswerService {
             Pageable pageable
     ) {
         return contentAnswerRepository.getContentAnswers(request, pageable);
+    }
+
+    public GetMaeilMailContentAnswerDetailResponse getContentAnswer(Long id) {
+        return contentAnswerRepository.findDetailById(id)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext("maeilMailContentAnswerId", id));
     }
 }

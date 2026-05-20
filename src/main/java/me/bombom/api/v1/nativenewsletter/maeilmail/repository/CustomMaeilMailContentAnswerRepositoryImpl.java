@@ -8,10 +8,13 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTrack;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerDetailResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswersRequest;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.QGetMaeilMailContentAnswerDetailResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.QGetMaeilMailContentAnswerResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -55,6 +58,21 @@ public class CustomMaeilMailContentAnswerRepositoryImpl implements CustomMaeilMa
                         filterByTitle(request.title()));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public Optional<GetMaeilMailContentAnswerDetailResponse> findDetailById(Long id) {
+        return Optional.ofNullable(queryFactory
+                .select(new QGetMaeilMailContentAnswerDetailResponse(
+                        maeilMailContentAnswer.id,
+                        maeilMailContent.title,
+                        maeilMailTopic.track,
+                        maeilMailContentAnswer.answer))
+                .from(maeilMailContentAnswer)
+                .join(maeilMailContent).on(maeilMailContentAnswer.contentId.eq(maeilMailContent.id))
+                .join(maeilMailTopic).on(maeilMailContent.topicId.eq(maeilMailTopic.id))
+                .where(maeilMailContentAnswer.id.eq(id))
+                .fetchOne());
     }
 
     private BooleanExpression filterByTrack(MaeilMailTrack track) {

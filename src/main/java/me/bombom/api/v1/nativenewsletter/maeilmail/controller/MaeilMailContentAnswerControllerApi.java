@@ -1,9 +1,12 @@
 package me.bombom.api.v1.nativenewsletter.maeilmail.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerDetailResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswersRequest;
 import org.springdoc.core.annotations.ParameterObject;
@@ -12,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @Tag(name = "MaeilMailContentAnswer", description = "매일메일 콘텐츠 답변 관리 API")
 @ApiResponses({
@@ -30,7 +34,7 @@ public interface MaeilMailContentAnswerControllerApi {
             **페이지네이션:**
             - `page`: 페이지 번호 (0부터 시작, 기본값: 0)
             - `size`: 페이지 크기 (기본값: 20)
-            - `sort`: 정렬 기준 (기본값: id,DESC)
+            - `sort`: 정렬 기준 (기본값: id, ASC)
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "목록 조회 성공")
@@ -38,4 +42,12 @@ public interface MaeilMailContentAnswerControllerApi {
     Page<GetMaeilMailContentAnswerResponse> getContentAnswers(
             @ParameterObject @ModelAttribute GetMaeilMailContentAnswersRequest request,
             @ParameterObject @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable);
+
+    @Operation(summary = "매일메일 콘텐츠 답변 단건 조회", description = "매일메일 콘텐츠 답변 상세 정보를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 답변", content = @Content)
+    })
+    GetMaeilMailContentAnswerDetailResponse getContentAnswer(
+            @Parameter(description = "답변 ID", required = true) @PathVariable Long id);
 }
