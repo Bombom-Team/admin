@@ -41,4 +41,8 @@ public class MaeilMailContentAnswer extends BaseEntity {
         this.contentId = contentId;
         this.answer = answer;
     }
+
+    public void update(String answer) {
+        this.answer = answer;
+    }
 }

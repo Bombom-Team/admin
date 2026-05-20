@@ -6,16 +6,25 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.CreateMaeilMailContentAnswerRequest;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerDetailResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswersRequest;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.UpdateMaeilMailContentAnswerRequest;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Tag(name = "MaeilMailContentAnswer", description = "매일메일 콘텐츠 답변 관리 API")
 @ApiResponses({
@@ -65,5 +74,24 @@ public interface MaeilMailContentAnswerControllerApi {
     @ResponseStatus(HttpStatus.CREATED)
     void createContentAnswer(@RequestBody @Valid CreateMaeilMailContentAnswerRequest request);
 
+    @Operation(summary = "매일메일 콘텐츠 답변 수정", description = "매일메일 콘텐츠 답변을 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 입력값", content = @Content),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 답변", content = @Content)
+    })
+    @PatchMapping("/{id}")
+    void updateContentAnswer(
+            @Parameter(description = "답변 ID", required = true) @PathVariable Long id,
+            @RequestBody @Valid UpdateMaeilMailContentAnswerRequest request);
+
+    @Operation(summary = "매일메일 콘텐츠 답변 삭제", description = "매일메일 콘텐츠 답변을 삭제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "삭제 성공"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 답변", content = @Content)
+    })
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteContentAnswer(
             @Parameter(description = "답변 ID", required = true) @PathVariable Long id);
 }

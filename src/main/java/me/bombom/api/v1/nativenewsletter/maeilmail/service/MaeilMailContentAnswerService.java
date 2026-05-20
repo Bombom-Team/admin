@@ -3,10 +3,17 @@ package me.bombom.api.v1.nativenewsletter.maeilmail.service;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
+import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailContent;
+import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailContentAnswer;
+import me.bombom.api.v1.nativenewsletter.maeilmail.domain.MaeilMailTopic;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.CreateMaeilMailContentAnswerRequest;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerDetailResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswerResponse;
 import me.bombom.api.v1.nativenewsletter.maeilmail.dto.GetMaeilMailContentAnswersRequest;
+import me.bombom.api.v1.nativenewsletter.maeilmail.dto.UpdateMaeilMailContentAnswerRequest;
 import me.bombom.api.v1.nativenewsletter.maeilmail.repository.MaeilMailContentAnswerRepository;
+import me.bombom.api.v1.nativenewsletter.maeilmail.repository.MaeilMailContentRepository;
+import me.bombom.api.v1.nativenewsletter.maeilmail.repository.MaeilMailTopicRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -56,5 +63,22 @@ public class MaeilMailContentAnswerService {
                 .answer(request.answer())
                 .build()
         );
+    }
+
+    @Transactional
+    public void updateContentAnswer(Long id, UpdateMaeilMailContentAnswerRequest request) {
+        MaeilMailContentAnswer answer = contentAnswerRepository.findById(id)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext("maeilMailContentAnswerId", id));
+        answer.update(request.answer());
+    }
+
+    @Transactional
+    public void deleteContentAnswer(Long id) {
+        if (!contentAnswerRepository.existsById(id)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext("maeilMailContentAnswerId", id);
+        }
+        contentAnswerRepository.deleteById(id);
     }
 }
