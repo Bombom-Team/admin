@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.CServerErrorException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
@@ -32,6 +33,7 @@ import me.bombom.api.v1.flyway.github.GitHubPullFile;
 import me.bombom.api.v1.flyway.github.GitHubPullRequest;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FlywayService {
@@ -167,13 +169,17 @@ public class FlywayService {
     }
 
     private List<ResolvedMigration> issueMigrations(Set<String> takenVersions) {
-        List<ResolvedMigration> migrations = new ArrayList<>();
-        for (GitHubIssue issue : gitHubClient.listOpenIssuesWithLabel(
-                properties.getIssueOwner(), properties.getIssueRepo(), properties.getWipLabel())) {
-            issueMigration(issue, takenVersions).ifPresent(migrations::add);
+        try {
+            List<ResolvedMigration> migrations = new ArrayList<>();
+            for (GitHubIssue issue : gitHubClient.listOpenIssuesWithLabel(
+                    properties.getIssueOwner(), properties.getIssueRepo(), properties.getWipLabel())) {
+                issueMigration(issue, takenVersions).ifPresent(migrations::add);
+            }
+            return migrations;
+        } catch (CServerErrorException exception) {
+            log.warn("flyway-wip 이슈 조회 실패, 로컬작업중 항목 생략: status={}", exception.getMessage());
+            return List.of();
         }
-
-        return migrations;
     }
 
     private Optional<ResolvedMigration> issueMigration(GitHubIssue issue, Set<String> takenVersions) {

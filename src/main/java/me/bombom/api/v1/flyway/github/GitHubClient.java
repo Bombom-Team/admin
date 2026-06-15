@@ -107,6 +107,10 @@ public class GitHubClient {
                     .block();
         } catch (WebClientResponseException.NotFound notFound) {
             return null;
+        } catch (WebClientResponseException.Unauthorized unauthorized) {
+            // 토큰이 만료/취소된 경우 — 인증 필요 기능(이슈 조회)은 빈 결과로 처리
+            log.warn("GitHub 인증 실패(401), 빈 결과 반환: {}", uri);
+            return null;
         } catch (WebClientResponseException exception) {
             throw externalError("githubGet", exception.getStatusCode().value());
         } catch (Exception exception) {
