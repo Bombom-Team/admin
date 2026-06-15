@@ -206,20 +206,34 @@ public class FlywayService {
         if (minPending.isEmpty()) {
             return resolved;
         }
+        Set<Integer> pendingMajors = pendingMajors(resolved);
         List<ResolvedMigration> enriched = new ArrayList<>();
         for (ResolvedMigration migration : resolved) {
-            enriched.add(enrichIfAheadCandidate(migration, minPending.get()));
+            enriched.add(enrichIfAheadCandidate(migration, minPending.get(), pendingMajors));
         }
 
         return enriched;
     }
 
+    private Set<Integer> pendingMajors(List<ResolvedMigration> resolved) {
+        Set<Integer> majors = new LinkedHashSet<>();
+        for (ResolvedMigration migration : resolved) {
+            if (migration.migration().isPending()) {
+                majors.add(migration.version().major());
+            }
+        }
+
+        return majors;
+    }
+
     private ResolvedMigration enrichIfAheadCandidate(
             ResolvedMigration migration,
-            MigrationVersion minPending
+            MigrationVersion minPending,
+            Set<Integer> pendingMajors
     ) {
         boolean candidate = migration.migration().isPending() == false
-                && migration.version().isHigherThan(minPending);
+                && migration.version().isHigherThan(minPending)
+                && pendingMajors.contains(migration.version().major());
         if (candidate == false) {
             return migration;
         }
