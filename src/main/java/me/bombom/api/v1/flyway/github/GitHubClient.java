@@ -99,6 +99,8 @@ public class GitHubClient {
                     .retrieve()
                     .bodyToMono(type)
                     .block();
+        } catch (WebClientResponseException.NotFound notFound) {
+            return null;
         } catch (WebClientResponseException exception) {
             throw externalError("githubGet", exception.getStatusCode().value());
         } catch (Exception exception) {
