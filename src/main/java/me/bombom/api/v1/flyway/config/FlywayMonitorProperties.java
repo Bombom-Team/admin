@@ -19,7 +19,7 @@ public class FlywayMonitorProperties {
     @Value("${flyway.source.repo:2025-bom-bom}")
     private String sourceRepo;
 
-    @Value("${flyway.source.deploy-branch:server}")
+    @Value("${flyway.source.deploy-branch:main}")
     private String deployBranch;
 
     @Value("${flyway.source.integration-branch:main}")
