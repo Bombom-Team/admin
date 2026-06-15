@@ -14,8 +14,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 /**
- * GitHub REST API 호출 래퍼. 읽기는 public repo라 토큰 없이도 동작하고,
- * 이슈 생성은 GITHUB_ISSUE_TOKEN 이 있을 때만 가능하다.
+ * GitHub REST API 호출 래퍼.
+ * - 소스 레포(public) 읽기: 토큰 미첨부(public read). admin용 토큰은 다른 org라 붙이면 오히려 거부될 수 있음.
+ * - 이슈 레포(admin) 조회/생성: 토큰 첨부.
  */
 @Slf4j
 @Component
@@ -36,6 +37,7 @@ public class GitHubClient {
         GitHubContentItem[] items = getForObject(
                 "/repos/{owner}/{repo}/contents/{path}?ref={ref}",
                 GitHubContentItem[].class,
+                false,
                 owner, repo, path, ref);
         return toList(items);
     }
@@ -49,6 +51,7 @@ public class GitHubClient {
         return getForObject(
                 "/repos/{owner}/{repo}/contents/{path}?ref={ref}",
                 GitHubFileContent.class,
+                false,
                 owner, repo, path, ref);
     }
 
@@ -56,6 +59,7 @@ public class GitHubClient {
         GitHubPullRequest[] pulls = getForObject(
                 "/repos/{owner}/{repo}/pulls?state=open&per_page=100",
                 GitHubPullRequest[].class,
+                false,
                 owner, repo);
         return toList(pulls);
     }
@@ -64,6 +68,7 @@ public class GitHubClient {
         GitHubPullFile[] files = getForObject(
                 "/repos/{owner}/{repo}/pulls/{number}/files?per_page=100",
                 GitHubPullFile[].class,
+                false,
                 owner, repo, number);
         return toList(files);
     }
@@ -72,13 +77,14 @@ public class GitHubClient {
         GitHubIssue[] issues = getForObject(
                 "/repos/{owner}/{repo}/issues?state=open&labels={label}&per_page=100",
                 GitHubIssue[].class,
+                true,
                 owner, repo, label);
         return toList(issues);
     }
 
     public GitHubIssue createIssue(String owner, String repo, CreateIssueCommand command) {
         try {
-            return createClient().post()
+            return client(true).post()
                     .uri("/repos/{owner}/{repo}/issues", owner, repo)
                     .bodyValue(command)
                     .retrieve()
@@ -92,9 +98,9 @@ public class GitHubClient {
         }
     }
 
-    private <T> T getForObject(String uri, Class<T> type, Object... uriVariables) {
+    private <T> T getForObject(String uri, Class<T> type, boolean authenticated, Object... uriVariables) {
         try {
-            return createClient().get()
+            return client(authenticated).get()
                     .uri(uri, uriVariables)
                     .retrieve()
                     .bodyToMono(type)
@@ -124,11 +130,11 @@ public class GitHubClient {
                 .toList();
     }
 
-    private WebClient createClient() {
+    private WebClient client(boolean authenticated) {
         WebClient.Builder builder = webClientBuilder.clone()
                 .baseUrl(BASE_URL)
                 .defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github+json");
-        if (properties.hasIssueToken()) {
+        if (authenticated && properties.hasIssueToken()) {
             builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getIssueToken());
         }
 
