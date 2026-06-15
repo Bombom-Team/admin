@@ -11,6 +11,7 @@ import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.CServerErrorException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
+import me.bombom.api.v1.flyway.config.FlywayCacheConfig;
 import me.bombom.api.v1.flyway.config.FlywayMonitorProperties;
 import me.bombom.api.v1.flyway.domain.MigrationFile;
 import me.bombom.api.v1.flyway.domain.MigrationScript;
@@ -31,6 +32,7 @@ import me.bombom.api.v1.flyway.github.GitHubFileContent;
 import me.bombom.api.v1.flyway.github.GitHubIssue;
 import me.bombom.api.v1.flyway.github.GitHubPullFile;
 import me.bombom.api.v1.flyway.github.GitHubPullRequest;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -42,6 +44,7 @@ public class FlywayService {
     private final FlywayMonitorProperties properties;
     private final OutOfOrderAnalyzer analyzer = new OutOfOrderAnalyzer();
 
+    @Cacheable(FlywayCacheConfig.FLYWAY_OVERVIEW)
     public FlywayOverviewResponse getOverview() {
         List<ResolvedMigration> resolved = enrichAheadScripts(collectAll());
         return FlywayOverviewAssembler.assemble(resolved, analyzer, properties);

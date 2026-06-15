@@ -93,6 +93,10 @@ dependencies {
     //otel
     implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.7.0")
 
+    // cache
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+    implementation("com.github.ben-manes.caffeine:caffeine")
+
     // for : webhook
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 
