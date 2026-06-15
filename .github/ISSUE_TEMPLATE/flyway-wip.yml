@@ -1,0 +1,43 @@
+name: "Flyway 작업중(예약)"
+description: "곧 작성할 마이그레이션을 미리 예약해 버전 번호 충돌을 예방합니다. (어드민에서 자동 생성됨)"
+title: "[작업중] <버전> <설명>"
+labels: ["flyway-wip"]
+body:
+  - type: dropdown
+    id: work-kind
+    attributes:
+      label: 작업 종류
+      options:
+        - 새로운 테이블
+        - 기존 테이블
+    validations:
+      required: true
+  - type: input
+    id: target-table
+    attributes:
+      label: 대상 테이블
+      description: "기존 테이블을 수정할 때만 입력 (새 테이블이면 - 으로 두세요)"
+      value: "-"
+    validations:
+      required: true
+  - type: input
+    id: planned-version
+    attributes:
+      label: 예정 버전
+      placeholder: "V36.3.0"
+    validations:
+      required: true
+  - type: input
+    id: description
+    attributes:
+      label: 설명
+      placeholder: "add_grade_to_member"
+    validations:
+      required: true
+  - type: input
+    id: assignee
+    attributes:
+      label: 담당자
+      placeholder: "github-id"
+    validations:
+      required: true
