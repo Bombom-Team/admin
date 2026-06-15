@@ -38,6 +38,10 @@ public record MigrationVersion(
         return parts.isEmpty() ? 0 : parts.get(0);
     }
 
+    public int minor() {
+        return parts.size() > 1 ? parts.get(1) : 0;
+    }
+
     @Override
     public int compareTo(MigrationVersion other) {
         int size = Math.max(parts.size(), other.parts.size());
