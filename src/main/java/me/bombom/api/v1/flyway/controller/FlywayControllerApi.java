@@ -30,4 +30,8 @@ public interface FlywayControllerApi {
     @Operation(summary = "작업중 등록",
             description = "flyway-wip 라벨 이슈를 생성한다 (GITHUB_ISSUE_TOKEN 필요)")
     CreateWipIssueResponse createWipIssue(@Valid @RequestBody CreateWipIssueRequest request);
+
+    @Operation(summary = "형상 캐시 초기화",
+            description = "캐시를 즉시 비워 다음 조회 시 GitHub에서 최신 데이터를 가져온다")
+    void refreshCache();
 }

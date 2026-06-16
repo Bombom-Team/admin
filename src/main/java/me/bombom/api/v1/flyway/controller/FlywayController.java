@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
 @RequiredArgsConstructor
@@ -40,5 +41,12 @@ public class FlywayController implements FlywayControllerApi {
     @ResponseStatus(HttpStatus.CREATED)
     public CreateWipIssueResponse createWipIssue(@Valid @RequestBody CreateWipIssueRequest request) {
         return flywayService.createWipIssue(request);
+    }
+
+    @Override
+    @DeleteMapping("/cache")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void refreshCache() {
+        flywayService.evictOverviewCache();
     }
 }

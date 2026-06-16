@@ -13,7 +13,7 @@ public class FlywayCacheConfig {
 
     public static final String FLYWAY_OVERVIEW = "flyway-overview";
 
-    @Value("${flyway.cache.ttl-seconds:60}")
+    @Value("${flyway.cache.ttl-seconds:3600}")
     private int ttlSeconds;
 
     @Bean
