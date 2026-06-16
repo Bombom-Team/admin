@@ -22,7 +22,7 @@ public class FlywayMonitorProperties {
     @Value("${flyway.source.deploy-branch:main}")
     private String deployBranch;
 
-    @Value("${flyway.source.integration-branch:main}")
+    @Value("${flyway.source.integration-branch:server-dev}")
     private String integrationBranch;
 
     @Value("${flyway.source.migration-path:backend/bom-bom-server/src/main/resources/db/migration}")
