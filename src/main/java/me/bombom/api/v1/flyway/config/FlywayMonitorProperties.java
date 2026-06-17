@@ -37,8 +37,15 @@ public class FlywayMonitorProperties {
     @Value("${flyway.issue.label:flyway-wip}")
     private String wipLabel;
 
+    @Value("${GITHUB_READ_TOKEN:}")
+    private String readToken;
+
     @Value("${GITHUB_ISSUE_TOKEN:}")
     private String issueToken;
+
+    public boolean hasReadToken() {
+        return readToken != null && readToken.isBlank() == false;
+    }
 
     public boolean hasIssueToken() {
         return issueToken != null && issueToken.isBlank() == false;

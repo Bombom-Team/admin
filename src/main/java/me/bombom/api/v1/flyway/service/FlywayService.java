@@ -32,6 +32,7 @@ import me.bombom.api.v1.flyway.github.GitHubFileContent;
 import me.bombom.api.v1.flyway.github.GitHubIssue;
 import me.bombom.api.v1.flyway.github.GitHubPullFile;
 import me.bombom.api.v1.flyway.github.GitHubPullRequest;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +49,10 @@ public class FlywayService {
     public FlywayOverviewResponse getOverview() {
         List<ResolvedMigration> resolved = enrichAheadScripts(collectAll());
         return FlywayOverviewAssembler.assemble(resolved, analyzer, properties);
+    }
+
+    @CacheEvict(value = FlywayCacheConfig.FLYWAY_OVERVIEW, allEntries = true)
+    public void evictOverviewCache() {
     }
 
     public MigrationScriptResponse getScript(String fileName) {

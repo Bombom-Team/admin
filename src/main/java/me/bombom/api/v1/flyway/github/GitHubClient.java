@@ -108,8 +108,11 @@ public class GitHubClient {
         } catch (WebClientResponseException.NotFound notFound) {
             return null;
         } catch (WebClientResponseException.Unauthorized unauthorized) {
-            // 토큰이 만료/취소된 경우 — 인증 필요 기능(이슈 조회)은 빈 결과로 처리
             log.warn("GitHub 인증 실패(401), 빈 결과 반환: {}", uri);
+            return null;
+        } catch (WebClientResponseException.Forbidden forbidden) {
+            // 비인증 읽기는 60회/시간 한도 초과 시 403 반환 — GITHUB_READ_TOKEN 설정으로 5000회/시간으로 상향 가능
+            log.warn("GitHub API rate limit 또는 접근 거부(403), 빈 결과 반환: {}", uri);
             return null;
         } catch (WebClientResponseException exception) {
             throw externalError("githubGet", exception.getStatusCode().value());
@@ -140,8 +143,10 @@ public class GitHubClient {
                 .defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github+json");
         if (authenticated && properties.hasIssueToken()) {
             builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getIssueToken());
+        } else if (!authenticated && properties.hasReadToken()) {
+            // 비인증 읽기도 토큰 첨부 시 5000회/시간으로 상향 (미설정: 60회/시간)
+            builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getReadToken());
         }
-
         return builder.build();
     }
 }
