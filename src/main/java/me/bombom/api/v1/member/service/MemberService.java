@@ -10,6 +10,7 @@ import me.bombom.api.v1.member.dto.MembersOptionsRequest;
 import me.bombom.api.v1.member.dto.UpdateRoleRequest;
 import me.bombom.api.v1.member.repository.MemberRepository;
 import me.bombom.api.v1.member.repository.RoleRepository;
+import me.bombom.api.v1.session.repository.SpringSessionRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final RoleRepository roleRepository;
+    private final SpringSessionRepository springSessionRepository;
 
     public Page<GetMemberResponse> getMembers(MembersOptionsRequest request, Pageable pageable) {
         return memberRepository.findMemberInfo(pageable, request.name(), request.role());
@@ -43,5 +45,6 @@ public class MemberService {
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "role")
                         .addContext("authority", authority));
         member.updateRole(role.getId());
+        springSessionRepository.deleteByPrincipalName(member.getNickname());
     }
 }

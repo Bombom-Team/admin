@@ -10,6 +10,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SpringSessionRepository extends JpaRepository<SpringSession, String> {
 
+  void deleteByPrincipalName(String principalName);
+
   @Query(value = """
           SELECT COUNT(DISTINCT s.PRINCIPAL_NAME)
           FROM SPRING_SESSION s
