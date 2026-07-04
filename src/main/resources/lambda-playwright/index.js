@@ -10,6 +10,7 @@ const USER_AGENT =
 
 const BLOCKED_RESOURCE_TYPES = ['image', 'font', 'media'];
 
+const RENDER_WAIT_TIMEOUT_MS = 20000;
 const UNSUBSCRIBE_TIMEOUT_MS = 20000;
 const NAVIGATION_TIMEOUT_MS = 60000;
 const POLLING_INTERVAL_MS = 500;
@@ -71,6 +72,7 @@ exports.handler = async (event) => {
         'google-analytics.com',
         'googletagmanager.com',
     ];
+
     const resubscribeRegex =
         /resubscribe|re-subscribe|subscribe again|다시.?구독|재구독/i;
 
@@ -121,7 +123,7 @@ exports.handler = async (event) => {
                 } else {
                     await route.continue();
                 }
-            } catch (e) {
+            } catch {
                 try {
                     await route.continue();
                 } catch {}
@@ -135,6 +137,23 @@ exports.handler = async (event) => {
                 .replace(/\s+/g, ' ')
                 .trim()
                 .substring(0, maxLength);
+        };
+
+        const getElementText = async (locator) => {
+            const [innerText, textContent, value, ariaLabel, title] =
+                await Promise.all([
+                    locator.innerText().catch(() => ''),
+                    locator.textContent().catch(() => ''),
+                    locator.getAttribute('value').catch(() => ''),
+                    locator.getAttribute('aria-label').catch(() => ''),
+                    locator.getAttribute('title').catch(() => ''),
+                ]);
+
+            return [innerText, textContent, value, ariaLabel, title]
+                .filter(Boolean)
+                .join(' ')
+                .replace(/\s+/g, ' ')
+                .trim();
         };
 
         const getDetectionText = async (frame) => {
@@ -222,21 +241,145 @@ exports.handler = async (event) => {
             return false;
         };
 
-        const getElementText = async (locator) => {
-            const [innerText, textContent, value, ariaLabel, title] =
-                await Promise.all([
-                    locator.innerText().catch(() => ''),
-                    locator.textContent().catch(() => ''),
-                    locator.getAttribute('value').catch(() => ''),
-                    locator.getAttribute('aria-label').catch(() => ''),
-                    locator.getAttribute('title').catch(() => ''),
-                ]);
+        const getButtonState = async () => {
+            const frames = page.frames();
 
-            return [innerText, textContent, value, ariaLabel, title]
-                .filter(Boolean)
-                .join(' ')
-                .replace(/\s+/g, ' ')
-                .trim();
+            for (const frame of frames) {
+                const frameUrl = frame.url();
+
+                const state = await frame
+                    .evaluate(
+                        ({ unsubscribePattern, alreadyPattern, errorPattern }) => {
+                            const unsubscribeRegex = new RegExp(unsubscribePattern, 'i');
+                            const alreadyRegex = new RegExp(alreadyPattern, 'i');
+                            const errorRegex = new RegExp(errorPattern, 'i');
+
+                            const bodyText = (document.body?.innerText || '')
+                                .replace(/\s+/g, ' ')
+                                .trim();
+
+                            const candidates = [
+                                ...document.querySelectorAll(
+                                    'button, a, [role="button"], input[type="button"], input[type="submit"]',
+                                ),
+                            ].map((el) => {
+                                const text = [
+                                    el.innerText,
+                                    el.textContent,
+                                    el.value,
+                                    el.getAttribute('aria-label'),
+                                    el.getAttribute('title'),
+                                ]
+                                    .filter(Boolean)
+                                    .join(' ')
+                                    .replace(/\s+/g, ' ')
+                                    .trim();
+
+                                const visible = !!(
+                                    el.offsetWidth ||
+                                    el.offsetHeight ||
+                                    el.getClientRects().length
+                                );
+
+                                return {
+                                    text,
+                                    visible,
+                                    tag: el.tagName,
+                                    html: el.outerHTML.slice(0, 240),
+                                };
+                            });
+
+                            return {
+                                bodyText,
+                                hasUnsubscribeButton: candidates.some(
+                                    (candidate) =>
+                                        candidate.visible && unsubscribeRegex.test(candidate.text),
+                                ),
+                                hasAnyUnsubscribeCandidate: candidates.some((candidate) =>
+                                    unsubscribeRegex.test(candidate.text),
+                                ),
+                                hasAlreadyText: alreadyRegex.test(bodyText),
+                                hasExplicitErrorText:
+                                    errorRegex.test(bodyText) ||
+                                    /404|not found|페이지를 찾을 수|존재하지 않는|만료된|invalid|expired/i.test(
+                                        bodyText,
+                                    ),
+                                candidates,
+                            };
+                        },
+                        {
+                            unsubscribePattern: regex.unsubscribe.source,
+                            alreadyPattern: regex.alreadyUnsubscribed.source,
+                            errorPattern: regex.error.source,
+                        },
+                    )
+                    .catch((error) => ({
+                        bodyText: '',
+                        hasUnsubscribeButton: false,
+                        hasAnyUnsubscribeCandidate: false,
+                        hasAlreadyText: false,
+                        hasExplicitErrorText: false,
+                        candidates: [],
+                        evaluateError: error.message,
+                    }));
+
+                if (
+                    state.hasUnsubscribeButton ||
+                    state.hasAnyUnsubscribeCandidate ||
+                    state.hasAlreadyText ||
+                    state.hasExplicitErrorText
+                ) {
+                    return {
+                        frameUrl,
+                        ...state,
+                    };
+                }
+            }
+
+            const mainFrame = page.mainFrame();
+            const bodyText = await mainFrame.locator('body').innerText().catch(() => '');
+
+            return {
+                frameUrl: mainFrame.url(),
+                bodyText,
+                hasUnsubscribeButton: false,
+                hasAnyUnsubscribeCandidate: false,
+                hasAlreadyText: false,
+                hasExplicitErrorText: false,
+                candidates: [],
+            };
+        };
+
+        const waitForActionableUnsubscribeState = async () => {
+            const deadline = Date.now() + RENDER_WAIT_TIMEOUT_MS;
+
+            while (Date.now() < deadline) {
+                const state = await getButtonState();
+
+                console.log(
+                    `⏳ [WAIT] frameUrl=${state.frameUrl}, hasButton=${state.hasUnsubscribeButton}, hasAnyCandidate=${state.hasAnyUnsubscribeCandidate}, hasAlready=${state.hasAlreadyText}, hasError=${state.hasExplicitErrorText}, candidateCount=${state.candidates.length}, body="${cleanForLog(
+                        state.bodyText,
+                        180,
+                    )}"`,
+                );
+
+                if (state.hasUnsubscribeButton) {
+                    return 'FOUND_BUTTON';
+                }
+
+                if (state.hasAlreadyText) {
+                    return 'ALREADY_UNSUBSCRIBED';
+                }
+
+                if (state.hasExplicitErrorText) {
+                    return 'ERROR_PAGE';
+                }
+
+                await page.waitForTimeout(POLLING_INTERVAL_MS);
+            }
+
+            console.log('⏱️ [WAIT] 해지 버튼 렌더링 대기 시간 초과');
+            return 'TIMEOUT';
         };
 
         const logAllButtonCandidates = async () => {
@@ -351,6 +494,12 @@ exports.handler = async (event) => {
             return null;
         };
 
+        page.on('requestfailed', (request) => {
+            console.log(
+                `❌ [REQUEST FAILED] method=${request.method()}, url=${request.url()}, failure=${request.failure()?.errorText}`,
+            );
+        });
+
         page.on('dialog', async (dialog) => {
             try {
                 const message = dialog.message();
@@ -400,9 +549,9 @@ exports.handler = async (event) => {
                     return;
                 }
 
-                if (lowerUrl.includes('unsubscribe')) {
+                if (lowerUrl.includes('unsubscribe') || status >= 400) {
                     console.log(
-                        `📡 [XHR 감지] clicked=${hasClicked}, status=${status}, url=${resUrl.substring(
+                        `📡 [RESPONSE] clicked=${hasClicked}, status=${status}, url=${resUrl.substring(
                             0,
                             180,
                         )}`,
@@ -440,8 +589,10 @@ exports.handler = async (event) => {
 
         console.log(`🔗 [STEP 2] 페이지 접속 시도: ${url}`);
 
+        let navigationResponse = null;
+
         try {
-            await page.goto(url, {
+            navigationResponse = await page.goto(url, {
                 waitUntil: 'networkidle',
                 timeout: NAVIGATION_TIMEOUT_MS,
             });
@@ -449,20 +600,47 @@ exports.handler = async (event) => {
             console.warn(
                 `⚠️ [STEP 2] networkidle 실패, load로 재시도: ${gotoErr.message}`,
             );
-            await page.goto(url, {
+            navigationResponse = await page.goto(url, {
                 waitUntil: 'load',
                 timeout: NAVIGATION_TIMEOUT_MS,
             });
         }
 
+        const initialStatus = navigationResponse?.status();
         const pageTitle = await page.title().catch(() => 'No Title');
+
         console.log(
-            `✅ [STEP 2] 페이지 로드 완료 (Title: "${pageTitle}", URL: ${page.url()})`,
+            `✅ [STEP 2] 페이지 로드 완료 (status=${initialStatus}, Title="${pageTitle}", URL=${page.url()})`,
         );
 
-        console.log('⏳ 페이지 안정화 및 동적 콘텐츠 대기 중 (5s)...');
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)).catch(() => {});
-        await page.waitForTimeout(5000);
+        if (initialStatus === 404 || initialStatus === 410) {
+            return {
+                success: false,
+                statusCode: initialStatus,
+                message: '해지 페이지가 존재하지 않거나 만료되었습니다.',
+            };
+        }
+
+        console.log('⏳ 해지 화면 렌더링 대기 중...');
+        const waitResult = await waitForActionableUnsubscribeState();
+
+        if (waitResult === 'ERROR_PAGE') {
+            return {
+                success: false,
+                statusCode: 404,
+                message: '해지 페이지가 존재하지 않거나 오류 페이지로 렌더링되었습니다.',
+            };
+        }
+
+        if (waitResult === 'ALREADY_UNSUBSCRIBED') {
+            return {
+                success: true,
+                statusCode: 200,
+                message: '이미 해지된 상태 문구가 발견되었습니다.',
+                method: 'ALREADY_UNSUBSCRIBED',
+            };
+        }
+
         logMemory('PageLoaded');
 
         const beforeUrl = page.url();
@@ -504,7 +682,11 @@ exports.handler = async (event) => {
                     );
                     await page.waitForTimeout(1000);
 
-                    if (await checkSuccessText('after_navigation', { includeSuccess: true })) {
+                    if (
+                        await checkSuccessText('after_navigation', {
+                            includeSuccess: true,
+                        })
+                    ) {
                         console.log('🎯 [RESULT] 페이지 이동 후 문구로 성공 확인');
                         return {
                             success: true,
@@ -518,7 +700,8 @@ exports.handler = async (event) => {
                     return {
                         success: true,
                         statusCode: 200,
-                        message: '해지 프로세스 완료 후 페이지가 이동되어 성공한 것으로 간주합니다.',
+                        message:
+                            '해지 프로세스 완료 후 페이지가 이동되어 성공한 것으로 간주합니다.',
                         method: 'NAVIGATION_SUCCESS',
                     };
                 }
@@ -579,7 +762,9 @@ exports.handler = async (event) => {
             .locator('body')
             .evaluate((body) => {
                 const clone = body.cloneNode(true);
-                clone.querySelectorAll('script, style, noscript').forEach((el) => el.remove());
+                clone
+                    .querySelectorAll('script, style, noscript')
+                    .forEach((el) => el.remove());
                 return clone.innerText || clone.textContent || '';
             })
             .catch(() => '');
@@ -589,7 +774,9 @@ exports.handler = async (event) => {
         );
         console.log(`📄 [DEBUG] HTML 길이: ${html.length}`);
         console.log(`📄 [DEBUG] HTML 앞부분: ${html.substring(0, 5000)}`);
-        console.log(`🔍 [DEBUG] 최종 본문 텍스트: "${cleanForLog(finalBody, 300)}..."`);
+        console.log(
+            `🔍 [DEBUG] 최종 본문 텍스트: "${cleanForLog(finalBody, 300)}..."`,
+        );
 
         return {
             success: false,
@@ -609,6 +796,9 @@ exports.handler = async (event) => {
         const duration = Date.now() - startTime;
         console.log(`🏁 [FINISH] 실행 종료 (소요 시간: ${duration}ms)`);
         logMemory('Finished');
-        if (browser) await browser.close().catch(() => {});
+
+        if (browser) {
+            await browser.close().catch(() => {});
+        }
     }
 };
