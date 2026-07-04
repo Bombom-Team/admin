@@ -5,7 +5,8 @@
 const chromium = require('@sparticuz/chromium');
 const { chromium: playwright } = require('playwright-core');
 
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36';
+const USER_AGENT =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36';
 
 const BLOCKED_RESOURCE_TYPES = ['image', 'font', 'media'];
 
@@ -20,8 +21,13 @@ exports.handler = async (event) => {
 
     const logMemory = (tag = 'Status') => {
         const used = process.memoryUsage();
-        console.log(`📊 [MEMORY ${tag}]: rss=${Math.round(used.rss / 1024 / 1024)}MB, heapUsed=${Math.round(used.heapUsed / 1024 / 1024)}MB`);
+        console.log(
+            `📊 [MEMORY ${tag}]: rss=${Math.round(
+                used.rss / 1024 / 1024,
+            )}MB, heapUsed=${Math.round(used.heapUsed / 1024 / 1024)}MB`,
+        );
     };
+
     logMemory('Initial');
 
     const body = typeof event.body === 'string' ? JSON.parse(event.body) : event;
@@ -29,7 +35,11 @@ exports.handler = async (event) => {
 
     if (!url) {
         console.error('❌ [ERROR] 해지 URL이 누락되었습니다.');
-        return { success: false, statusCode: 400, message: '해지 URL이 누락되었습니다.' };
+        return {
+            success: false,
+            statusCode: 400,
+            message: '해지 URL이 누락되었습니다.',
+        };
     }
 
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -38,22 +48,42 @@ exports.handler = async (event) => {
     }
 
     const regex = {
-        unsubscribe: new RegExp(patterns?.unsubscribe || 'unsubscribe|구독.?취소|수신.?거부|해지|cancel|confirm|yes', 'i'),
-        success: new RegExp(patterns?.success || 'unsubscribed|canceled|cancelled|successfully|취소.?완료|처리.?완료|해지.?완료|거부.?완료|취소.?되었습니다|해지.?되었습니다|성공|완료', 'i'),
-        alreadyUnsubscribed: new RegExp(patterns?.alreadyUnsubscribed || 'already.?unsubscribed|not.?subscribed|no.?longer|이미.?구독.?취소|이미.?취소|이미.?수신.?거부|구독.?취소.?되었습니다|해지.?되었습니다|메일러가.?없어요', 'i'),
-        error: new RegExp(patterns?.error || 'error|failed|실패|오류', 'i')
+        unsubscribe: new RegExp(
+            patterns?.unsubscribe ||
+            'unsubscribe|구독.?취소|수신.?거부|해지|cancel|confirm|yes',
+            'i',
+        ),
+        success: new RegExp(
+            patterns?.success ||
+            'unsubscribed|canceled|cancelled|successfully|취소.?완료|처리.?완료|해지.?완료|거부.?완료|취소.?되었습니다|해지.?되었습니다|성공|완료',
+            'i',
+        ),
+        alreadyUnsubscribed: new RegExp(
+            patterns?.alreadyUnsubscribed ||
+            'already.?unsubscribed|not.?subscribed|no.?longer|이미.?구독.?취소|이미.?취소|이미.?수신.?거부|구독.?취소.?되었습니다|해지.?되었습니다|메일러가.?없어요',
+            'i',
+        ),
+        error: new RegExp(patterns?.error || 'error|failed|실패|오류', 'i'),
     };
 
-    const adDomains = patterns?.adDomains || ['doubleclick.net', 'google-analytics.com', 'googletagmanager.com'];
-    const resubscribeRegex = /resubscribe|re-subscribe|subscribe again|다시.?구독|재구독/i;
+    const adDomains = patterns?.adDomains || [
+        'doubleclick.net',
+        'google-analytics.com',
+        'googletagmanager.com',
+    ];
+    const resubscribeRegex =
+        /resubscribe|re-subscribe|subscribe again|다시.?구독|재구독/i;
 
-    console.log('🧩 [PATTERN] 적용 패턴:', JSON.stringify({
-        unsubscribe: patterns?.unsubscribe,
-        success: patterns?.success,
-        alreadyUnsubscribed: patterns?.alreadyUnsubscribed,
-        error: patterns?.error,
-        adDomains
-    }));
+    console.log(
+        '🧩 [PATTERN] 적용 패턴:',
+        JSON.stringify({
+            unsubscribe: patterns?.unsubscribe,
+            success: patterns?.success,
+            alreadyUnsubscribed: patterns?.alreadyUnsubscribed,
+            error: patterns?.error,
+            adDomains,
+        }),
+    );
 
     let browser = null;
     let isProcessed = false;
@@ -62,11 +92,13 @@ exports.handler = async (event) => {
 
     try {
         console.log('🌐 [STEP 1] 브라우저 실행 준비 중...');
+
         browser = await playwright.launch({
             args: [...chromium.args, '--disable-gpu', '--disable-dev-shm-usage'],
             executablePath: await chromium.executablePath(),
             headless: true,
         });
+
         console.log('✅ [STEP 1] 브라우저 실행 완료');
         logMemory('BrowserUp');
 
@@ -75,10 +107,10 @@ exports.handler = async (event) => {
             viewport: { width: 1280, height: 720 },
             extraHTTPHeaders: {
                 'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Referer': 'https://www.google.com/'
+                Referer: 'https://www.google.com/',
             },
             locale: 'ko-KR',
-            timezoneId: 'Asia/Seoul'
+            timezoneId: 'Asia/Seoul',
         });
 
         await context.route('**/*', async (route) => {
@@ -90,7 +122,9 @@ exports.handler = async (event) => {
                     await route.continue();
                 }
             } catch (e) {
-                try { await route.continue(); } catch { }
+                try {
+                    await route.continue();
+                } catch {}
             }
         });
 
@@ -104,25 +138,32 @@ exports.handler = async (event) => {
         };
 
         const getDetectionText = async (frame) => {
-            return await frame.locator('body').evaluate((body) => {
-                const clone = body.cloneNode(true);
+            return await frame
+                .locator('body')
+                .evaluate((body) => {
+                    const clone = body.cloneNode(true);
 
-                clone.querySelectorAll([
-                    'script',
-                    'style',
-                    'noscript',
-                    'button',
-                    'a',
-                    'input',
-                    'select',
-                    'textarea',
-                    '[role="button"]'
-                ].join(',')).forEach((el) => el.remove());
+                    clone
+                        .querySelectorAll(
+                            [
+                                'script',
+                                'style',
+                                'noscript',
+                                'button',
+                                'a',
+                                'input',
+                                'select',
+                                'textarea',
+                                '[role="button"]',
+                            ].join(','),
+                        )
+                        .forEach((el) => el.remove());
 
-                return (clone.innerText || clone.textContent || '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-            }).catch(() => '');
+                    return (clone.innerText || clone.textContent || '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                })
+                .catch(() => '');
         };
 
         const checkSuccessText = async (contextName = 'auto', options = {}) => {
@@ -130,7 +171,9 @@ exports.handler = async (event) => {
 
             try {
                 const frames = page.frames();
-                console.log(`🧾 [TEXT 검사 시작] context=${contextName}, includeSuccess=${includeSuccess}, frameCount=${frames.length}`);
+                console.log(
+                    `🧾 [TEXT 검사 시작] context=${contextName}, includeSuccess=${includeSuccess}, frameCount=${frames.length}`,
+                );
 
                 for (const frame of frames) {
                     const detectionText = await getDetectionText(frame);
@@ -138,70 +181,170 @@ exports.handler = async (event) => {
 
                     if (!detectionText) {
                         if (contextName !== 'polling') {
-                            console.log(`🧾 [TEXT 검사] context=${contextName}, frameUrl=${frameUrl}, length=0`);
+                            console.log(
+                                `🧾 [TEXT 검사] context=${contextName}, frameUrl=${frameUrl}, length=0`,
+                            );
                         }
                         continue;
                     }
 
                     if (contextName !== 'polling') {
-                        console.log(`🧾 [TEXT 검사] context=${contextName}, frameUrl=${frameUrl}, length=${detectionText.length}, text="${cleanForLog(detectionText)}..."`);
+                        console.log(
+                            `🧾 [TEXT 검사] context=${contextName}, frameUrl=${frameUrl}, length=${detectionText.length}, text="${cleanForLog(
+                                detectionText,
+                            )}..."`,
+                        );
                     }
 
-                    const matchedBySuccess = includeSuccess && regex.success.test(detectionText);
-                    const matchedByAlready = regex.alreadyUnsubscribed.test(detectionText);
+                    const matchedBySuccess =
+                        includeSuccess && regex.success.test(detectionText);
+                    const matchedByAlready =
+                        regex.alreadyUnsubscribed.test(detectionText);
 
                     if (matchedBySuccess || matchedByAlready) {
-                        const reason = matchedByAlready ? 'already-unsubscribed' : 'success';
-                        console.log(`✨ [TEXT 성공 감지] context=${contextName}, reason=${reason}, frameUrl=${frameUrl}, text="${cleanForLog(detectionText)}..."`);
+                        const reason = matchedByAlready
+                            ? 'already-unsubscribed'
+                            : 'success';
+                        console.log(
+                            `✨ [TEXT 성공 감지] context=${contextName}, reason=${reason}, frameUrl=${frameUrl}, text="${cleanForLog(
+                                detectionText,
+                            )}..."`,
+                        );
                         return true;
                     }
                 }
             } catch (e) {
-                console.log(`⚠️ [TEXT 확인 중 오류] context=${contextName}, error=${e.message}`);
+                console.log(
+                    `⚠️ [TEXT 확인 중 오류] context=${contextName}, error=${e.message}`,
+                );
             }
 
             return false;
         };
 
-        const findUnsubscribeButton = async () => {
-            const buttons = page.locator('button:visible, a:visible, input[type="button"]:visible, input[type="submit"]:visible');
-            const count = await buttons.count();
-
-            console.log(`🔘 [BUTTON] 발견된 가시적 후보 수: ${count}`);
-
-            for (let i = 0; i < count; i++) {
-                const btn = buttons.nth(i);
-                const [text, value, ariaLabel, title, tagName, type, href] = await Promise.all([
-                    btn.innerText().catch(() => ''),
-                    btn.getAttribute('value').catch(() => ''),
-                    btn.getAttribute('aria-label').catch(() => ''),
-                    btn.getAttribute('title').catch(() => ''),
-                    btn.evaluate((el) => el.tagName).catch(() => ''),
-                    btn.getAttribute('type').catch(() => ''),
-                    btn.getAttribute('href').catch(() => '')
+        const getElementText = async (locator) => {
+            const [innerText, textContent, value, ariaLabel, title] =
+                await Promise.all([
+                    locator.innerText().catch(() => ''),
+                    locator.textContent().catch(() => ''),
+                    locator.getAttribute('value').catch(() => ''),
+                    locator.getAttribute('aria-label').catch(() => ''),
+                    locator.getAttribute('title').catch(() => ''),
                 ]);
 
-                const buttonText = [text, value, ariaLabel, title].filter(Boolean).join(' ').trim();
+            return [innerText, textContent, value, ariaLabel, title]
+                .filter(Boolean)
+                .join(' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
 
-                console.log(`🔎 [BUTTON 후보 ${i + 1}/${count}] tag=${tagName}, type=${type || '-'}, href=${href || '-'}, text="${cleanForLog(buttonText)}"`);
+        const logAllButtonCandidates = async () => {
+            const selector =
+                'button, a, [role="button"], input[type="button"], input[type="submit"]';
 
-                if (!buttonText) {
-                    console.log(`⏭️ [BUTTON 제외 ${i + 1}] 텍스트 없음`);
-                    continue;
+            for (const frame of page.frames()) {
+                const frameUrl = frame.url();
+                const bodyText = await frame.locator('body').innerText().catch(() => '');
+                const candidates = frame.locator(selector);
+                const count = await candidates.count();
+
+                console.log(
+                    `🧪 [DEBUG BUTTONS] frameUrl=${frameUrl}, hasUnsubscribeText=${bodyText.includes(
+                        '구독 취소',
+                    )}, allCandidateCount=${count}`,
+                );
+
+                const summary = [];
+
+                for (let i = 0; i < count; i++) {
+                    const candidate = candidates.nth(i);
+                    const [text, visible, tagName, type, href, html] = await Promise.all([
+                        getElementText(candidate),
+                        candidate
+                            .evaluate(
+                                (el) =>
+                                    !!(
+                                        el.offsetWidth ||
+                                        el.offsetHeight ||
+                                        el.getClientRects().length
+                                    ),
+                            )
+                            .catch(() => false),
+                        candidate.evaluate((el) => el.tagName).catch(() => ''),
+                        candidate.getAttribute('type').catch(() => ''),
+                        candidate.getAttribute('href').catch(() => ''),
+                        candidate
+                            .evaluate((el) => el.outerHTML.slice(0, 300))
+                            .catch(() => ''),
+                    ]);
+
+                    summary.push({
+                        i,
+                        tag: tagName,
+                        type: type || '-',
+                        href: href || '-',
+                        visible,
+                        text: cleanForLog(text, 160),
+                        html: cleanForLog(html, 220),
+                    });
                 }
 
-                if (resubscribeRegex.test(buttonText)) {
-                    console.log(`⏭️ [BUTTON 제외 ${i + 1}] 재구독 버튼 감지`);
-                    continue;
-                }
+                console.log(
+                    `🧪 [DEBUG BUTTONS DETAIL] frameUrl=${frameUrl}, candidates=${JSON.stringify(
+                        summary,
+                    )}`,
+                );
+            }
+        };
 
-                if (!regex.unsubscribe.test(buttonText)) {
-                    console.log(`⏭️ [BUTTON 제외 ${i + 1}] 해지 패턴 불일치`);
-                    continue;
-                }
+        const findUnsubscribeButton = async () => {
+            const visibleSelector =
+                'button:visible, a:visible, [role="button"]:visible, input[type="button"]:visible, input[type="submit"]:visible';
 
-                console.log(`🎯 [BUTTON 선택 ${i + 1}] "${cleanForLog(buttonText, 160)}"`);
-                return btn;
+            await logAllButtonCandidates();
+
+            for (const frame of page.frames()) {
+                const frameUrl = frame.url();
+                const buttons = frame.locator(visibleSelector);
+                const count = await buttons.count();
+
+                console.log(`🔘 [BUTTON] frameUrl=${frameUrl}, 가시적 후보 수: ${count}`);
+
+                for (let i = 0; i < count; i++) {
+                    const btn = buttons.nth(i);
+
+                    const [buttonText, tagName, type, href] = await Promise.all([
+                        getElementText(btn),
+                        btn.evaluate((el) => el.tagName).catch(() => ''),
+                        btn.getAttribute('type').catch(() => ''),
+                        btn.getAttribute('href').catch(() => ''),
+                    ]);
+
+                    console.log(
+                        `🔎 [BUTTON 후보 ${i + 1}/${count}] frameUrl=${frameUrl}, tag=${tagName}, type=${
+                            type || '-'
+                        }, href=${href || '-'}, text="${cleanForLog(buttonText)}"`,
+                    );
+
+                    if (!buttonText) {
+                        console.log(`⏭️ [BUTTON 제외 ${i + 1}] 텍스트 없음`);
+                        continue;
+                    }
+
+                    if (resubscribeRegex.test(buttonText)) {
+                        console.log(`⏭️ [BUTTON 제외 ${i + 1}] 재구독 버튼 감지`);
+                        continue;
+                    }
+
+                    if (!regex.unsubscribe.test(buttonText)) {
+                        console.log(`⏭️ [BUTTON 제외 ${i + 1}] 해지 패턴 불일치`);
+                        continue;
+                    }
+
+                    console.log(`🎯 [BUTTON 선택 ${i + 1}] "${cleanForLog(buttonText, 160)}"`);
+                    return btn;
+                }
             }
 
             console.log('🔍 [BUTTON] 해지 버튼 후보를 찾지 못했습니다.');
@@ -211,14 +354,23 @@ exports.handler = async (event) => {
         page.on('dialog', async (dialog) => {
             try {
                 const message = dialog.message();
-                console.log(`💬 [DIALOG 감지] hasClicked=${hasClicked}, message="${cleanForLog(message, 200)}"`);
+                console.log(
+                    `💬 [DIALOG 감지] hasClicked=${hasClicked}, message="${cleanForLog(
+                        message,
+                        200,
+                    )}"`,
+                );
 
                 if (regex.error.test(message)) {
                     console.log('⚠️ [DIALOG 에러 감지]');
                     hasError = true;
                 }
 
-                if (hasClicked && (regex.success.test(message) || regex.alreadyUnsubscribed.test(message))) {
+                if (
+                    hasClicked &&
+                    (regex.success.test(message) ||
+                        regex.alreadyUnsubscribed.test(message))
+                ) {
                     console.log('✨ [DIALOG 성공 감지]');
                     isProcessed = true;
                 }
@@ -240,10 +392,21 @@ exports.handler = async (event) => {
                 const status = response.status();
                 const lowerUrl = resUrl.toLowerCase();
 
-                if (adDomains.some(domain => lowerUrl.includes(String(domain).toLowerCase()))) return;
+                if (
+                    adDomains.some((domain) =>
+                        lowerUrl.includes(String(domain).toLowerCase()),
+                    )
+                ) {
+                    return;
+                }
 
                 if (lowerUrl.includes('unsubscribe')) {
-                    console.log(`📡 [XHR 감지] clicked=${hasClicked}, status=${status}, url=${resUrl.substring(0, 180)}`);
+                    console.log(
+                        `📡 [XHR 감지] clicked=${hasClicked}, status=${status}, url=${resUrl.substring(
+                            0,
+                            180,
+                        )}`,
+                    );
                 }
 
                 if (!hasClicked) return;
@@ -255,7 +418,12 @@ exports.handler = async (event) => {
 
                 if (status >= 400 && status < 500 && lowerUrl.includes('unsubscribe')) {
                     const resBody = await response.text().catch(() => '');
-                    console.log(`📡 [XHR 4xx 본문] status=${status}, body="${cleanForLog(resBody, 200)}"`);
+                    console.log(
+                        `📡 [XHR 4xx 본문] status=${status}, body="${cleanForLog(
+                            resBody,
+                            200,
+                        )}"`,
+                    );
 
                     if (regex.alreadyUnsubscribed.test(resBody)) {
                         console.log(`📡 [XHR 이미해지 감지] status=${status}`);
@@ -273,17 +441,27 @@ exports.handler = async (event) => {
         console.log(`🔗 [STEP 2] 페이지 접속 시도: ${url}`);
 
         try {
-            await page.goto(url, { waitUntil: 'networkidle', timeout: NAVIGATION_TIMEOUT_MS });
+            await page.goto(url, {
+                waitUntil: 'networkidle',
+                timeout: NAVIGATION_TIMEOUT_MS,
+            });
         } catch (gotoErr) {
-            console.warn(`⚠️ [STEP 2] networkidle 실패, load로 재시도: ${gotoErr.message}`);
-            await page.goto(url, { waitUntil: 'load', timeout: NAVIGATION_TIMEOUT_MS });
+            console.warn(
+                `⚠️ [STEP 2] networkidle 실패, load로 재시도: ${gotoErr.message}`,
+            );
+            await page.goto(url, {
+                waitUntil: 'load',
+                timeout: NAVIGATION_TIMEOUT_MS,
+            });
         }
 
         const pageTitle = await page.title().catch(() => 'No Title');
-        console.log(`✅ [STEP 2] 페이지 로드 완료 (Title: "${pageTitle}", URL: ${page.url()})`);
+        console.log(
+            `✅ [STEP 2] 페이지 로드 완료 (Title: "${pageTitle}", URL: ${page.url()})`,
+        );
 
         console.log('⏳ 페이지 안정화 및 동적 콘텐츠 대기 중 (5s)...');
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)).catch(() => { });
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)).catch(() => {});
         await page.waitForTimeout(5000);
         logMemory('PageLoaded');
 
@@ -311,7 +489,7 @@ exports.handler = async (event) => {
                         success: true,
                         statusCode: 200,
                         message: '백그라운드 네트워크 통신을 통해 해지 승인을 확인했습니다.',
-                        method: 'NETWORK_CONFIRMATION'
+                        method: 'NETWORK_CONFIRMATION',
                     };
                 }
 
@@ -321,7 +499,9 @@ exports.handler = async (event) => {
                 }
 
                 if (page.url() !== beforeUrl) {
-                    console.log(`🔄 [REDIRECT] URL 변경 감지: before=${beforeUrl}, after=${page.url()}`);
+                    console.log(
+                        `🔄 [REDIRECT] URL 변경 감지: before=${beforeUrl}, after=${page.url()}`,
+                    );
                     await page.waitForTimeout(1000);
 
                     if (await checkSuccessText('after_navigation', { includeSuccess: true })) {
@@ -330,7 +510,7 @@ exports.handler = async (event) => {
                             success: true,
                             statusCode: 200,
                             message: '페이지 이동 후 화면에서 성공 문구가 포착되었습니다.',
-                            method: 'NAVIGATION_SUCCESS'
+                            method: 'NAVIGATION_SUCCESS',
                         };
                     }
 
@@ -339,7 +519,7 @@ exports.handler = async (event) => {
                         success: true,
                         statusCode: 200,
                         message: '해지 프로세스 완료 후 페이지가 이동되어 성공한 것으로 간주합니다.',
-                        method: 'NAVIGATION_SUCCESS'
+                        method: 'NAVIGATION_SUCCESS',
                     };
                 }
 
@@ -349,7 +529,7 @@ exports.handler = async (event) => {
                         success: true,
                         statusCode: 200,
                         message: '클릭 후 화면에 성공 문구가 나타난 것을 확인했습니다.',
-                        method: 'SCREEN_TEXT_MATCH'
+                        method: 'SCREEN_TEXT_MATCH',
                     };
                 }
 
@@ -366,7 +546,7 @@ exports.handler = async (event) => {
                     success: true,
                     statusCode: 200,
                     message: '해지 버튼은 없고 이미 해지된 상태 문구가 발견되었습니다.',
-                    method: 'ALREADY_UNSUBSCRIBED'
+                    method: 'ALREADY_UNSUBSCRIBED',
                 };
             }
         }
@@ -377,7 +557,7 @@ exports.handler = async (event) => {
                 success: true,
                 statusCode: 200,
                 message: '최종 네트워크 응답 결과가 성공으로 판정되었습니다.',
-                method: 'NETWORK_CONFIRMATION'
+                method: 'NETWORK_CONFIRMATION',
             };
         }
 
@@ -387,7 +567,7 @@ exports.handler = async (event) => {
                 success: true,
                 statusCode: 200,
                 message: '최종적으로 화면에서 성공 문구가 발견되었습니다.',
-                method: 'SCREEN_TEXT_MATCH'
+                method: 'SCREEN_TEXT_MATCH',
             };
         }
 
@@ -395,33 +575,40 @@ exports.handler = async (event) => {
 
         const finalUrl = page.url();
         const html = await page.content().catch(() => '');
-        const finalBody = await page.locator('body').evaluate((body) => {
-            const clone = body.cloneNode(true);
-            clone.querySelectorAll('script, style, noscript').forEach((el) => el.remove());
-            return clone.innerText || clone.textContent || '';
-        }).catch(() => '');
+        const finalBody = await page
+            .locator('body')
+            .evaluate((body) => {
+                const clone = body.cloneNode(true);
+                clone.querySelectorAll('script, style, noscript').forEach((el) => el.remove());
+                return clone.innerText || clone.textContent || '';
+            })
+            .catch(() => '');
 
-        console.log(`🧭 [DEBUG] hasClicked=${hasClicked}, isProcessed=${isProcessed}, hasError=${hasError}, finalUrl=${finalUrl}`);
+        console.log(
+            `🧭 [DEBUG] hasClicked=${hasClicked}, isProcessed=${isProcessed}, hasError=${hasError}, finalUrl=${finalUrl}`,
+        );
         console.log(`📄 [DEBUG] HTML 길이: ${html.length}`);
+        console.log(`📄 [DEBUG] HTML 앞부분: ${html.substring(0, 5000)}`);
         console.log(`🔍 [DEBUG] 최종 본문 텍스트: "${cleanForLog(finalBody, 300)}..."`);
 
         return {
             success: false,
             statusCode: hasError ? 500 : 404,
-            message: hasError ? '사이트에서 실패 관련 팝업 혹은 에러가 감지되었습니다.' : '정해진 시간 내에 성공 결과를 확인하지 못했습니다.'
+            message: hasError
+                ? '사이트에서 실패 관련 팝업 혹은 에러가 감지되었습니다.'
+                : '정해진 시간 내에 성공 결과를 확인하지 못했습니다.',
         };
-
     } catch (error) {
         console.error('💥 [CRITICAL] 람다 내부 예외 발생:', error);
         return {
             success: false,
             statusCode: 500,
-            message: `람다 런타임 오류: ${error.message}`
+            message: `람다 런타임 오류: ${error.message}`,
         };
     } finally {
         const duration = Date.now() - startTime;
         console.log(`🏁 [FINISH] 실행 종료 (소요 시간: ${duration}ms)`);
         logMemory('Finished');
-        if (browser) await browser.close().catch(() => { });
+        if (browser) await browser.close().catch(() => {});
     }
 };
