@@ -5,7 +5,7 @@ name: Reviewer Rotation
 # 주의: schedule은 default 브랜치(main)의 워크플로우만 실행됩니다.
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
