@@ -14,6 +14,27 @@ CREATE TABLE reviewer (
   updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 리뷰어 추가 (rotation_order 원자 계산 — 동시 추가 시 순번 중복 방지)
+-- 대시보드의 addReviewer가 이 함수를 RPC로 호출합니다.
+-- CREATE OR REPLACE FUNCTION add_reviewer(p_display_name text, p_github_username text)
+-- RETURNS void LANGUAGE sql AS $$
+--   INSERT INTO reviewer (display_name, github_username, rotation_order)
+--   VALUES (p_display_name, p_github_username,
+--           (SELECT COALESCE(MAX(rotation_order), 0) + 1 FROM reviewer));
+-- $$;
+-- GRANT EXECUTE ON FUNCTION add_reviewer(text, text) TO anon;
+--
+-- 순번 중복을 DB 차원에서 차단
+-- ALTER TABLE reviewer ADD CONSTRAINT reviewer_rotation_order_key UNIQUE (rotation_order);
+
+-- 배정 설정 (단일 행 — admin 대시보드에서 수정)
+CREATE TABLE review_setting (
+  id             BIGINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),  -- 단일 행 강제
+  deadline_hours INTEGER NOT NULL DEFAULT 96,          -- 리뷰 기한 (기본 4일)
+  exclude_label  TEXT NOT NULL DEFAULT 'No Review',    -- 이 라벨이 붙은 PR은 배정 제외
+  updated_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 배정 이력
 CREATE TABLE review_assignment (
   id                  BIGSERIAL PRIMARY KEY,
@@ -28,6 +49,32 @@ CREATE TABLE review_assignment (
   completed_at        TIMESTAMPTZ,             -- 리뷰 제출 또는 PR close 시각
   overdue_notified_at TIMESTAMPTZ              -- 기한 초과 Discord 알림 발송 마커 (중복 방지)
 );
+
+-- ============================================================
+-- 권한 설정 (RLS + GRANT)
+-- 대시보드(anon publishable key): reviewer 관리(추가/수정/삭제) + 설정 수정 + 조회
+-- GitHub Actions(service_role secret key): 전체 권한
+-- ============================================================
+-- ALTER TABLE reviewer ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE review_assignment ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE review_setting ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE POLICY "anon read reviewer" ON reviewer FOR SELECT TO anon USING (true);
+-- CREATE POLICY "anon insert reviewer" ON reviewer FOR INSERT TO anon WITH CHECK (true);
+-- CREATE POLICY "anon update reviewer" ON reviewer FOR UPDATE TO anon USING (true) WITH CHECK (true);
+-- CREATE POLICY "anon delete reviewer" ON reviewer FOR DELETE TO anon USING (true);
+-- CREATE POLICY "anon read assignment" ON review_assignment FOR SELECT TO anon USING (true);
+-- CREATE POLICY "anon read setting" ON review_setting FOR SELECT TO anon USING (true);
+-- CREATE POLICY "anon update setting" ON review_setting FOR UPDATE TO anon USING (true) WITH CHECK (true);
+--
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON public.reviewer TO anon;
+-- GRANT SELECT ON public.review_assignment TO anon;
+-- GRANT SELECT, UPDATE ON public.review_setting TO anon;
+-- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon;
+-- GRANT ALL ON public.reviewer, public.review_assignment, public.review_setting TO service_role;
+-- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO service_role;
+--
+-- INSERT INTO review_setting (id) VALUES (1);
 
 -- ============================================================
 -- 기존 테이블에 기한 관련 컬럼을 추가하는 마이그레이션
