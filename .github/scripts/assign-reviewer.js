@@ -4,7 +4,30 @@ const fs = require('fs');
 const path = require('path');
 const { sbFetch } = require('./supabase');
 
-const DEADLINE_HOURS = 24;
+const DEFAULT_SETTING = { deadline_hours: 96, exclude_label: 'No Review' };
+
+/** review_setting 단일 행 조회 — 없거나 실패하면 기본값(4일, 'No Review') */
+async function loadSetting(core) {
+  try {
+    const rows = await sbFetch(
+      'review_setting?id=eq.1&select=deadline_hours,exclude_label',
+    );
+    if (rows.length > 0) return rows[0];
+  } catch (error) {
+    core.warning(`review_setting 조회 실패, 기본값 사용: ${error.message}`);
+  }
+  return DEFAULT_SETTING;
+}
+
+/** 96 → "4일", 30 → "30시간" */
+function formatDeadline(hours) {
+  return hours % 24 === 0 ? `${hours / 24}일` : `${hours}시간`;
+}
+
+/** 배정 제외 라벨이 붙어 있는지 */
+function hasExcludeLabel(pr, excludeLabel) {
+  return (pr.labels ?? []).some((label) => label.name === excludeLabel);
+}
 
 /**
  * round-robin 후보 선정: 휴가 아님 + PR 작성자 제외 중
@@ -44,6 +67,7 @@ async function run({ github, core }) {
     s.trim(),
   );
 
+  const setting = await loadSetting(core);
   const reviewers = await sbFetch('reviewer?select=*');
   const openAssignments = await sbFetch(
     'review_assignment?status=eq.OPEN&select=pr_number',
@@ -63,6 +87,7 @@ async function run({ github, core }) {
   for (const pr of prs) {
     if (pr.draft) continue;
     if (!baseBranches.includes(pr.base.ref)) continue;
+    if (hasExcludeLabel(pr, setting.exclude_label)) continue;
     if (assignedPrNumbers.has(pr.number)) continue;
     if (pr.requested_reviewers && pr.requested_reviewers.length > 0) continue;
 
@@ -88,7 +113,9 @@ async function run({ github, core }) {
     });
 
     const now = new Date();
-    const deadline = new Date(now.getTime() + DEADLINE_HOURS * 60 * 60 * 1000);
+    const deadline = new Date(
+      now.getTime() + setting.deadline_hours * 60 * 60 * 1000,
+    );
 
     await sbFetch('review_assignment', {
       method: 'POST',
@@ -135,7 +162,7 @@ async function run({ github, core }) {
   ].join(' ');
   const fields = assigned.map((a) => ({
     name: `#${a.prNumber} ${a.title}`,
-    value: `리뷰어: ${a.reviewer.display_name} · 기한 24시간`,
+    value: `리뷰어: ${a.reviewer.display_name} · 기한 ${formatDeadline(setting.deadline_hours)}`,
   }));
 
   core.setOutput('assigned', 'true');
@@ -143,4 +170,10 @@ async function run({ github, core }) {
   core.setOutput('fields', JSON.stringify(fields));
 }
 
-module.exports = { pickCandidate, run, DEADLINE_HOURS };
+module.exports = {
+  pickCandidate,
+  run,
+  formatDeadline,
+  hasExcludeLabel,
+  DEFAULT_SETTING,
+};

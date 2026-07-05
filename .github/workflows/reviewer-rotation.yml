@@ -50,7 +50,7 @@ jobs:
         uses: ./.github/actions/discord-notify
         with:
           webhook: ${{ secrets.DISCORD_REVIEW_WEBHOOK_URL }}
-          content: '👀 *리뷰어가 배정되었습니다! (기한: 24시간)*'
+          content: '👀 *리뷰어가 배정되었습니다!*'
           mentions: ${{ steps.assign.outputs.mentions }}
           title: '새 리뷰 배정'
           url: https://github.com/woowacourse-teams/2025-bom-bom/pulls
