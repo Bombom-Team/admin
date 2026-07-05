@@ -1,7 +1,7 @@
 # 자동 리뷰어 배정 시스템
 
 `woowacourse-teams/2025-bom-bom` 레포의 백엔드 PR(base: `server-dev`, `email-server-dev`)을
-**이 레포(Bombom-Team/admin)의 GitHub Actions가 5분 간격으로 폴링**해서 리뷰어 1명을 자동 배정하고,
+**이 레포(Bombom-Team/admin)의 GitHub Actions가 10분 간격으로 폴링**해서 리뷰어 1명을 자동 배정하고,
 리뷰 기한(기본 4일, 대시보드에서 변경 가능) 초과 시 Discord로 알림을 보냅니다.
 
 감시 대상 레포(2025-bom-bom)에는 아무 파일도 추가하지 않습니다 — 모든 동작이 이 레포에서 실행됩니다.
@@ -10,7 +10,7 @@
 
 | 파일 | 역할 |
 |---|---|
-| `.github/workflows/reviewer-rotation.yml` | 5분 간격 cron: 완료 동기화 → 신규 배정 → 기한 초과 알림 |
+| `.github/workflows/reviewer-rotation.yml` | 10분 간격 cron: 완료 동기화 → 신규 배정 → 기한 초과 알림 |
 | `.github/scripts/assign-reviewer.js` | 미배정 PR 탐색 + round-robin 배정 |
 | `.github/scripts/sync-completed.js` | 리뷰 제출/PR close 감지해 배정 완료 처리 |
 | `.github/scripts/check-overdue.js` | 기한 초과 배정 Discord 알림 |
@@ -18,7 +18,7 @@
 | `.github/actions/discord-notify/` | Discord 웹훅 전송 composite action |
 | `docs/reviewer-assignment/schema.sql` | Supabase 테이블 스키마 (콘솔 관리, 근거 문서) |
 
-## 매 실행(5분)마다 하는 일
+## 매 실행(10분)마다 하는 일
 
 1. **완료 동기화**: OPEN 배정들의 PR 상태 확인 — PR이 닫혔거나(머지 포함) 배정된 리뷰어가 리뷰를 제출했으면 `CLOSED + completed_at` 기록
 2. **신규 배정**: 대상 브랜치의 열린 PR 중 ① OPEN 배정 기록 없음 ② 수동 지정된 리뷰어 없음 ③ 아직 리뷰가 없음 ④ 제외 라벨(기본 `No Review`) 없음 인 PR에 대해:
@@ -51,5 +51,5 @@
 
 - **cron/workflow_dispatch는 default 브랜치(main)의 워크플로우 기준으로 동작**합니다.
   `server` 머지 후 main에도 반영해야 시스템이 실제로 돌기 시작합니다.
-- 배정 지연: cron 특성상 PR 오픈 후 최대 5~10분 안에 배정됩니다 (GitHub cron은 정시 보장이 없음)
+- 배정 지연: cron 특성상 PR 오픈 후 최대 10~15분 안에 배정됩니다 (GitHub cron은 정시 보장이 없음)
 - draft PR은 배정하지 않으며, ready_for_review로 전환되면 다음 폴링에서 배정됩니다
