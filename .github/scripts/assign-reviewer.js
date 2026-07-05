@@ -9,7 +9,6 @@ const DEADLINE_HOURS = 24;
 /**
  * round-robin 후보 선정: 휴가 아님 + PR 작성자 제외 중
  * last_assigned_at이 가장 오래된 사람(null 최우선), 동률이면 rotation_order 낮은 순.
- * (Supabase 쿼리와 동일한 규칙 — 로컬 단위 테스트용 순수 함수)
  */
 function pickCandidate(reviewers, prAuthor) {
   const candidates = reviewers.filter(
@@ -34,70 +33,114 @@ function loadNotifyIds() {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
-async function run({ github, context, core }) {
-  const pr = context.payload.pull_request;
-  const prAuthor = pr.user.login;
-
-  const existing = await sbFetch(
-    `review_assignment?pr_number=eq.${pr.number}&status=eq.OPEN&select=id`,
+/**
+ * TARGET_REPO(2025-bom-bom)의 열린 PR을 폴링해서 미배정 PR에 리뷰어를 배정한다.
+ * - 이미 OPEN 배정 기록이 있는 PR 스킵
+ * - 수동으로 리뷰어가 지정됐거나 이미 리뷰가 달린 PR 스킵 (수동 운영 존중)
+ */
+async function run({ github, core }) {
+  const [owner, repo] = process.env.TARGET_REPO.split('/');
+  const baseBranches = process.env.TARGET_BASE_BRANCHES.split(',').map((s) =>
+    s.trim(),
   );
-  if (existing.length > 0) {
-    core.notice(`PR #${pr.number}에 이미 OPEN 배정이 있어 스킵합니다`);
-    return;
-  }
 
-  const candidates = await sbFetch(
-    `reviewer?is_on_vacation=eq.false&github_username=neq.${encodeURIComponent(prAuthor)}` +
-      `&order=last_assigned_at.asc.nullsfirst,rotation_order.asc&limit=1&select=*`,
+  const reviewers = await sbFetch('reviewer?select=*');
+  const openAssignments = await sbFetch(
+    'review_assignment?status=eq.OPEN&select=pr_number',
   );
-  if (candidates.length === 0) {
-    core.warning('자동 배정 가능한 리뷰어가 없습니다 (전원 휴가 등)');
-    await github.rest.issues.createComment({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      issue_number: pr.number,
-      body: '🙋 자동 배정 가능한 리뷰어가 없습니다. 리뷰어를 수동으로 지정해주세요.',
-    });
-    return;
-  }
-  const reviewer = candidates[0];
+  const assignedPrNumbers = new Set(openAssignments.map((a) => a.pr_number));
 
-  // GitHub API 지정을 DB 기록보다 먼저 수행 — 실패 시 유령 배정 방지
-  await github.rest.pulls.requestReviewers({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    pull_number: pr.number,
-    reviewers: [reviewer.github_username],
-  });
-
-  const now = new Date();
-  const deadline = new Date(now.getTime() + DEADLINE_HOURS * 60 * 60 * 1000);
-
-  await sbFetch('review_assignment', {
-    method: 'POST',
-    body: {
-      reviewer_id: reviewer.id,
-      pr_number: pr.number,
-      pr_title: pr.title,
-      pr_author: prAuthor,
-      pr_url: pr.html_url,
-      assigned_at: now.toISOString(),
-      deadline_at: deadline.toISOString(),
-      status: 'OPEN',
-    },
-  });
-
-  await sbFetch(`reviewer?id=eq.${reviewer.id}`, {
-    method: 'PATCH',
-    body: { last_assigned_at: now.toISOString(), updated_at: now.toISOString() },
+  const prs = await github.paginate(github.rest.pulls.list, {
+    owner,
+    repo,
+    state: 'open',
+    per_page: 100,
   });
 
   const notifyIds = loadNotifyIds();
-  const discordId = notifyIds[reviewer.github_username];
+  const assigned = [];
+
+  for (const pr of prs) {
+    if (pr.draft) continue;
+    if (!baseBranches.includes(pr.base.ref)) continue;
+    if (assignedPrNumbers.has(pr.number)) continue;
+    if (pr.requested_reviewers && pr.requested_reviewers.length > 0) continue;
+
+    const { data: reviews } = await github.rest.pulls.listReviews({
+      owner,
+      repo,
+      pull_number: pr.number,
+    });
+    if (reviews.length > 0) continue;
+
+    const candidate = pickCandidate(reviewers, pr.user.login);
+    if (!candidate) {
+      core.warning(`PR #${pr.number}: 배정 가능한 리뷰어가 없습니다 (전원 휴가 등)`);
+      continue;
+    }
+
+    // GitHub API 지정을 DB 기록보다 먼저 수행 — 실패 시 유령 배정 방지
+    await github.rest.pulls.requestReviewers({
+      owner,
+      repo,
+      pull_number: pr.number,
+      reviewers: [candidate.github_username],
+    });
+
+    const now = new Date();
+    const deadline = new Date(now.getTime() + DEADLINE_HOURS * 60 * 60 * 1000);
+
+    await sbFetch('review_assignment', {
+      method: 'POST',
+      body: {
+        reviewer_id: candidate.id,
+        pr_number: pr.number,
+        pr_title: pr.title,
+        pr_author: pr.user.login,
+        pr_url: pr.html_url,
+        assigned_at: now.toISOString(),
+        deadline_at: deadline.toISOString(),
+        status: 'OPEN',
+      },
+    });
+    await sbFetch(`reviewer?id=eq.${candidate.id}`, {
+      method: 'PATCH',
+      body: { last_assigned_at: now.toISOString(), updated_at: now.toISOString() },
+    });
+
+    // 같은 실행 안에서 여러 PR을 배정할 때도 로테이션이 이어지도록 로컬 상태 갱신
+    candidate.last_assigned_at = now.toISOString();
+
+    assigned.push({
+      prNumber: pr.number,
+      title: pr.title,
+      reviewer: candidate,
+    });
+    core.notice(`PR #${pr.number} 리뷰어 배정: ${candidate.github_username}`);
+  }
+
+  if (assigned.length === 0) {
+    core.setOutput('assigned', 'false');
+    core.notice('새로 배정할 PR이 없습니다');
+    return;
+  }
+
+  const mentions = [
+    ...new Set(
+      assigned.map((a) => {
+        const discordId = notifyIds[a.reviewer.github_username];
+        return discordId ? `<@${discordId}>` : a.reviewer.github_username;
+      }),
+    ),
+  ].join(' ');
+  const fields = assigned.map((a) => ({
+    name: `#${a.prNumber} ${a.title}`,
+    value: `리뷰어: ${a.reviewer.display_name} · 기한 24시간`,
+  }));
+
   core.setOutput('assigned', 'true');
-  core.setOutput('reviewer_name', reviewer.display_name);
-  core.setOutput('reviewer_mention', discordId ? `<@${discordId}>` : reviewer.github_username);
-  core.notice(`PR #${pr.number} 리뷰어 배정: ${reviewer.github_username}`);
+  core.setOutput('mentions', mentions);
+  core.setOutput('fields', JSON.stringify(fields));
 }
 
 module.exports = { pickCandidate, run, DEADLINE_HOURS };
