@@ -1,0 +1,45 @@
+name: Assign Reviewer
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+    branches: [server]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  assign:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assign reviewer via rotation
+        id: assign
+        uses: actions/github-script@v7
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        with:
+          script: |
+            const { run } = require('./.github/scripts/assign-reviewer.js');
+            await run({ github, context, core });
+
+      - name: Send Discord notification
+        if: steps.assign.outputs.assigned == 'true'
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_REVIEW_WEBHOOK_URL }}
+          content: '👀 *리뷰어가 배정되었습니다! (기한: 24시간)*'
+          mentions: ${{ steps.assign.outputs.reviewer_mention }}
+          title: ${{ github.event.pull_request.title }}
+          url: ${{ github.event.pull_request.html_url }}
+          color: 3447003
+          fields: |
+            [
+              { "name": "작성자", "value": "${{ github.event.pull_request.user.login }}" },
+              { "name": "리뷰어", "value": "${{ steps.assign.outputs.reviewer_name }}" }
+            ]

@@ -1,0 +1,52 @@
+name: Review Deadline Check
+
+# 주의: schedule은 default 브랜치(main)의 워크플로우만 실행됩니다.
+# server 머지 후 main에도 반영해야 동작합니다.
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find overdue assignments
+        id: check
+        uses: actions/github-script@v7
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        with:
+          script: |
+            const { run } = require('./.github/scripts/check-overdue.js');
+            await run({ core });
+
+      - name: Send Discord notification
+        if: steps.check.outputs.has_overdue == 'true'
+        uses: ./.github/actions/discord-notify
+        with:
+          webhook: ${{ secrets.DISCORD_REVIEW_WEBHOOK_URL }}
+          content: '⏰ *리뷰 기한이 초과된 PR이 있습니다!*'
+          mentions: ${{ steps.check.outputs.mentions }}
+          title: '기한 초과 리뷰 목록'
+          url: ${{ github.server_url }}/${{ github.repository }}/pulls
+          color: 15158332
+          fields: ${{ steps.check.outputs.fields }}
+
+      - name: Mark as notified
+        if: steps.check.outputs.has_overdue == 'true'
+        uses: actions/github-script@v7
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        with:
+          script: |
+            const { markNotified } = require('./.github/scripts/check-overdue.js');
+            await markNotified({ core }, '${{ steps.check.outputs.ids }}');
