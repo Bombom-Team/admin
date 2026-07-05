@@ -2,6 +2,16 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.3"
     id("io.spring.dependency-management") version "1.1.7"
+    id("com.diffplug.spotless") version "6.25.0"
+}
+
+spotless {
+    java {
+        targetExclude("src/main/generated/**")
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 group = "me.bombom"
@@ -63,7 +73,10 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:mysql")
     testImplementation("org.testcontainers:junit-jupiter")
-
+    testRuntimeOnly("com.h2database:h2")
+    // instancio
+    testImplementation("org.instancio:instancio-junit:5.3.0")
+    
     // db
     runtimeOnly("com.mysql:mysql-connector-j")
 
@@ -80,8 +93,21 @@ dependencies {
     //otel
     implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.7.0")
 
+    // cache
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+    implementation("com.github.ben-manes.caffeine:caffeine")
+
     // for : webhook
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+
+    // for : s3
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.4.2")
+
+    // image resizing
+    implementation("net.coobird:thumbnailator:0.4.20")
+
+    // html parsing
+    implementation("org.jsoup:jsoup:1.21.2")
 }
 
 // Querydsl 생성된 파일 정리
@@ -91,4 +117,17 @@ tasks.named<Delete>("clean") {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.register("installGitHooks") {
+    doLast {
+        ProcessBuilder("git", "config", "core.hooksPath", ".githooks")
+            .inheritIO()
+            .start()
+            .waitFor()
+    }
+}
+
+tasks.named("compileJava") {
+    dependsOn("installGitHooks", "spotlessApply")
 }

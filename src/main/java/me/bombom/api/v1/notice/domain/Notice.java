@@ -1,0 +1,61 @@
+package me.bombom.api.v1.notice.domain;
+
+import me.bombom.api.v1.common.BaseEntity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Notice extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "mediumtext")
+    private String content;
+
+    @Column(nullable = false)
+    @Enumerated(value = EnumType.STRING)
+    private NoticeCategory noticeCategory;
+
+    @Builder
+    public Notice(
+            Long id,
+            @NonNull String title,
+            @NonNull String content,
+            @NonNull NoticeCategory noticeCategory
+    ) {
+        this.id = id;
+        this.title = title;
+        this.content = content;
+        this.noticeCategory = noticeCategory;
+    }
+
+    public void update(String title, String content, NoticeCategory noticeCategory) {
+        if (title != null) {
+            this.title = title;
+        }
+        if (content != null) {
+            this.content = content;
+        }
+        if (noticeCategory != null) {
+            this.noticeCategory = noticeCategory;
+        }
+    }
+}
