@@ -14,6 +14,19 @@ CREATE TABLE reviewer (
   updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 리뷰어 추가 (rotation_order 원자 계산 — 동시 추가 시 순번 중복 방지)
+-- 대시보드의 addReviewer가 이 함수를 RPC로 호출합니다.
+-- CREATE OR REPLACE FUNCTION add_reviewer(p_display_name text, p_github_username text)
+-- RETURNS void LANGUAGE sql AS $$
+--   INSERT INTO reviewer (display_name, github_username, rotation_order)
+--   VALUES (p_display_name, p_github_username,
+--           (SELECT COALESCE(MAX(rotation_order), 0) + 1 FROM reviewer));
+-- $$;
+-- GRANT EXECUTE ON FUNCTION add_reviewer(text, text) TO anon;
+--
+-- 순번 중복을 DB 차원에서 차단
+-- ALTER TABLE reviewer ADD CONSTRAINT reviewer_rotation_order_key UNIQUE (rotation_order);
+
 -- 배정 설정 (단일 행 — admin 대시보드에서 수정)
 CREATE TABLE review_setting (
   id             BIGINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),  -- 단일 행 강제
