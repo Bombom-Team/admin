@@ -53,7 +53,8 @@ public class ChallengeService {
     private static final List<ChallengeTodoType> DEFAULT_CHALLENGE_TODO_TYPES = List.of(
             ChallengeTodoType.READ,
             ChallengeTodoType.COMMENT,
-            ChallengeTodoType.MINDSET
+            ChallengeTodoType.MINDSET,
+            ChallengeTodoType.REVIEW
     );
 
     private final ChallengeRepository challengeRepository;
