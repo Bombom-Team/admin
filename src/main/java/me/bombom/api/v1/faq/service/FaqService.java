@@ -8,6 +8,7 @@ import me.bombom.api.v1.faq.domain.Faq;
 import me.bombom.api.v1.faq.dto.CreateFaqRequest;
 import me.bombom.api.v1.faq.dto.GetFaqDetailResponse;
 import me.bombom.api.v1.faq.dto.GetFaqResponse;
+import me.bombom.api.v1.faq.dto.GetFaqsRequest;
 import me.bombom.api.v1.faq.dto.UpdateFaqRequest;
 import me.bombom.api.v1.faq.repository.FaqRepository;
 import org.springframework.data.domain.Page;
@@ -22,8 +23,8 @@ public class FaqService {
 
     private final FaqRepository faqRepository;
 
-    public Page<GetFaqResponse> getFaqs(Pageable pageable) {
-        return faqRepository.findAll(pageable)
+    public Page<GetFaqResponse> getFaqs(GetFaqsRequest request, Pageable pageable) {
+        return faqRepository.findFaqs(request, pageable)
                 .map(GetFaqResponse::from);
     }
 

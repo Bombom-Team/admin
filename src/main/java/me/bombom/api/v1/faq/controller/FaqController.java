@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.faq.dto.CreateFaqRequest;
 import me.bombom.api.v1.faq.dto.GetFaqDetailResponse;
 import me.bombom.api.v1.faq.dto.GetFaqResponse;
+import me.bombom.api.v1.faq.dto.GetFaqsRequest;
 import me.bombom.api.v1.faq.dto.UpdateFaqRequest;
 import me.bombom.api.v1.faq.service.FaqService;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,13 +38,14 @@ public class FaqController implements FaqControllerApi {
     @Override
     @GetMapping
     public Page<GetFaqResponse> getFaqs(
+            @ModelAttribute GetFaqsRequest request,
             @PageableDefault(size = 20)
             @SortDefault.SortDefaults({
                     @SortDefault(sort = "createdAt", direction = Sort.Direction.DESC),
                     @SortDefault(sort = "id", direction = Sort.Direction.ASC)
             }) Pageable pageable
     ) {
-        return faqService.getFaqs(pageable);
+        return faqService.getFaqs(request, pageable);
     }
 
     @Override

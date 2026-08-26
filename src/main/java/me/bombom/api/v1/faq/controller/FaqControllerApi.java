@@ -11,7 +11,9 @@ import jakarta.validation.constraints.Positive;
 import me.bombom.api.v1.faq.dto.CreateFaqRequest;
 import me.bombom.api.v1.faq.dto.GetFaqDetailResponse;
 import me.bombom.api.v1.faq.dto.GetFaqResponse;
+import me.bombom.api.v1.faq.dto.GetFaqsRequest;
 import me.bombom.api.v1.faq.dto.UpdateFaqRequest;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,11 +26,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 })
 public interface FaqControllerApi {
 
-    @Operation(summary = "FAQ 목록 조회", description = "FAQ 목록을 조회합니다.")
+    @Operation(summary = "FAQ 목록 조회", description = "FAQ 목록을 조회합니다. (카테고리 필터링 지원)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "목록 조회 성공")
     })
-    Page<GetFaqResponse> getFaqs(Pageable pageable);
+    Page<GetFaqResponse> getFaqs(
+            @ParameterObject GetFaqsRequest request,
+            @ParameterObject Pageable pageable);
 
     @Operation(summary = "FAQ 상세 조회", description = "FAQ 상세 정보를 조회합니다.")
     @ApiResponses({
