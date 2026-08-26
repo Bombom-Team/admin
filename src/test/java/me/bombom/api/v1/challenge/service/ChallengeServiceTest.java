@@ -559,7 +559,7 @@ class ChallengeServiceTest {
         Challenge challenge = challengeRepository.findAll().get(0);
         List<ChallengeTodo> challengeTodos = challengeTodoRepository.findAll();
         assertSoftly(softly -> {
-            softly.assertThat(challengeTodos).hasSize(3);
+            softly.assertThat(challengeTodos).hasSize(4);
             softly.assertThat(challengeTodos)
                     .extracting(ChallengeTodo::getChallengeId)
                     .containsOnly(challenge.getId());
@@ -568,7 +568,8 @@ class ChallengeServiceTest {
                     .containsExactlyInAnyOrder(
                             ChallengeTodoType.READ,
                             ChallengeTodoType.COMMENT,
-                            ChallengeTodoType.MINDSET);
+                            ChallengeTodoType.MINDSET,
+                            ChallengeTodoType.REVIEW);
         });
     }
 
