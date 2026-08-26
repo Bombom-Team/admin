@@ -53,7 +53,7 @@ public interface FaqControllerApi {
     })
     void updateFaq(
             @Parameter(description = "수정할 FAQ ID") @PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long id,
-            @RequestBody UpdateFaqRequest request);
+            @Valid @RequestBody UpdateFaqRequest request);
 
     @Operation(summary = "FAQ 삭제", description = "기존 FAQ를 삭제합니다.")
     @ApiResponses({

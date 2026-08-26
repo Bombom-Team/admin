@@ -62,7 +62,7 @@ public class FaqController implements FaqControllerApi {
     @PatchMapping("/{id}")
     public void updateFaq(
             @PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long id,
-            @RequestBody UpdateFaqRequest request) {
+            @Valid @RequestBody UpdateFaqRequest request) {
         faqService.updateFaq(id, request);
     }
 

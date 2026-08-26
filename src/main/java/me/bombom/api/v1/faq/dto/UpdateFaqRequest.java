@@ -9,6 +9,7 @@ public record UpdateFaqRequest(
         String question,
 
         String answer,
+
         FaqCategory faqCategory
 ) {
 }
