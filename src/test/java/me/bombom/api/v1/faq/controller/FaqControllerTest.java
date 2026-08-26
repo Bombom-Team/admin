@@ -18,6 +18,7 @@ import me.bombom.api.v1.faq.domain.FaqCategory;
 import me.bombom.api.v1.faq.dto.CreateFaqRequest;
 import me.bombom.api.v1.faq.dto.GetFaqDetailResponse;
 import me.bombom.api.v1.faq.dto.GetFaqResponse;
+import me.bombom.api.v1.faq.dto.GetFaqsRequest;
 import me.bombom.api.v1.faq.dto.UpdateFaqRequest;
 import me.bombom.api.v1.faq.service.FaqService;
 import org.junit.jupiter.api.DisplayName;
@@ -109,7 +110,7 @@ class FaqControllerTest extends ControllerTestSupport {
         GetFaqResponse response = new GetFaqResponse(1L, "질문", "기능", java.time.LocalDate.now());
         PageImpl<GetFaqResponse> result = new PageImpl<>(List.of(response), PageRequest.of(0, 10), 1);
 
-        given(faqService.getFaqs(any(Pageable.class)))
+        given(faqService.getFaqs(any(GetFaqsRequest.class), any(Pageable.class)))
                 .willReturn(result);
 
         // when & then

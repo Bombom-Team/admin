@@ -5,6 +5,7 @@ import me.bombom.api.v1.faq.domain.Faq;
 import me.bombom.api.v1.faq.domain.FaqCategory;
 import me.bombom.api.v1.faq.dto.CreateFaqRequest;
 import me.bombom.api.v1.faq.dto.GetFaqResponse;
+import me.bombom.api.v1.faq.dto.GetFaqsRequest;
 import me.bombom.api.v1.faq.dto.UpdateFaqRequest;
 import me.bombom.api.v1.faq.fixture.FaqFixture;
 import me.bombom.api.v1.faq.repository.FaqRepository;
@@ -116,7 +117,7 @@ class FaqServiceTest {
         Pageable pageRequest = PageRequest.of(0, 10);
 
         // when
-        Page<GetFaqResponse> result = faqService.getFaqs(pageRequest);
+        Page<GetFaqResponse> result = faqService.getFaqs(new GetFaqsRequest(null), pageRequest);
 
         // then
         assertSoftly(softly -> {
