@@ -1,5 +1,8 @@
 package me.bombom.api.v1.dashboard.dto;
 
+import java.time.Instant;
+import java.util.List;
+
 public record DashboardStatsResponse(
         long totalMembers,
         long totalNotices,
@@ -8,7 +11,9 @@ public record DashboardStatsResponse(
         long monthlyJoinedMembers,
         long yearlyJoinedMembers,
         long withdrawnMembersThisMonth,
-        long todayActiveMembers
+        long todayActiveMembers,
+        List<DailyJoinedMembersResponse> dailyJoinedTrend,
+        Instant aggregatedAt
 ) {
 
     public static DashboardStatsResponse of(
@@ -19,7 +24,9 @@ public record DashboardStatsResponse(
             long monthlyJoinedMembers,
             long yearlyJoinedMembers,
             long withdrawnMembersThisMonth,
-            long todayActiveMembers
+            long todayActiveMembers,
+            List<DailyJoinedMembersResponse> dailyJoinedTrend,
+            Instant aggregatedAt
     ) {
         return new DashboardStatsResponse(
                 totalMembers,
@@ -29,7 +36,9 @@ public record DashboardStatsResponse(
                 monthlyJoinedMembers,
                 yearlyJoinedMembers,
                 withdrawnMembersThisMonth,
-                todayActiveMembers
+                todayActiveMembers,
+                List.copyOf(dailyJoinedTrend),
+                aggregatedAt
         );
     }
 }
