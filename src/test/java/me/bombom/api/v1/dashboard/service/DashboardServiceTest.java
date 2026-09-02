@@ -116,6 +116,27 @@ class DashboardServiceTest {
     }
 
     @Test
+    void 오늘_활동_회원에서_권한_4인_테스트계정만_제외한다() {
+        // given
+        createMember("일반", 1L);
+        createMember("테스트", 4L);
+        LocalDate today = LocalDate.now(clock);
+        long now = clock.millis();
+        long todayStart = today.atStartOfDay(clock.getZone())
+                .toInstant()
+                .toEpochMilli();
+        createSession("normal", "일반", todayStart, now + 60_000);
+        createSession("test", "테스트", todayStart, now + 60_000);
+        createSession("unknown", "회원연결없음", todayStart, now + 60_000);
+
+        // when
+        DashboardStatsResponse response = dashboardService.getStats();
+
+        // then
+        assertThat(response.todayActiveMembers()).isEqualTo(2);
+    }
+
+    @Test
     void 데이터가_없으면_집계와_30일_추이는_0이다() {
         // when
         DashboardStatsResponse response = dashboardService.getStats();

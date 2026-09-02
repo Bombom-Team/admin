@@ -92,6 +92,10 @@ public class DashboardService {
                 .toInstant()
                 .toEpochMilli();
 
-        return springSessionRepository.countTodayActiveUsers(startOfTodayMillis, clock.millis());
+        return springSessionRepository.countTodayActiveUsers(
+                startOfTodayMillis,
+                clock.millis(),
+                TEST_ROLE_ID
+        );
     }
 }
