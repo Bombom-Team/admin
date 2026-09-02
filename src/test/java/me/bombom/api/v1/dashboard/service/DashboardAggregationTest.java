@@ -90,19 +90,24 @@ class DashboardAggregationTest {
     }
 
     @Test
-    void 캐시_5분_만료_후에는_회원_변경을_다시_집계한다() {
+    void 캐시는_3시간_동안_회원_변경을_재사용하고_만료_후_다시_집계한다() {
         // given
         createMember(1L, 1L, "2026-09-02T00:00:00");
         dashboardService.getStats();
         createMember(2L, 4L, "2026-09-02T00:00:00");
         createMember(3L, 1L, "2026-09-02T00:00:00");
-        tickerNanos.set(Duration.ofMinutes(5).toNanos());
+        tickerNanos.set(Duration.ofHours(3).minusMinutes(1).toNanos());
 
         // when
-        DashboardStatsResponse response = dashboardService.getStats();
+        DashboardStatsResponse beforeExpiration = dashboardService.getStats();
+        tickerNanos.set(Duration.ofHours(3).toNanos());
+        DashboardStatsResponse afterExpiration = dashboardService.getStats();
 
         // then
-        assertThat(response.totalMembers()).isEqualTo(2);
+        assertSoftly(softly -> {
+            softly.assertThat(beforeExpiration.totalMembers()).isEqualTo(1);
+            softly.assertThat(afterExpiration.totalMembers()).isEqualTo(2);
+        });
     }
 
     @Test
