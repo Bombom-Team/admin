@@ -17,8 +17,15 @@ public interface SpringSessionRepository extends JpaRepository<SpringSession, St
           FROM SPRING_SESSION s
           WHERE s.LAST_ACCESS_TIME >= :todayStartMillis
             AND s.EXPIRY_TIME > :nowMillis
+            AND NOT EXISTS (
+              SELECT 1
+              FROM member m
+              WHERE m.nickname = s.PRINCIPAL_NAME
+                AND m.role_id = :excludedRoleId
+            )
       """, nativeQuery = true)
   long countTodayActiveUsers(
       @Param("todayStartMillis") long todayStartMillis,
-      @Param("nowMillis") long nowMillis);
+      @Param("nowMillis") long nowMillis,
+      @Param("excludedRoleId") long excludedRoleId);
 }
