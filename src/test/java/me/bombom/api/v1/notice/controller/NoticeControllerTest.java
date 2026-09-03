@@ -3,6 +3,7 @@ package me.bombom.api.v1.notice.controller;
 import me.bombom.api.v1.common.support.ControllerTestSupport;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
 import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
@@ -51,11 +52,15 @@ class NoticeControllerTest extends ControllerTestSupport {
                                 }
                                 """;
 
+                given(noticeService.createNotice(any(CreateNoticeRequest.class)))
+                                .willReturn(new CreateNoticeResponse(1L));
+
                 // when & then
                 mockMvc.perform(post("/admin/api/v1/notices")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(requestBody))
-                                .andExpect(status().isCreated());
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.noticeId").value(1L));
 
                 verify(noticeService).createNotice(any(CreateNoticeRequest.class));
         }

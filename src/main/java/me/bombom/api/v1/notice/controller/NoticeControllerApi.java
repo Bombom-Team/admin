@@ -1,6 +1,7 @@
 package me.bombom.api.v1.notice.controller;
 
 import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
@@ -53,7 +54,7 @@ public interface NoticeControllerApi {
                         @ApiResponse(responseCode = "201", description = "공지사항 생성 성공"),
                         @ApiResponse(responseCode = "400", description = "잘못된 요청 값", content = @Content)
         })
-        void createNotice(
+        CreateNoticeResponse createNotice(
                         @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "noticeCategory: [NOTICE, UPDATE, EVENT, CHECK] 중 하나 선택") @Valid @RequestBody CreateNoticeRequest request);
 
         @Operation(summary = "공지사항 수정", description = "기존 공지사항을 수정합니다.")

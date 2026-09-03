@@ -5,6 +5,7 @@ import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
@@ -38,13 +39,13 @@ public class NoticeService {
     }
 
     @Transactional
-    public void createNotice(CreateNoticeRequest request) {
+    public CreateNoticeResponse createNotice(CreateNoticeRequest request) {
         Notice notice = Notice.builder()
                 .title(request.title())
                 .content(request.content())
                 .noticeCategory(request.noticeCategory())
                 .build();
-        noticeRepository.save(notice);
+        return CreateNoticeResponse.from(noticeRepository.save(notice));
     }
 
     @Transactional

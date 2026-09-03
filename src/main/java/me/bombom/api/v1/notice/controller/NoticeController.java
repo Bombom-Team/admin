@@ -1,6 +1,7 @@
 package me.bombom.api.v1.notice.controller;
 
 import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
@@ -52,8 +53,8 @@ public class NoticeController implements NoticeControllerApi {
     @Override
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void createNotice(@Valid @RequestBody CreateNoticeRequest request) {
-        noticeService.createNotice(request);
+    public CreateNoticeResponse createNotice(@Valid @RequestBody CreateNoticeRequest request) {
+        return noticeService.createNotice(request);
     }
 
     @Override

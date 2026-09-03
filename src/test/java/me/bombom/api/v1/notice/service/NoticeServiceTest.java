@@ -4,6 +4,7 @@ import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
 import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
@@ -44,11 +45,14 @@ class NoticeServiceTest {
         CreateNoticeRequest request = new CreateNoticeRequest("제목", "내용", NoticeCategory.NOTICE);
 
         // when
-        noticeService.createNotice(request);
+        CreateNoticeResponse response = noticeService.createNotice(request);
 
         // then
         List<Notice> notices = noticeRepository.findAll();
-        assertThat(notices).hasSize(1);
+        assertSoftly(softly -> {
+            assertThat(notices).hasSize(1);
+            assertThat(response.noticeId()).isEqualTo(notices.getFirst().getId());
+        });
     }
 
     @Test
