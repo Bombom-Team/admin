@@ -19,7 +19,7 @@ public class DashboardCacheConfig {
     @Bean
     public Cache<DashboardCacheKey, DashboardStatsResponse> dashboardStatsCache(Ticker dashboardCacheTicker) {
         return Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofMinutes(5))
+                .expireAfterWrite(Duration.ofHours(3))
                 .maximumSize(2)
                 .ticker(dashboardCacheTicker)
                 .build();
