@@ -17,11 +17,11 @@ public record GetNoticeResponse(
 
         @QueryProjection
         public GetNoticeResponse(
-                Long id, 
-                String title, 
+                Long id,
+                String title,
                 NoticeCategory noticeCategory,
-                NoticeVisibility visibility, 
-                boolean isRepresentative, 
+                NoticeVisibility visibility,
+                boolean isRepresentative,
                 LocalDateTime createdAt
         ) {
                 this(id, title, noticeCategory, visibility, isRepresentative,
