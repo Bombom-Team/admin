@@ -2,7 +2,7 @@ package me.bombom.api.v1.notice.controller;
 
 import me.bombom.api.v1.common.support.ControllerTestSupport;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
-import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.domain.NoticeVisibility;
 import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
@@ -40,29 +40,17 @@ class NoticeControllerTest extends ControllerTestSupport {
         private NoticeService noticeService;
 
         @Test
-        @DisplayName("공지사항을 등록한다.")
+        @DisplayName("공지사항 초안을 생성하고 공지 id를 반환한다.")
         void createNotice() throws Exception {
                 // given
-                // noticeCategory Enum 바인딩 확인을 위해 String으로 요청 바디를 작성
-                String requestBody = """
-                                {
-                                    "title": "제목",
-                                    "content": "내용",
-                                    "noticeCategory": "NOTICE"
-                                }
-                                """;
-
-                given(noticeService.createNotice(any(CreateNoticeRequest.class)))
-                                .willReturn(new CreateNoticeResponse(1L));
+                given(noticeService.createNotice()).willReturn(new CreateNoticeResponse(1L));
 
                 // when & then
-                mockMvc.perform(post("/admin/api/v1/notices")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody))
+                mockMvc.perform(post("/admin/api/v1/notices"))
                                 .andExpect(status().isCreated())
                                 .andExpect(jsonPath("$.noticeId").value(1L));
 
-                verify(noticeService).createNotice(any(CreateNoticeRequest.class));
+                verify(noticeService).createNotice();
         }
 
         @Test
@@ -70,7 +58,7 @@ class NoticeControllerTest extends ControllerTestSupport {
         void updateNotice() throws Exception {
                 // given
                 UpdateNoticeRequest updateNoticeRequest = new UpdateNoticeRequest("수정 제목", "수정 내용",
-                                NoticeCategory.UPDATE);
+                                NoticeCategory.UPDATE, NoticeVisibility.PUBLIC, true);
 
                 // when & then
                 mockMvc.perform(patch("/admin/api/v1/notices/1")
@@ -87,7 +75,7 @@ class NoticeControllerTest extends ControllerTestSupport {
         @DisplayName("공지사항을 일부만 수정한다.")
         void updateNotice_partial() throws Exception {
                 // given
-                UpdateNoticeRequest updateNoticeRequest = new UpdateNoticeRequest("수정 제목", null, null);
+                UpdateNoticeRequest updateNoticeRequest = new UpdateNoticeRequest("수정 제목", null, null, null, null);
 
                 // when & then
                 mockMvc.perform(patch("/admin/api/v1/notices/1")
@@ -116,7 +104,13 @@ class NoticeControllerTest extends ControllerTestSupport {
         @DisplayName("공지사항 목록을 조회한다.")
         void getNotices() throws Exception {
                 // given
-                GetNoticeResponse response = new GetNoticeResponse(1L, "제목", "NOTICE", java.time.LocalDate.now());
+                GetNoticeResponse response = new GetNoticeResponse(
+                                1L,
+                                "제목",
+                                NoticeCategory.NOTICE,
+                                NoticeVisibility.PUBLIC,
+                                true,
+                                java.time.LocalDate.of(2026, 8, 30));
                 PageImpl<GetNoticeResponse> result = new PageImpl<>(List.of(response), PageRequest.of(0, 10), 1);
 
                 given(noticeService.getNotices(any(GetNoticesRequest.class), any(Pageable.class)))
@@ -129,7 +123,12 @@ class NoticeControllerTest extends ControllerTestSupport {
                                 .param("size", "10"))
                                 .andDo(print())
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.content[0].title").value("제목"));
+                                .andExpect(jsonPath("$.content[0].id").value(1L))
+                                .andExpect(jsonPath("$.content[0].title").value("제목"))
+                                .andExpect(jsonPath("$.content[0].noticeCategory").value("NOTICE"))
+                                .andExpect(jsonPath("$.content[0].visibility").value("PUBLIC"))
+                                .andExpect(jsonPath("$.content[0].isRepresentative").value(true))
+                                .andExpect(jsonPath("$.content[0].createdAt").value("2026-08-30"));
         }
 
         @Test

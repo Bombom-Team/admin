@@ -3,7 +3,7 @@ package me.bombom.api.v1.notice.service;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
-import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.domain.NoticeVisibility;
 import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
@@ -39,19 +39,22 @@ class NoticeServiceTest {
     private NoticeRepository noticeRepository;
 
     @Test
-    @DisplayName("공지사항을 등록한다.")
+    @DisplayName("공지사항 초안을 생성하면 비공개 상태의 빈 공지가 저장되고 id가 반환된다.")
     void createNotice() {
-        // given
-        CreateNoticeRequest request = new CreateNoticeRequest("제목", "내용", NoticeCategory.NOTICE);
-
         // when
-        CreateNoticeResponse response = noticeService.createNotice(request);
+        CreateNoticeResponse response = noticeService.createNotice();
 
         // then
         List<Notice> notices = noticeRepository.findAll();
         assertSoftly(softly -> {
             assertThat(notices).hasSize(1);
-            assertThat(response.noticeId()).isEqualTo(notices.getFirst().getId());
+            Notice draft = notices.getFirst();
+            assertThat(response.noticeId()).isEqualTo(draft.getId());
+            assertThat(draft.getVisibility()).isEqualTo(NoticeVisibility.PRIVATE);
+            assertThat(draft.isRepresentative()).isFalse();
+            assertThat(draft.getTitle()).isNull();
+            assertThat(draft.getContent()).isNull();
+            assertThat(draft.getNoticeCategory()).isNull();
         });
     }
 
@@ -61,7 +64,8 @@ class NoticeServiceTest {
         // given
         Notice notice = noticeRepository.save(NoticeFixture.createNotice("제목", "내용", NoticeCategory.NOTICE));
 
-        UpdateNoticeRequest request = new UpdateNoticeRequest("수정 제목", "수정 내용", NoticeCategory.UPDATE);
+        UpdateNoticeRequest request = new UpdateNoticeRequest("수정 제목", "수정 내용", NoticeCategory.UPDATE,
+                NoticeVisibility.PUBLIC, null);
 
         // when
         noticeService.updateNotice(notice.getId(), request);
@@ -73,6 +77,7 @@ class NoticeServiceTest {
             assertThat(updatedNotice.getTitle()).isEqualTo("수정 제목");
             assertThat(updatedNotice.getContent()).isEqualTo("수정 내용");
             assertThat(updatedNotice.getNoticeCategory()).isEqualTo(NoticeCategory.UPDATE);
+            assertThat(updatedNotice.getVisibility()).isEqualTo(NoticeVisibility.PUBLIC);
         });
     }
 
@@ -82,7 +87,7 @@ class NoticeServiceTest {
         // given
         Notice notice = noticeRepository.save(NoticeFixture.createNotice("제목", "내용", NoticeCategory.NOTICE));
 
-        UpdateNoticeRequest request = new UpdateNoticeRequest("수정 제목", null, null);
+        UpdateNoticeRequest request = new UpdateNoticeRequest("수정 제목", null, null, null, null);
 
         // when
         noticeService.updateNotice(notice.getId(), request);
@@ -95,6 +100,52 @@ class NoticeServiceTest {
             assertThat(updatedNotice.getContent()).isEqualTo("내용");
             assertThat(updatedNotice.getNoticeCategory()).isEqualTo(NoticeCategory.NOTICE);
         });
+    }
+
+    @Test
+    @DisplayName("대표 공지로 지정하면 기존 대표 공지는 해제된다.")
+    void updateNotice_representativeIsUnique() {
+        // given
+        Notice previous = noticeRepository.save(Notice.builder()
+                .title("기존 대표")
+                .content("내용")
+                .noticeCategory(NoticeCategory.NOTICE)
+                .visibility(NoticeVisibility.PUBLIC)
+                .isRepresentative(true)
+                .build());
+        Notice target = noticeRepository.save(NoticeFixture.createNotice("새 공지", "내용", NoticeCategory.NOTICE));
+
+        UpdateNoticeRequest request = new UpdateNoticeRequest(null, null, null, null, true);
+
+        // when
+        noticeService.updateNotice(target.getId(), request);
+
+        // then
+        assertSoftly(softly -> {
+            assertThat(noticeRepository.findById(target.getId()).get().isRepresentative()).isTrue();
+            assertThat(noticeRepository.findById(previous.getId()).get().isRepresentative()).isFalse();
+        });
+    }
+
+    @Test
+    @DisplayName("대표 공지를 다시 지정해도 자기 자신은 해제되지 않는다.")
+    void updateNotice_representativeStaysWhenReassigned() {
+        // given
+        Notice notice = noticeRepository.save(Notice.builder()
+                .title("대표")
+                .content("내용")
+                .noticeCategory(NoticeCategory.NOTICE)
+                .visibility(NoticeVisibility.PUBLIC)
+                .isRepresentative(true)
+                .build());
+
+        UpdateNoticeRequest request = new UpdateNoticeRequest("수정 제목", null, null, null, true);
+
+        // when
+        noticeService.updateNotice(notice.getId(), request);
+
+        // then
+        assertThat(noticeRepository.findById(notice.getId()).get().isRepresentative()).isTrue();
     }
 
     @Test
@@ -127,7 +178,11 @@ class NoticeServiceTest {
         // then
         assertSoftly(softly -> {
             assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().getFirst().noticeCategory()).isEqualTo(NoticeCategory.NOTICE.getValue());
+            GetNoticeResponse first = result.getContent().getFirst();
+            assertThat(first.noticeCategory()).isEqualTo(NoticeCategory.NOTICE);
+            assertThat(first.visibility()).isEqualTo(NoticeVisibility.PUBLIC);
+            assertThat(first.isRepresentative()).isFalse();
+            assertThat(first.createdAt()).isNotNull();
         });
     }
 
