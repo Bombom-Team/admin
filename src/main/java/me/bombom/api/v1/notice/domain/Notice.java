@@ -13,7 +13,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 
 @Entity
 @Getter
@@ -24,27 +23,36 @@ public class Notice extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "mediumtext")
+    @Column(columnDefinition = "mediumtext")
     private String content;
+
+    @Enumerated(value = EnumType.STRING)
+    private NoticeCategory noticeCategory;
 
     @Column(nullable = false)
     @Enumerated(value = EnumType.STRING)
-    private NoticeCategory noticeCategory;
+    private NoticeVisibility visibility;
+
+    @Column(nullable = false)
+    private boolean isRepresentative;
 
     @Builder
     public Notice(
             Long id,
-            @NonNull String title,
-            @NonNull String content,
-            @NonNull NoticeCategory noticeCategory
+            String title,
+            String content,
+            NoticeCategory noticeCategory,
+            NoticeVisibility visibility,
+            Boolean isRepresentative
     ) {
         this.id = id;
         this.title = title;
         this.content = content;
         this.noticeCategory = noticeCategory;
+        this.visibility = visibility != null ? visibility : NoticeVisibility.PRIVATE;
+        this.isRepresentative = isRepresentative != null && isRepresentative;
     }
 
     public void update(String title, String content, NoticeCategory noticeCategory) {
