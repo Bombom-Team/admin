@@ -1,6 +1,5 @@
 package me.bombom.api.v1.notice.controller;
 
-import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
 import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
@@ -13,7 +12,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -49,15 +47,13 @@ public interface NoticeControllerApi {
         GetNoticeDetailResponse getNotice(
                         @Parameter(description = "조회할 공지사항 ID") @PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long id);
 
-        @Operation(summary = "공지사항 생성", description = "새로운 공지사항 또는 이벤트를 등록합니다.")
+        @Operation(summary = "공지사항 초안 생성", description = "빈 공지사항 초안(비공개)을 생성하고 공지 id를 반환합니다. 실제 내용 등록은 수정 API가 담당합니다.")
         @ApiResponses({
-                        @ApiResponse(responseCode = "201", description = "공지사항 생성 성공"),
-                        @ApiResponse(responseCode = "400", description = "잘못된 요청 값", content = @Content)
+                        @ApiResponse(responseCode = "201", description = "공지사항 초안 생성 성공")
         })
-        CreateNoticeResponse createNotice(
-                        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "noticeCategory: [NOTICE, UPDATE, EVENT, CHECK] 중 하나 선택") @Valid @RequestBody CreateNoticeRequest request);
+        CreateNoticeResponse createNotice();
 
-        @Operation(summary = "공지사항 수정", description = "기존 공지사항을 수정합니다.")
+        @Operation(summary = "공지사항 수정", description = "공지사항 초안의 내용을 채우고 공개 여부/대표 지정을 변경합니다. 대표 공지는 전체에서 1건만 유지됩니다.")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "공지사항 수정 성공"),
                         @ApiResponse(responseCode = "404", description = "존재하지 않는 공지사항", content = @Content)

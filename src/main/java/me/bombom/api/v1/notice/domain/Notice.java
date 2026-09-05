@@ -55,7 +55,13 @@ public class Notice extends BaseEntity {
         this.isRepresentative = isRepresentative != null && isRepresentative;
     }
 
-    public void update(String title, String content, NoticeCategory noticeCategory) {
+    public void update(
+            String title,
+            String content,
+            NoticeCategory noticeCategory,
+            NoticeVisibility visibility,
+            Boolean isRepresentative
+    ) {
         if (title != null) {
             this.title = title;
         }
@@ -65,5 +71,15 @@ public class Notice extends BaseEntity {
         if (noticeCategory != null) {
             this.noticeCategory = noticeCategory;
         }
+        if (visibility != null) {
+            this.visibility = visibility;
+        }
+        if (isRepresentative != null) {
+            this.isRepresentative = isRepresentative;
+        }
+    }
+
+    public void demoteFromRepresentative() {
+        this.isRepresentative = false;
     }
 }

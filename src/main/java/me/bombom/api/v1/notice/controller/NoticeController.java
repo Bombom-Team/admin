@@ -1,6 +1,5 @@
 package me.bombom.api.v1.notice.controller;
 
-import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
 import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
@@ -8,7 +7,6 @@ import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
 import me.bombom.api.v1.notice.service.NoticeService;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -53,8 +51,8 @@ public class NoticeController implements NoticeControllerApi {
     @Override
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CreateNoticeResponse createNotice(@Valid @RequestBody CreateNoticeRequest request) {
-        return noticeService.createNotice(request);
+    public CreateNoticeResponse createNotice() {
+        return noticeService.createNotice();
     }
 
     @Override

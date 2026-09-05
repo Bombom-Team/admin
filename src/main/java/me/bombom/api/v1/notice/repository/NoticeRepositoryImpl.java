@@ -38,7 +38,9 @@ public class NoticeRepositoryImpl implements CustomNoticeRepository {
                         new QGetNoticeResponse(
                                 notice.id,
                                 notice.title,
-                                notice.noticeCategory.stringValue(),
+                                notice.noticeCategory,
+                                notice.visibility,
+                                notice.isRepresentative,
                                 notice.createdAt))
                 .from(notice)
                 .where(

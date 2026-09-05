@@ -4,7 +4,7 @@ import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.notice.domain.Notice;
-import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.domain.NoticeVisibility;
 import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
@@ -39,11 +39,9 @@ public class NoticeService {
     }
 
     @Transactional
-    public CreateNoticeResponse createNotice(CreateNoticeRequest request) {
+    public CreateNoticeResponse createNotice() {
         Notice notice = Notice.builder()
-                .title(request.title())
-                .content(request.content())
-                .noticeCategory(request.noticeCategory())
+                .visibility(NoticeVisibility.PRIVATE)
                 .build();
         return CreateNoticeResponse.from(noticeRepository.save(notice));
     }
@@ -53,8 +51,26 @@ public class NoticeService {
         Notice notice = noticeRepository.findById(id)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "notice")
-                        .addContext(ErrorContextKeys.OPERATION, "updateNotice"));
-        notice.update(request.title(), request.content(), request.noticeCategory());
+                        .addContext(ErrorContextKeys.OPERATION, "findById")
+                        .addContext(ErrorContextKeys.NOTICE_ID, id));
+
+        if (Boolean.TRUE.equals(request.isRepresentative())) {
+            demoteOtherRepresentatives(id);
+        }
+
+        notice.update(
+            request.title(),
+            request.content(),
+            request.noticeCategory(),
+            request.visibility(),
+            request.isRepresentative()
+        );
+    }
+
+    private void demoteOtherRepresentatives(Long representativeId) {
+        noticeRepository.findByIsRepresentativeTrue().stream()
+                .filter(notice -> !notice.getId().equals(representativeId))
+                .forEach(Notice::demoteFromRepresentative);
     }
 
     @Transactional
