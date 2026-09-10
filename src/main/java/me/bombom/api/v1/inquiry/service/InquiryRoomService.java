@@ -24,8 +24,7 @@ public class InquiryRoomService {
     private final InquiryRoomRepository inquiryRoomRepository;
 
     public Page<InquiryRoomResponse> getRooms(GetInquiryRoomsRequest request, Pageable pageable) {
-        return inquiryRoomRepository.findRoomsForAdmin(
-                        request.status(), request.assigneeId(), request.categoryId(), pageable)
+        return inquiryRoomRepository.findRoomsForAdmin(request, pageable)
                 .map(InquiryRoomResponse::from);
     }
 

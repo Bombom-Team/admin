@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.inquiry.domain.InquiryRoom;
 import me.bombom.api.v1.inquiry.domain.InquiryStatus;
+import me.bombom.api.v1.inquiry.dto.request.GetInquiryRoomsRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -19,18 +20,13 @@ public class InquiryRoomRepositoryImpl implements CustomInquiryRoomRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<InquiryRoom> findRoomsForAdmin(
-            InquiryStatus status,
-            Long assigneeId,
-            Long categoryId,
-            Pageable pageable
-    ) {
+    public Page<InquiryRoom> findRoomsForAdmin(GetInquiryRoomsRequest request, Pageable pageable) {
         List<InquiryRoom> content = queryFactory
                 .selectFrom(inquiryRoom)
                 .where(
-                        statusEq(status),
-                        assigneeIdEq(assigneeId),
-                        categoryIdEq(categoryId))
+                        statusEq(request.status()),
+                        assigneeIdEq(request.assigneeId()),
+                        categoryIdEq(request.categoryId()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .orderBy(inquiryRoom.createdAt.desc(), inquiryRoom.id.desc())
@@ -40,9 +36,9 @@ public class InquiryRoomRepositoryImpl implements CustomInquiryRoomRepository {
                 .select(inquiryRoom.count())
                 .from(inquiryRoom)
                 .where(
-                        statusEq(status),
-                        assigneeIdEq(assigneeId),
-                        categoryIdEq(categoryId));
+                        statusEq(request.status()),
+                        assigneeIdEq(request.assigneeId()),
+                        categoryIdEq(request.categoryId()));
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
