@@ -29,22 +29,22 @@ public class InquiryRoomService {
     }
 
     public InquiryRoomDetailResponse getRoom(Long roomId) {
-        return InquiryRoomDetailResponse.from(getRoomOrThrow(roomId));
+        return InquiryRoomDetailResponse.from(getRoomById(roomId));
     }
 
     @Transactional
     public void assignRoom(Long roomId, AssignInquiryRoomRequest request) {
-        InquiryRoom room = getRoomOrThrow(roomId);
+        InquiryRoom room = getRoomById(roomId);
         room.assign(request.assigneeId());
     }
 
     @Transactional
     public void changeStatus(Long roomId, UpdateInquiryRoomStatusRequest request) {
-        InquiryRoom room = getRoomOrThrow(roomId);
+        InquiryRoom room = getRoomById(roomId);
         room.changeStatus(request.status());
     }
 
-    InquiryRoom getRoomOrThrow(Long roomId) {
+    InquiryRoom getRoomById(Long roomId) {
         return inquiryRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryRoom"));

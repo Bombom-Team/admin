@@ -51,7 +51,7 @@ public class InquiryMessageService {
 
     @Transactional
     public InquiryMessageResponse sendMessage(Long roomId, Long adminId, SendAdminInquiryMessageRequest request) {
-        InquiryRoom room = inquiryRoomService.getRoomOrThrow(roomId);
+        InquiryRoom room = inquiryRoomService.getRoomById(roomId);
         validateRoomNotClosed(room);
         assignAndActivateIfFirstResponse(room, adminId);
 
