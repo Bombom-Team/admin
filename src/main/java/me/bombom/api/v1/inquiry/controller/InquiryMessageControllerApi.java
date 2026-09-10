@@ -30,7 +30,7 @@ public interface InquiryMessageControllerApi {
     InquiryMessagePageResponse getMessages(
             @Parameter(description = "채팅방 ID") @PathVariable @Positive Long roomId,
             @Parameter(description = "커서(마지막으로 받은 메시지 ID)") @RequestParam(required = false) Long cursor,
-            @Parameter(description = "페이지 크기") @RequestParam(required = false) Integer size);
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size);
 
     @Operation(summary = "어드민 메시지 전송", description = "담당자가 없으면 자동 배정되고, 상태가 미확인이면 진행중으로 전환됩니다.")
     @ApiResponses({

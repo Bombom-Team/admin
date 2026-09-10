@@ -1,6 +1,7 @@
 package me.bombom.api.v1.inquiry.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -129,8 +130,8 @@ class InquiryMessageControllerTest extends ControllerTestSupport {
         // given
         InquiryMessageResponse response = new InquiryMessageResponse(
                 1L, 1L, InquirySenderType.ADMIN, 1L, "답변입니다", List.of(), LocalDateTime.now());
-        given(inquiryMessageService.getMessages(any(Long.class), any(), any()))
-                .willReturn(InquiryMessagePageResponse.of(List.of(response), false));
+        given(inquiryMessageService.getMessages(any(Long.class), any(), anyInt()))
+                .willReturn(new InquiryMessagePageResponse(List.of(response), false));
 
         // when & then
         mockMvc.perform(get("/admin/api/v1/inquiries/rooms/1/messages"))

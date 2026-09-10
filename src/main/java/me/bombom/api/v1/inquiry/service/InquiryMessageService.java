@@ -26,28 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class InquiryMessageService {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
-
     private final InquiryRoomService inquiryRoomService;
     private final InquiryMessageRepository inquiryMessageRepository;
     private final InquiryMessageImageRepository inquiryMessageImageRepository;
-
-    public InquiryMessagePageResponse getMessages(Long roomId, Long cursor, Integer size) {
-        int pageSize = size == null ? DEFAULT_PAGE_SIZE : size;
-        List<InquiryMessage> messages = inquiryMessageRepository.findMessagesByCursor(roomId, cursor, pageSize + 1);
-
-        boolean hasNext = messages.size() > pageSize;
-        List<InquiryMessage> content = hasNext ? messages.subList(0, pageSize) : messages;
-
-        Map<Long, List<String>> imagesByMessageId = findImagesByMessageId(content);
-
-        List<InquiryMessageResponse> responses = content.stream()
-                .map(message -> InquiryMessageResponse.of(
-                        message, imagesByMessageId.getOrDefault(message.getId(), List.of())))
-                .toList();
-
-        return InquiryMessagePageResponse.of(responses, hasNext);
-    }
 
     @Transactional
     public InquiryMessageResponse sendMessage(Long roomId, Long adminId, SendAdminInquiryMessageRequest request) {
@@ -55,25 +36,38 @@ public class InquiryMessageService {
         validateRoomNotClosed(room);
         assignAndActivateIfFirstResponse(room, adminId);
 
-        InquiryMessage message = InquiryMessage.createAdminMessage(roomId, adminId, request.content());
-        inquiryMessageRepository.save(message);
-        List<String> imageUrls = saveImages(message.getId(), request.imageUrls());
+        InquiryMessage message = inquiryMessageRepository.save(
+                InquiryMessage.createAdminMessage(roomId, adminId, request.content()));
+        List<InquiryMessageImage> images = saveImages(message.getId(), request.imageUrls());
 
-        return InquiryMessageResponse.of(message, imageUrls);
+        return InquiryMessageResponse.of(message, images);
+    }
+
+    public InquiryMessagePageResponse getMessages(Long roomId, Long cursor, int size) {
+        List<InquiryMessage> messages = inquiryMessageRepository.findMessagesByCursor(roomId, cursor, size + 1);
+
+        boolean hasNext = messages.size() > size;
+        List<InquiryMessage> pageMessages = hasNext ? messages.subList(0, size) : messages;
+
+        List<Long> messageIds = pageMessages.stream().map(InquiryMessage::getId).toList();
+        List<InquiryMessageImage> images = inquiryMessageImageRepository.findByMessageIdInOrderBySortOrderAsc(
+                messageIds);
+        Map<Long, List<InquiryMessageImage>> imagesByMessageId = images.stream()
+                .collect(Collectors.groupingBy(InquiryMessageImage::getMessageId));
+
+        return InquiryMessagePageResponse.of(pageMessages, imagesByMessageId, hasNext);
     }
 
     @Transactional
     public InquiryMessageResponse updateMessage(
-            Long roomId,
-            Long messageId,
-            Long adminId,
-            UpdateAdminInquiryMessageRequest request
+            Long roomId, Long messageId, Long adminId, UpdateAdminInquiryMessageRequest request
     ) {
         InquiryMessage message = getOwnedMessage(roomId, messageId, adminId);
+
         message.updateContent(request.content());
-        List<String> imageUrls = findImagesByMessageId(List.of(message))
-                .getOrDefault(message.getId(), List.of());
-        return InquiryMessageResponse.of(message, imageUrls);
+        List<InquiryMessageImage> images =
+                inquiryMessageImageRepository.findByMessageIdInOrderBySortOrderAsc(List.of(messageId));
+        return InquiryMessageResponse.of(message, images);
     }
 
     @Transactional
@@ -111,26 +105,14 @@ public class InquiryMessageService {
         return message;
     }
 
-    private List<String> saveImages(Long messageId, List<String> imageUrls) {
+    private List<InquiryMessageImage> saveImages(Long messageId, List<String> imageUrls) {
         if (imageUrls == null || imageUrls.isEmpty()) {
             return List.of();
         }
         List<InquiryMessageImage> images = new ArrayList<>();
         for (int i = 0; i < imageUrls.size(); i += 1) {
-            images.add(new InquiryMessageImage(messageId, imageUrls.get(i), i));
+            images.add(inquiryMessageImageRepository.save(new InquiryMessageImage(messageId, imageUrls.get(i), i)));
         }
-        inquiryMessageImageRepository.saveAll(images);
-        return imageUrls;
-    }
-
-    private Map<Long, List<String>> findImagesByMessageId(List<InquiryMessage> messages) {
-        List<Long> messageIds = messages.stream().map(InquiryMessage::getId).toList();
-        if (messageIds.isEmpty()) {
-            return Map.of();
-        }
-        return inquiryMessageImageRepository.findByMessageIdInOrderBySortOrderAsc(messageIds).stream()
-                .collect(Collectors.groupingBy(
-                        InquiryMessageImage::getMessageId,
-                        Collectors.mapping(InquiryMessageImage::getImageUrl, Collectors.toList())));
+        return images;
     }
 }

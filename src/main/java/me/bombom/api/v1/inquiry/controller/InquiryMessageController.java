@@ -36,7 +36,7 @@ public class InquiryMessageController implements InquiryMessageControllerApi {
     public InquiryMessagePageResponse getMessages(
             @PathVariable @Positive Long roomId,
             @RequestParam(required = false) Long cursor,
-            @RequestParam(required = false) Integer size) {
+            @RequestParam(defaultValue = "20") int size) {
         return inquiryMessageService.getMessages(roomId, cursor, size);
     }
 

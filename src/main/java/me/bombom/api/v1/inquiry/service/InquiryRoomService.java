@@ -23,6 +23,12 @@ public class InquiryRoomService {
 
     private final InquiryRoomRepository inquiryRoomRepository;
 
+    @Transactional
+    public void assignRoom(Long roomId, AssignInquiryRoomRequest request) {
+        InquiryRoom room = getRoomById(roomId);
+        room.assign(request.assigneeId());
+    }
+
     public Page<InquiryRoomResponse> getRooms(GetInquiryRoomsRequest request, Pageable pageable) {
         return inquiryRoomRepository.findRoomsForAdmin(request, pageable)
                 .map(InquiryRoomResponse::from);
@@ -32,21 +38,15 @@ public class InquiryRoomService {
         return InquiryRoomDetailResponse.from(getRoomById(roomId));
     }
 
-    @Transactional
-    public void assignRoom(Long roomId, AssignInquiryRoomRequest request) {
-        InquiryRoom room = getRoomById(roomId);
-        room.assign(request.assigneeId());
+    public InquiryRoom getRoomById(Long roomId) {
+        return inquiryRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryRoom"));
     }
 
     @Transactional
     public void changeStatus(Long roomId, UpdateInquiryRoomStatusRequest request) {
         InquiryRoom room = getRoomById(roomId);
         room.changeStatus(request.status());
-    }
-
-    InquiryRoom getRoomById(Long roomId) {
-        return inquiryRoomRepository.findById(roomId)
-                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
-                        .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryRoom"));
     }
 }
