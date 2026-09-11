@@ -18,6 +18,8 @@ import me.bombom.api.v1.inquiry.dto.request.AssignInquiryRoomRequest;
 import me.bombom.api.v1.inquiry.dto.request.GetInquiryRoomsRequest;
 import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomStatusRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomResponse;
+import me.bombom.api.v1.inquiry.dto.response.LastMessageResponse;
+import me.bombom.api.v1.inquiry.domain.InquirySenderType;
 import me.bombom.api.v1.inquiry.service.InquiryRoomService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,9 +40,11 @@ class InquiryRoomControllerTest extends ControllerTestSupport {
     @DisplayName("채팅방 목록을 조회한다.")
     void 채팅방_목록_조회() throws Exception {
         // given
+        LastMessageResponse lastMessage = new LastMessageResponse(
+                "안녕하세요", false, InquirySenderType.ADMIN, "상추", LocalDateTime.now());
         InquiryRoomResponse response = new InquiryRoomResponse(
-                1L, 10L, InquiryStatus.UNCONFIRMED, null, null,
-                InquirerType.MEMBER, "메이", "may@example.com", null, null,
+                1L, 10L, InquiryStatus.UNCONFIRMED, 100L, "상추",
+                InquirerType.MEMBER, "메이", "may@example.com", "https://img/1", lastMessage,
                 LocalDateTime.now(), null);
         given(inquiryRoomService.getRooms(any(GetInquiryRoomsRequest.class), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(response), PageRequest.of(0, 20), 1));
@@ -48,7 +52,13 @@ class InquiryRoomControllerTest extends ControllerTestSupport {
         // when & then
         mockMvc.perform(get("/admin/api/v1/inquiries/rooms"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(1L));
+                .andExpect(jsonPath("$.content[0].id").value(1L))
+                .andExpect(jsonPath("$.content[0].assigneeNickname").value("상추"))
+                .andExpect(jsonPath("$.content[0].inquirerType").value("MEMBER"))
+                .andExpect(jsonPath("$.content[0].inquirerLabel").value("메이"))
+                .andExpect(jsonPath("$.content[0].inquirerEmail").value("may@example.com"))
+                .andExpect(jsonPath("$.content[0].lastMessage.content").value("안녕하세요"))
+                .andExpect(jsonPath("$.content[0].lastMessage.adminNickname").value("상추"));
     }
 
     @Test

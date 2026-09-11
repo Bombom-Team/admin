@@ -26,7 +26,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 })
 public interface InquiryRoomControllerApi {
 
-    @Operation(summary = "문의 채팅방 목록 조회", description = "상태/담당자/카테고리로 필터링하여 조회합니다.")
+    @Operation(
+            summary = "문의 채팅방 목록 조회",
+            description = "상태/담당자/카테고리로 필터링하여 조회합니다. "
+                    + "목록은 최신 메시지 시각(없으면 방 생성 시각) 기준 내림차순으로 정렬되며, "
+                    + "각 방에는 문의자 정보(회원/게스트)와 담당자 닉네임, 최근 메시지 미리보기가 함께 내려갑니다.")
     @ApiResponses({ @ApiResponse(responseCode = "200", description = "목록 조회 성공") })
     Page<InquiryRoomResponse> getRooms(
             @ParameterObject GetInquiryRoomsRequest request,
