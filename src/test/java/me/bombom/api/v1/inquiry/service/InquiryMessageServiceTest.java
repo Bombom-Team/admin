@@ -1,0 +1,166 @@
+package me.bombom.api.v1.inquiry.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+
+import me.bombom.api.v1.common.config.QuerydslConfig;
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
+import me.bombom.api.v1.common.exception.ErrorDetail;
+import me.bombom.api.v1.inquiry.domain.InquiryMessage;
+import me.bombom.api.v1.inquiry.domain.InquiryRoom;
+import me.bombom.api.v1.inquiry.domain.InquiryStatus;
+import me.bombom.api.v1.inquiry.dto.request.SendAdminInquiryMessageRequest;
+import me.bombom.api.v1.inquiry.dto.request.UpdateAdminInquiryMessageRequest;
+import me.bombom.api.v1.inquiry.dto.response.InquiryMessageResponse;
+import me.bombom.api.v1.inquiry.fixture.InquiryMessageFixture;
+import me.bombom.api.v1.inquiry.fixture.InquiryRoomFixture;
+import me.bombom.api.v1.inquiry.repository.InquiryMessageRepository;
+import me.bombom.api.v1.inquiry.repository.InquiryRoomRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+
+@DataJpaTest
+@Import({ InquiryMessageService.class, InquiryRoomService.class, QuerydslConfig.class })
+class InquiryMessageServiceTest {
+
+    @Autowired
+    private InquiryMessageService inquiryMessageService;
+
+    @Autowired
+    private InquiryRoomRepository inquiryRoomRepository;
+
+    @Autowired
+    private InquiryMessageRepository inquiryMessageRepository;
+
+    @Test
+    @DisplayName("담당자 없는 방에 어드민이 처음 답변하면 담당자로 자동 배정되고 상태가 진행중으로 바뀐다.")
+    void 최초_답변_시_담당자_자동배정_및_상태_자동전환() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        SendAdminInquiryMessageRequest request = new SendAdminInquiryMessageRequest("답변입니다", null);
+
+        // when
+        inquiryMessageService.sendMessage(room.getId(), 100L, request);
+
+        // then
+        InquiryRoom updated = inquiryRoomRepository.findById(room.getId()).orElseThrow();
+        assertSoftly(softly -> {
+            softly.assertThat(updated.getAssigneeId()).isEqualTo(100L);
+            softly.assertThat(updated.getStatus()).isEqualTo(InquiryStatus.IN_PROGRESS);
+        });
+    }
+
+    @Test
+    @DisplayName("이미 담당자가 있는 방에 다른 어드민이 답변해도 담당자는 바뀌지 않는다.")
+    void 담당자_있는_방은_자동배정되지_않음() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        room.assign(999L);
+        SendAdminInquiryMessageRequest request = new SendAdminInquiryMessageRequest("답변입니다", null);
+
+        // when
+        inquiryMessageService.sendMessage(room.getId(), 100L, request);
+
+        // then
+        InquiryRoom updated = inquiryRoomRepository.findById(room.getId()).orElseThrow();
+        assertThat(updated.getAssigneeId()).isEqualTo(999L);
+    }
+
+    @Test
+    @DisplayName("종료된 채팅방에는 메시지를 보낼 수 없다.")
+    void 종료된_방_메시지_전송_실패() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        room.changeStatus(InquiryStatus.DONE);
+        SendAdminInquiryMessageRequest request = new SendAdminInquiryMessageRequest("답변입니다", null);
+
+        // when & then
+        assertThatThrownBy(() -> inquiryMessageService.sendMessage(room.getId(), 100L, request))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.INQUIRY_ROOM_CLOSED.getMessage());
+    }
+
+    @Test
+    @DisplayName("보류 상태의 채팅방에도 메시지를 보낼 수 없다.")
+    void 보류_상태_방_메시지_전송_실패() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        room.changeStatus(InquiryStatus.ON_HOLD);
+        SendAdminInquiryMessageRequest request = new SendAdminInquiryMessageRequest("답변입니다", null);
+
+        // when & then
+        assertThatThrownBy(() -> inquiryMessageService.sendMessage(room.getId(), 100L, request))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.INQUIRY_ROOM_CLOSED.getMessage());
+    }
+
+    @Test
+    @DisplayName("본인이 작성한 메시지를 수정한다.")
+    void 본인_메시지_수정_성공() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        InquiryMessage message = inquiryMessageRepository.save(
+                InquiryMessageFixture.createAdminMessage(room.getId(), 100L, "원본"));
+
+        // when
+        InquiryMessageResponse response = inquiryMessageService.updateMessage(
+                room.getId(), message.getId(), 100L, new UpdateAdminInquiryMessageRequest("수정본"));
+
+        // then
+        assertThat(response.content()).isEqualTo("수정본");
+    }
+
+    @Test
+    @DisplayName("본인이 작성하지 않은 메시지를 수정하려 하면 예외가 발생한다.")
+    void 타인_메시지_수정_실패() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        InquiryMessage message = inquiryMessageRepository.save(
+                InquiryMessageFixture.createAdminMessage(room.getId(), 100L, "원본"));
+
+        // when & then
+        assertThatThrownBy(() -> inquiryMessageService.updateMessage(
+                room.getId(), message.getId(), 999L, new UpdateAdminInquiryMessageRequest("수정본")))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.FORBIDDEN_RESOURCE.getMessage());
+    }
+
+    @Test
+    @DisplayName("본인이 작성한 메시지를 삭제한다.")
+    void 본인_메시지_삭제_성공() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        InquiryMessage message = inquiryMessageRepository.save(
+                InquiryMessageFixture.createAdminMessage(room.getId(), 100L, "원본"));
+
+        // when
+        inquiryMessageService.deleteMessage(room.getId(), message.getId(), 100L);
+
+        // then
+        assertThat(inquiryMessageRepository.findById(message.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("메시지 목록을 커서 기반으로 조회한다.")
+    void 메시지_커서_조회() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        for (int i = 0; i < 3; i += 1) {
+            inquiryMessageRepository.save(
+                    InquiryMessageFixture.createAdminMessage(room.getId(), 100L, "메시지" + i));
+        }
+
+        // when
+        var result = inquiryMessageService.getMessages(room.getId(), null, 2);
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(result.messages()).hasSize(2);
+            softly.assertThat(result.hasNext()).isTrue();
+        });
+    }
+}

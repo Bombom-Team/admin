@@ -24,6 +24,8 @@ public enum ErrorDetail {
     CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "M011", "해당 카테고리에 속한 뉴스레터가 있어 삭제할 수 없습니다."),
     CHALLENGE_HAS_PARTICIPANTS(HttpStatus.BAD_REQUEST, "M012", "참여자가 있는 챌린지는 삭제할 수 없습니다."),
     RESOURCE_CONFLICT(HttpStatus.CONFLICT, "M013", "요청을 처리할 수 없는 상태입니다."),
+    INQUIRY_CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "M014", "해당 카테고리를 사용 중인 문의가 있어 삭제할 수 없습니다."),
+    INQUIRY_ROOM_CLOSED(HttpStatus.BAD_REQUEST, "M015", "종료된 문의는 답변할 수 없습니다."),
 
     /*
     * J : 인증
