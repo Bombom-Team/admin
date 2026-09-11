@@ -1,10 +1,15 @@
 package me.bombom.api.v1.inquiry.repository;
 
+import static me.bombom.api.v1.inquiry.domain.QInquiryMessage.inquiryMessage;
 import static me.bombom.api.v1.inquiry.domain.QInquiryRoom.inquiryRoom;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Coalesce;
+import com.querydsl.core.types.dsl.ComparableExpressionBase;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.inquiry.domain.InquiryRoom;
@@ -21,6 +26,15 @@ public class InquiryRoomRepositoryImpl implements CustomInquiryRoomRepository {
 
     @Override
     public Page<InquiryRoom> findRoomsForAdmin(GetInquiryRoomsRequest request, Pageable pageable) {
+        ComparableExpressionBase<LocalDateTime> latestMessageCreatedAt = new Coalesce<>(
+                LocalDateTime.class,
+                JPAExpressions
+                        .select(inquiryMessage.createdAt.max())
+                        .from(inquiryMessage)
+                        .where(inquiryMessage.roomId.eq(inquiryRoom.id)),
+                inquiryRoom.createdAt)
+                .getValue();
+
         List<InquiryRoom> content = queryFactory
                 .selectFrom(inquiryRoom)
                 .where(
@@ -29,7 +43,7 @@ public class InquiryRoomRepositoryImpl implements CustomInquiryRoomRepository {
                         categoryIdEq(request.categoryId()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .orderBy(inquiryRoom.createdAt.desc(), inquiryRoom.id.desc())
+                .orderBy(latestMessageCreatedAt.desc(), inquiryRoom.id.desc())
                 .fetch();
 
         JPAQuery<Long> countQuery = queryFactory
