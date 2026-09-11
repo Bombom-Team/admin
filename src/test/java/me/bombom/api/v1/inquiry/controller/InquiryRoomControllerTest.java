@@ -16,6 +16,7 @@ import me.bombom.api.v1.inquiry.domain.InquirerType;
 import me.bombom.api.v1.inquiry.domain.InquiryStatus;
 import me.bombom.api.v1.inquiry.dto.request.AssignInquiryRoomRequest;
 import me.bombom.api.v1.inquiry.dto.request.GetInquiryRoomsRequest;
+import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomCategoryRequest;
 import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomStatusRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomResponse;
 import me.bombom.api.v1.inquiry.dto.response.LastMessageResponse;
@@ -91,5 +92,21 @@ class InquiryRoomControllerTest extends ControllerTestSupport {
                 .andExpect(status().isOk());
 
         verify(inquiryRoomService).changeStatus(any(Long.class), any(UpdateInquiryRoomStatusRequest.class));
+    }
+
+    @Test
+    @DisplayName("문의 카테고리를 변경한다.")
+    void 카테고리_변경() throws Exception {
+        // given
+        UpdateInquiryRoomCategoryRequest request = new UpdateInquiryRoomCategoryRequest(20L);
+
+        // when & then
+        mockMvc.perform(patch("/admin/api/v1/inquiries/rooms/1/category")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        verify(inquiryRoomService).changeCategory(any(Long.class), any(UpdateInquiryRoomCategoryRequest.class));
     }
 }

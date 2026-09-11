@@ -70,6 +70,10 @@ public class InquiryRoom extends BaseEntity {
         this.status = status;
     }
 
+    public void changeCategory(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
     public void markReadByAdmin(Long messageId) {
         this.lastReadMessageIdByAdmin = messageId;
     }

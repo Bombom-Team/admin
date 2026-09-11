@@ -16,10 +16,12 @@ import me.bombom.api.v1.inquiry.domain.InquiryRoom;
 import me.bombom.api.v1.inquiry.domain.InquirySenderType;
 import me.bombom.api.v1.inquiry.dto.request.AssignInquiryRoomRequest;
 import me.bombom.api.v1.inquiry.dto.request.GetInquiryRoomsRequest;
+import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomCategoryRequest;
 import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomStatusRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomDetailResponse;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomResponse;
 import me.bombom.api.v1.inquiry.dto.response.LastMessageResponse;
+import me.bombom.api.v1.inquiry.repository.InquiryCategoryRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryMessageRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryRoomRepository;
 import me.bombom.api.v1.member.domain.Member;
@@ -37,6 +39,7 @@ public class InquiryRoomService {
 
     private final InquiryRoomRepository inquiryRoomRepository;
     private final InquiryMessageRepository inquiryMessageRepository;
+    private final InquiryCategoryRepository inquiryCategoryRepository;
     private final MemberRepository memberRepository;
 
     @Transactional
@@ -77,6 +80,13 @@ public class InquiryRoomService {
     public void changeStatus(Long roomId, UpdateInquiryRoomStatusRequest request) {
         InquiryRoom room = getRoomById(roomId);
         room.changeStatus(request.status());
+    }
+
+    @Transactional
+    public void changeCategory(Long roomId, UpdateInquiryRoomCategoryRequest request) {
+        InquiryRoom room = getRoomById(roomId);
+        validateCategoryExists(request.categoryId());
+        room.changeCategory(request.categoryId());
     }
 
     // 채팅방과 관련이 있는 유저(문의자, 담당자, 담당자 아닌 어드민) 정보를 조회한다
@@ -126,6 +136,14 @@ public class InquiryRoomService {
             lastMessage = LastMessageResponse.of(latestMessage, adminNickname);
         }
 
-        return InquiryRoomResponse.of(room, assigneeNickname, inquirerType, inquirerNickname, inquirerEmail, lastMessage);
+        return InquiryRoomResponse.of(room, assigneeNickname, inquirerType, inquirerNickname, inquirerEmail,
+                lastMessage);
+    }
+
+    private void validateCategoryExists(Long categoryId) {
+        if (!inquiryCategoryRepository.existsById(categoryId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryCategory");
+        }
     }
 }

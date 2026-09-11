@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import me.bombom.api.v1.inquiry.dto.request.AssignInquiryRoomRequest;
 import me.bombom.api.v1.inquiry.dto.request.GetInquiryRoomsRequest;
+import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomCategoryRequest;
 import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomStatusRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomDetailResponse;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomResponse;
@@ -57,5 +58,13 @@ public class InquiryRoomController implements InquiryRoomControllerApi {
             @PathVariable @Positive Long roomId,
             @Valid @RequestBody UpdateInquiryRoomStatusRequest request) {
         inquiryRoomService.changeStatus(roomId, request);
+    }
+
+    @Override
+    @PatchMapping("/{roomId}/category")
+    public void changeCategory(
+            @PathVariable @Positive Long roomId,
+            @Valid @RequestBody UpdateInquiryRoomCategoryRequest request) {
+        inquiryRoomService.changeCategory(roomId, request);
     }
 }

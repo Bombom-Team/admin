@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import me.bombom.api.v1.inquiry.dto.request.AssignInquiryRoomRequest;
 import me.bombom.api.v1.inquiry.dto.request.GetInquiryRoomsRequest;
+import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomCategoryRequest;
 import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomStatusRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomDetailResponse;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomResponse;
@@ -60,4 +61,13 @@ public interface InquiryRoomControllerApi {
     void changeStatus(
             @Parameter(description = "채팅방 ID") @PathVariable @Positive Long roomId,
             @Valid @RequestBody UpdateInquiryRoomStatusRequest request);
+
+    @Operation(summary = "문의 카테고리 변경")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "변경 성공"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 채팅방 또는 카테고리", content = @Content)
+    })
+    void changeCategory(
+            @Parameter(description = "채팅방 ID") @PathVariable @Positive Long roomId,
+            @Valid @RequestBody UpdateInquiryRoomCategoryRequest request);
 }

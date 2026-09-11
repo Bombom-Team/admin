@@ -14,10 +14,13 @@ import me.bombom.api.v1.inquiry.domain.InquirySenderType;
 import me.bombom.api.v1.inquiry.domain.InquiryStatus;
 import me.bombom.api.v1.inquiry.dto.request.AssignInquiryRoomRequest;
 import me.bombom.api.v1.inquiry.dto.request.GetInquiryRoomsRequest;
+import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomCategoryRequest;
 import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomStatusRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomResponse;
+import me.bombom.api.v1.inquiry.fixture.InquiryCategoryFixture;
 import me.bombom.api.v1.inquiry.fixture.InquiryMessageFixture;
 import me.bombom.api.v1.inquiry.fixture.InquiryRoomFixture;
+import me.bombom.api.v1.inquiry.repository.InquiryCategoryRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryMessageRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryRoomRepository;
 import me.bombom.api.v1.member.domain.Member;
@@ -47,6 +50,9 @@ class InquiryRoomServiceTest {
 
     @Autowired
     private MemberRepository memberRepository;
+
+    @Autowired
+    private InquiryCategoryRepository inquiryCategoryRepository;
 
     @Test
     @DisplayName("상태로 채팅방 목록을 필터링한다.")
@@ -137,6 +143,34 @@ class InquiryRoomServiceTest {
         // then
         InquiryRoom updated = inquiryRoomRepository.findById(room.getId()).orElseThrow();
         assertThat(updated.getStatus()).isEqualTo(InquiryStatus.ON_HOLD);
+    }
+
+    @Test
+    @DisplayName("채팅방의 문의 카테고리를 변경한다.")
+    void 카테고리_변경() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        var newCategory = inquiryCategoryRepository.save(InquiryCategoryFixture.createCategory("환불"));
+
+        // when
+        inquiryRoomService.changeCategory(room.getId(), new UpdateInquiryRoomCategoryRequest(newCategory.getId()));
+
+        // then
+        InquiryRoom updated = inquiryRoomRepository.findById(room.getId()).orElseThrow();
+        assertThat(updated.getCategoryId()).isEqualTo(newCategory.getId());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 카테고리로 변경하려 하면 예외가 발생한다.")
+    void 존재하지_않는_카테고리로_변경_실패() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+
+        // when & then
+        assertThatThrownBy(() -> inquiryRoomService.changeCategory(
+                room.getId(), new UpdateInquiryRoomCategoryRequest(999L)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
     }
 
     @Test
