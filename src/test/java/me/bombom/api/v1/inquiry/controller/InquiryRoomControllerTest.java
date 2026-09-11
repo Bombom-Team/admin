@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.LocalDateTime;
 import java.util.List;
 import me.bombom.api.v1.common.support.ControllerTestSupport;
+import me.bombom.api.v1.inquiry.domain.InquirerType;
 import me.bombom.api.v1.inquiry.domain.InquiryStatus;
 import me.bombom.api.v1.inquiry.dto.request.AssignInquiryRoomRequest;
 import me.bombom.api.v1.inquiry.dto.request.GetInquiryRoomsRequest;
@@ -38,7 +39,9 @@ class InquiryRoomControllerTest extends ControllerTestSupport {
     void 채팅방_목록_조회() throws Exception {
         // given
         InquiryRoomResponse response = new InquiryRoomResponse(
-                1L, 10L, InquiryStatus.UNCONFIRMED, null, LocalDateTime.now(), null);
+                1L, 10L, InquiryStatus.UNCONFIRMED, null, null,
+                InquirerType.MEMBER, "메이", "may@example.com", null, null,
+                LocalDateTime.now(), null);
         given(inquiryRoomService.getRooms(any(GetInquiryRoomsRequest.class), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(response), PageRequest.of(0, 20), 1));
 

@@ -7,14 +7,22 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import me.bombom.api.v1.common.config.QuerydslConfig;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
+import me.bombom.api.v1.inquiry.domain.InquirerType;
+import me.bombom.api.v1.inquiry.domain.InquiryMessage;
 import me.bombom.api.v1.inquiry.domain.InquiryRoom;
+import me.bombom.api.v1.inquiry.domain.InquirySenderType;
 import me.bombom.api.v1.inquiry.domain.InquiryStatus;
 import me.bombom.api.v1.inquiry.dto.request.AssignInquiryRoomRequest;
 import me.bombom.api.v1.inquiry.dto.request.GetInquiryRoomsRequest;
 import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomStatusRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomResponse;
+import me.bombom.api.v1.inquiry.fixture.InquiryMessageFixture;
 import me.bombom.api.v1.inquiry.fixture.InquiryRoomFixture;
+import me.bombom.api.v1.inquiry.repository.InquiryMessageRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryRoomRepository;
+import me.bombom.api.v1.member.domain.Member;
+import me.bombom.api.v1.member.fixture.MemberFixture;
+import me.bombom.api.v1.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +41,12 @@ class InquiryRoomServiceTest {
 
     @Autowired
     private InquiryRoomRepository inquiryRoomRepository;
+
+    @Autowired
+    private InquiryMessageRepository inquiryMessageRepository;
+
+    @Autowired
+    private MemberRepository memberRepository;
 
     @Test
     @DisplayName("상태로 채팅방 목록을 필터링한다.")
@@ -123,5 +137,109 @@ class InquiryRoomServiceTest {
         // then
         InquiryRoom updated = inquiryRoomRepository.findById(room.getId()).orElseThrow();
         assertThat(updated.getStatus()).isEqualTo(InquiryStatus.ON_HOLD);
+    }
+
+    @Test
+    @DisplayName("회원 문의방 목록에는 문의자 닉네임/이메일/프로필과 담당자 닉네임, 최근 메시지가 채워진다.")
+    void 회원_문의방_목록_상세_정보_포함() {
+        // given
+        Member inquirer = memberRepository.save(MemberFixture.createMember("메이"));
+        Member assignee = memberRepository.save(MemberFixture.createMemberWithRole("상추", 2L));
+
+        InquiryRoom room = inquiryRoomRepository.save(
+                InquiryRoomFixture.createMemberRoom(inquirer.getId(), 10L));
+        room.assign(assignee.getId());
+
+        InquiryMessage message = inquiryMessageRepository.save(
+                InquiryMessageFixture.createAdminMessage(room.getId(), assignee.getId(), "안녕하세요"));
+
+        // when
+        Page<InquiryRoomResponse> result = inquiryRoomService.getRooms(
+                new GetInquiryRoomsRequest(null, null, null), PageRequest.of(0, 10));
+
+        // then
+        InquiryRoomResponse response = result.getContent().get(0);
+        assertSoftly(softly -> {
+            softly.assertThat(response.inquirerType()).isEqualTo(InquirerType.MEMBER);
+            softly.assertThat(response.inquirerLabel()).isEqualTo("메이");
+            softly.assertThat(response.inquirerEmail()).isEqualTo(inquirer.getEmail());
+            softly.assertThat(response.inquirerProfileImageUrl()).isEqualTo(inquirer.getProfileImageUrl());
+            softly.assertThat(response.assigneeNickname()).isEqualTo("상추");
+            softly.assertThat(response.lastMessage()).isNotNull();
+            softly.assertThat(response.lastMessage().content()).isEqualTo("안녕하세요");
+            softly.assertThat(response.lastMessage().senderType()).isEqualTo(InquirySenderType.ADMIN);
+            softly.assertThat(response.lastMessage().adminNickname()).isEqualTo("상추");
+            softly.assertThat(response.lastMessage().hasImages()).isFalse();
+        });
+        assertThat(message.getId()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("게스트 문의방은 게스트 라벨로 표시되고 이메일/프로필은 null이다.")
+    void 게스트_문의방_라벨() {
+        // given
+        inquiryRoomRepository.save(
+                InquiryRoomFixture.createGuestRoom("abcdefgh-1111-2222-3333-444444444444", 10L));
+
+        // when
+        Page<InquiryRoomResponse> result = inquiryRoomService.getRooms(
+                new GetInquiryRoomsRequest(null, null, null), PageRequest.of(0, 10));
+
+        // then
+        InquiryRoomResponse response = result.getContent().get(0);
+        assertSoftly(softly -> {
+            softly.assertThat(response.inquirerType()).isEqualTo(InquirerType.GUEST);
+            softly.assertThat(response.inquirerLabel()).isEqualTo("게스트abcdefgh");
+            softly.assertThat(response.inquirerEmail()).isNull();
+            softly.assertThat(response.inquirerProfileImageUrl()).isNull();
+            softly.assertThat(response.lastMessage()).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("담당자가 없거나 메시지가 없는 방은 관련 필드가 null로 채워진다.")
+    void 담당자_미배정_메시지_없음() {
+        // given
+        Member inquirer = memberRepository.save(MemberFixture.createMember("강철원"));
+        inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(inquirer.getId(), 10L));
+
+        // when
+        Page<InquiryRoomResponse> result = inquiryRoomService.getRooms(
+                new GetInquiryRoomsRequest(null, null, null), PageRequest.of(0, 10));
+
+        // then
+        InquiryRoomResponse response = result.getContent().get(0);
+        assertSoftly(softly -> {
+            softly.assertThat(response.assigneeId()).isNull();
+            softly.assertThat(response.assigneeNickname()).isNull();
+            softly.assertThat(response.lastMessage()).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("문의자/담당자/발신자 Member가 이미 삭제된 경우(탈퇴 회원) 라벨로 대체된다.")
+    void 탈퇴한_회원_라벨_처리() {
+        // given
+        Long withdrawnMemberId = 999L;
+        InquiryRoom room = inquiryRoomRepository.save(
+                InquiryRoomFixture.createMemberRoom(withdrawnMemberId, 10L));
+        room.assign(withdrawnMemberId);
+        inquiryMessageRepository.save(
+                InquiryMessageFixture.createAdminMessage(room.getId(), withdrawnMemberId, "안녕하세요"));
+
+        // when
+        Page<InquiryRoomResponse> result = inquiryRoomService.getRooms(
+                new GetInquiryRoomsRequest(null, null, null), PageRequest.of(0, 10));
+
+        // then
+        InquiryRoomResponse response = result.getContent().get(0);
+        assertSoftly(softly -> {
+            softly.assertThat(response.inquirerType()).isEqualTo(InquirerType.MEMBER);
+            softly.assertThat(response.inquirerLabel()).isEqualTo("탈퇴한 회원");
+            softly.assertThat(response.inquirerEmail()).isNull();
+            softly.assertThat(response.inquirerProfileImageUrl()).isNull();
+            softly.assertThat(response.assigneeNickname()).isEqualTo("탈퇴한 회원");
+            softly.assertThat(response.lastMessage().adminNickname()).isEqualTo("탈퇴한 회원");
+        });
     }
 }
