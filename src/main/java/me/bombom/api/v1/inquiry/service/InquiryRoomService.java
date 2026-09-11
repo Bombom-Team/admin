@@ -12,7 +12,6 @@ import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.inquiry.domain.InquirerType;
 import me.bombom.api.v1.inquiry.domain.InquiryMessage;
-import me.bombom.api.v1.inquiry.domain.InquiryMessageImage;
 import me.bombom.api.v1.inquiry.domain.InquiryRoom;
 import me.bombom.api.v1.inquiry.domain.InquirySenderType;
 import me.bombom.api.v1.inquiry.dto.request.AssignInquiryRoomRequest;
@@ -21,7 +20,6 @@ import me.bombom.api.v1.inquiry.dto.request.UpdateInquiryRoomStatusRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomDetailResponse;
 import me.bombom.api.v1.inquiry.dto.response.InquiryRoomResponse;
 import me.bombom.api.v1.inquiry.dto.response.LastMessageResponse;
-import me.bombom.api.v1.inquiry.repository.InquiryMessageImageRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryMessageRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryRoomRepository;
 import me.bombom.api.v1.member.domain.Member;
@@ -37,12 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class InquiryRoomService {
 
-    private static final int GUEST_LABEL_ID_LENGTH = 8;
-    private static final String WITHDRAWN_MEMBER_LABEL = "탈퇴한 회원";
-
     private final InquiryRoomRepository inquiryRoomRepository;
     private final InquiryMessageRepository inquiryMessageRepository;
-    private final InquiryMessageImageRepository inquiryMessageImageRepository;
     private final MemberRepository memberRepository;
 
     @Transactional
@@ -60,23 +54,32 @@ public class InquiryRoomService {
                 .findLatestMessagesByRoomIds(roomIds).stream()
                 .collect(Collectors.toMap(InquiryMessage::getRoomId, Function.identity()));
 
-        Set<Long> latestMessageIds = latestMessageByRoomId.values().stream()
-                .map(InquiryMessage::getId)
-                .collect(Collectors.toSet());
-        Set<Long> messageIdsWithImages = inquiryMessageImageRepository
-                .findByMessageIdInOrderBySortOrderAsc(List.copyOf(latestMessageIds)).stream()
-                .map(InquiryMessageImage::getMessageId)
-                .collect(Collectors.toSet());
-
         Map<Long, Member> memberById = findRelatedMembers(roomContent, latestMessageByRoomId);
 
         List<InquiryRoomResponse> content = roomContent.stream()
-                .map(room -> toResponse(room, latestMessageByRoomId.get(room.getId()), messageIdsWithImages, memberById))
+                .map(room -> toResponse(room, latestMessageByRoomId.get(room.getId()), memberById))
                 .toList();
 
         return new PageImpl<>(content, pageable, rooms.getTotalElements());
     }
 
+    public InquiryRoomDetailResponse getRoom(Long roomId) {
+        return InquiryRoomDetailResponse.from(getRoomById(roomId));
+    }
+
+    public InquiryRoom getRoomById(Long roomId) {
+        return inquiryRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                        .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryRoom"));
+    }
+
+    @Transactional
+    public void changeStatus(Long roomId, UpdateInquiryRoomStatusRequest request) {
+        InquiryRoom room = getRoomById(roomId);
+        room.changeStatus(request.status());
+    }
+
+    // 채팅방과 관련이 있는 유저(문의자, 담당자, 담당자 아닌 어드민) 정보를 조회한다
     private Map<Long, Member> findRelatedMembers(
             List<InquiryRoom> rooms, Map<Long, InquiryMessage> latestMessageByRoomId) {
         Set<Long> memberIds = new HashSet<>();
@@ -103,58 +106,26 @@ public class InquiryRoomService {
     private InquiryRoomResponse toResponse(
             InquiryRoom room,
             InquiryMessage latestMessage,
-            Set<Long> messageIdsWithImages,
             Map<Long, Member> memberById) {
         InquirerType inquirerType = room.getMemberId() != null ? InquirerType.MEMBER : InquirerType.GUEST;
         Member inquirer = room.getMemberId() != null ? memberById.get(room.getMemberId()) : null;
 
-        String inquirerLabel;
-        String inquirerEmail = null;
-        String inquirerProfileImageUrl = null;
-        if (inquirerType == InquirerType.GUEST) {
-            inquirerLabel = "게스트" + room.getGuestId().substring(0, GUEST_LABEL_ID_LENGTH);
-        } else if (inquirer != null) {
-            inquirerLabel = inquirer.getNickname();
-            inquirerEmail = inquirer.getEmail();
-            inquirerProfileImageUrl = inquirer.getProfileImageUrl();
-        } else {
-            inquirerLabel = WITHDRAWN_MEMBER_LABEL;
-        }
+        String inquirerNickname = inquirer != null ? inquirer.getNickname() : null;
+        String inquirerEmail = inquirer != null ? inquirer.getEmail() : null;
 
-        String assigneeNickname = null;
-        if (room.getAssigneeId() != null) {
-            Member assignee = memberById.get(room.getAssigneeId());
-            assigneeNickname = assignee != null ? assignee.getNickname() : WITHDRAWN_MEMBER_LABEL;
-        }
+        Member assignee = room.getAssigneeId() != null ? memberById.get(room.getAssigneeId()) : null;
+        String assigneeNickname = assignee != null ? assignee.getNickname() : null;
 
         LastMessageResponse lastMessage = null;
         if (latestMessage != null) {
-            boolean hasImages = messageIdsWithImages.contains(latestMessage.getId());
             String adminNickname = null;
             if (latestMessage.getSenderType() == InquirySenderType.ADMIN) {
                 Member sender = memberById.get(latestMessage.getAdminId());
-                adminNickname = sender != null ? sender.getNickname() : WITHDRAWN_MEMBER_LABEL;
+                adminNickname = sender != null ? sender.getNickname() : null;
             }
-            lastMessage = LastMessageResponse.of(latestMessage, hasImages, adminNickname);
+            lastMessage = LastMessageResponse.of(latestMessage, adminNickname);
         }
 
-        return InquiryRoomResponse.of(
-                room, assigneeNickname, inquirerType, inquirerLabel, inquirerEmail, inquirerProfileImageUrl, lastMessage);
-    }
-
-    public InquiryRoomDetailResponse getRoom(Long roomId) {
-        return InquiryRoomDetailResponse.from(getRoomById(roomId));
-    }
-
-    public InquiryRoom getRoomById(Long roomId) {
-        return inquiryRoomRepository.findById(roomId)
-                .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
-                        .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryRoom"));
-    }
-
-    @Transactional
-    public void changeStatus(Long roomId, UpdateInquiryRoomStatusRequest request) {
-        InquiryRoom room = getRoomById(roomId);
-        room.changeStatus(request.status());
+        return InquiryRoomResponse.of(room, assigneeNickname, inquirerType, inquirerNickname, inquirerEmail, lastMessage);
     }
 }

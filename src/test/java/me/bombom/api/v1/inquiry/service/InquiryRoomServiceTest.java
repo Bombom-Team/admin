@@ -140,7 +140,7 @@ class InquiryRoomServiceTest {
     }
 
     @Test
-    @DisplayName("회원 문의방 목록에는 문의자 닉네임/이메일/프로필과 담당자 닉네임, 최근 메시지가 채워진다.")
+    @DisplayName("회원 문의방 목록에는 문의자 닉네임/이메일과 담당자 닉네임, 최근 메시지가 채워진다.")
     void 회원_문의방_목록_상세_정보_포함() {
         // given
         Member inquirer = memberRepository.save(MemberFixture.createMember("메이"));
@@ -161,22 +161,21 @@ class InquiryRoomServiceTest {
         InquiryRoomResponse response = result.getContent().get(0);
         assertSoftly(softly -> {
             softly.assertThat(response.inquirerType()).isEqualTo(InquirerType.MEMBER);
-            softly.assertThat(response.inquirerLabel()).isEqualTo("메이");
+            softly.assertThat(response.guestId()).isNull();
+            softly.assertThat(response.inquirerNickname()).isEqualTo("메이");
             softly.assertThat(response.inquirerEmail()).isEqualTo(inquirer.getEmail());
-            softly.assertThat(response.inquirerProfileImageUrl()).isEqualTo(inquirer.getProfileImageUrl());
             softly.assertThat(response.assigneeNickname()).isEqualTo("상추");
             softly.assertThat(response.lastMessage()).isNotNull();
             softly.assertThat(response.lastMessage().content()).isEqualTo("안녕하세요");
             softly.assertThat(response.lastMessage().senderType()).isEqualTo(InquirySenderType.ADMIN);
             softly.assertThat(response.lastMessage().adminNickname()).isEqualTo("상추");
-            softly.assertThat(response.lastMessage().hasImages()).isFalse();
         });
         assertThat(message.getId()).isNotNull();
     }
 
     @Test
-    @DisplayName("게스트 문의방은 게스트 라벨로 표시되고 이메일/프로필은 null이다.")
-    void 게스트_문의방_라벨() {
+    @DisplayName("게스트 문의방은 guestId가 채워지고 회원 관련 필드는 null이다.")
+    void 게스트_문의방_raw_데이터() {
         // given
         inquiryRoomRepository.save(
                 InquiryRoomFixture.createGuestRoom("abcdefgh-1111-2222-3333-444444444444", 10L));
@@ -189,9 +188,9 @@ class InquiryRoomServiceTest {
         InquiryRoomResponse response = result.getContent().get(0);
         assertSoftly(softly -> {
             softly.assertThat(response.inquirerType()).isEqualTo(InquirerType.GUEST);
-            softly.assertThat(response.inquirerLabel()).isEqualTo("게스트abcdefgh");
+            softly.assertThat(response.guestId()).isEqualTo("abcdefgh-1111-2222-3333-444444444444");
+            softly.assertThat(response.inquirerNickname()).isNull();
             softly.assertThat(response.inquirerEmail()).isNull();
-            softly.assertThat(response.inquirerProfileImageUrl()).isNull();
             softly.assertThat(response.lastMessage()).isNull();
         });
     }
@@ -217,8 +216,8 @@ class InquiryRoomServiceTest {
     }
 
     @Test
-    @DisplayName("문의자/담당자/발신자 Member가 이미 삭제된 경우(탈퇴 회원) 라벨로 대체된다.")
-    void 탈퇴한_회원_라벨_처리() {
+    @DisplayName("문의자/담당자/발신자 Member가 이미 삭제된 경우 관련 닉네임 필드가 null로 내려간다.")
+    void 삭제된_회원_참조_시_닉네임_null() {
         // given
         Long withdrawnMemberId = 999L;
         InquiryRoom room = inquiryRoomRepository.save(
@@ -235,11 +234,10 @@ class InquiryRoomServiceTest {
         InquiryRoomResponse response = result.getContent().get(0);
         assertSoftly(softly -> {
             softly.assertThat(response.inquirerType()).isEqualTo(InquirerType.MEMBER);
-            softly.assertThat(response.inquirerLabel()).isEqualTo("탈퇴한 회원");
+            softly.assertThat(response.inquirerNickname()).isNull();
             softly.assertThat(response.inquirerEmail()).isNull();
-            softly.assertThat(response.inquirerProfileImageUrl()).isNull();
-            softly.assertThat(response.assigneeNickname()).isEqualTo("탈퇴한 회원");
-            softly.assertThat(response.lastMessage().adminNickname()).isEqualTo("탈퇴한 회원");
+            softly.assertThat(response.assigneeNickname()).isNull();
+            softly.assertThat(response.lastMessage().adminNickname()).isNull();
         });
     }
 }

@@ -41,10 +41,10 @@ class InquiryRoomControllerTest extends ControllerTestSupport {
     void 채팅방_목록_조회() throws Exception {
         // given
         LastMessageResponse lastMessage = new LastMessageResponse(
-                "안녕하세요", false, InquirySenderType.ADMIN, "상추", LocalDateTime.now());
+                "안녕하세요", InquirySenderType.ADMIN, "상추", LocalDateTime.now());
         InquiryRoomResponse response = new InquiryRoomResponse(
                 1L, 10L, InquiryStatus.UNCONFIRMED, 100L, "상추",
-                InquirerType.MEMBER, "메이", "may@example.com", "https://img/1", lastMessage,
+                InquirerType.MEMBER, null, "메이", "may@example.com", lastMessage,
                 LocalDateTime.now(), null);
         given(inquiryRoomService.getRooms(any(GetInquiryRoomsRequest.class), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(response), PageRequest.of(0, 20), 1));
@@ -55,7 +55,7 @@ class InquiryRoomControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.content[0].id").value(1L))
                 .andExpect(jsonPath("$.content[0].assigneeNickname").value("상추"))
                 .andExpect(jsonPath("$.content[0].inquirerType").value("MEMBER"))
-                .andExpect(jsonPath("$.content[0].inquirerLabel").value("메이"))
+                .andExpect(jsonPath("$.content[0].inquirerNickname").value("메이"))
                 .andExpect(jsonPath("$.content[0].inquirerEmail").value("may@example.com"))
                 .andExpect(jsonPath("$.content[0].lastMessage.content").value("안녕하세요"))
                 .andExpect(jsonPath("$.content[0].lastMessage.adminNickname").value("상추"));

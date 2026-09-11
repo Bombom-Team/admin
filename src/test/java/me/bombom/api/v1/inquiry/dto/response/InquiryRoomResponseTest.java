@@ -18,16 +18,35 @@ class InquiryRoomResponseTest {
 
         // when
         InquiryRoomResponse response = InquiryRoomResponse.of(
-                room, "상추", InquirerType.MEMBER, "메이", "may@example.com", "https://img/1", null);
+                room, "상추", InquirerType.MEMBER, "메이", "may@example.com", null);
 
         // then
         assertSoftly(softly -> {
             softly.assertThat(response.assigneeNickname()).isEqualTo("상추");
             softly.assertThat(response.inquirerType()).isEqualTo(InquirerType.MEMBER);
-            softly.assertThat(response.inquirerLabel()).isEqualTo("메이");
+            softly.assertThat(response.guestId()).isNull();
+            softly.assertThat(response.inquirerNickname()).isEqualTo("메이");
             softly.assertThat(response.inquirerEmail()).isEqualTo("may@example.com");
-            softly.assertThat(response.inquirerProfileImageUrl()).isEqualTo("https://img/1");
             softly.assertThat(response.lastMessage()).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("게스트 문의방을 응답으로 변환하면 guestId가 채워지고 회원 정보는 null이다.")
+    void 게스트_문의방_변환() {
+        // given
+        var room = InquiryRoomFixture.createGuestRoom("guest-uuid", 10L);
+
+        // when
+        InquiryRoomResponse response = InquiryRoomResponse.of(
+                room, null, InquirerType.GUEST, null, null, null);
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(response.inquirerType()).isEqualTo(InquirerType.GUEST);
+            softly.assertThat(response.guestId()).isEqualTo("guest-uuid");
+            softly.assertThat(response.inquirerNickname()).isNull();
+            softly.assertThat(response.inquirerEmail()).isNull();
         });
     }
 }

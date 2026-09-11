@@ -13,9 +13,9 @@ public record InquiryRoomResponse(
         Long assigneeId,
         String assigneeNickname,
         InquirerType inquirerType,
-        String inquirerLabel,
+        String guestId,
+        String inquirerNickname,
         String inquirerEmail,
-        String inquirerProfileImageUrl,
         LastMessageResponse lastMessage,
         LocalDateTime createdAt,
         LocalDateTime closedAt
@@ -25,9 +25,8 @@ public record InquiryRoomResponse(
             InquiryRoom room,
             String assigneeNickname,
             InquirerType inquirerType,
-            String inquirerLabel,
+            String inquirerNickname,
             String inquirerEmail,
-            String inquirerProfileImageUrl,
             LastMessageResponse lastMessage) {
         return new InquiryRoomResponse(
                 room.getId(),
@@ -36,9 +35,9 @@ public record InquiryRoomResponse(
                 room.getAssigneeId(),
                 assigneeNickname,
                 inquirerType,
-                inquirerLabel,
+                room.getGuestId(),
+                inquirerNickname,
                 inquirerEmail,
-                inquirerProfileImageUrl,
                 lastMessage,
                 room.getCreatedAt(),
                 room.getClosedAt());

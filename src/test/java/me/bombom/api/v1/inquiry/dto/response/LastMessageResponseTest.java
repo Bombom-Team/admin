@@ -16,11 +16,10 @@ class LastMessageResponseTest {
         InquiryMessage message = InquiryMessageFixture.createAdminMessage(1L, 100L, "안녕하세요");
 
         // when
-        LastMessageResponse response = LastMessageResponse.of(message, false, "상추");
+        LastMessageResponse response = LastMessageResponse.of(message, "상추");
 
         // then
         assertThat(response.content()).isEqualTo("안녕하세요");
-        assertThat(response.hasImages()).isFalse();
         assertThat(response.adminNickname()).isEqualTo("상추");
     }
 }
