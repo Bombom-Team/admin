@@ -1,7 +1,11 @@
 package me.bombom.api.v1.notice.dto;
 
+import me.bombom.api.v1.common.exception.CIllegalArgumentException;
+import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
 import me.bombom.api.v1.notice.domain.NoticeVisibility;
+
+import java.util.List;
 
 public record UpdateNoticeRequest(
 
@@ -9,6 +13,43 @@ public record UpdateNoticeRequest(
         String content,
         NoticeCategory noticeCategory,
         NoticeVisibility visibility,
-        Boolean isRepresentative
+        Boolean isRepresentative,
+        List<Long> referencedImageIds
 ) {
+
+    public void validate() {
+        validateReferencedImageIds();
+    }
+
+    public List<Long> distinctReferencedImageIds() {
+        if (referencedImageIds == null) {
+            return List.of();
+        }
+
+        return referencedImageIds.stream()
+                .distinct()
+                .toList();
+    }
+
+    private void validateReferencedImageIds() {
+        if (referencedImageIds == null) {
+            return;
+        }
+
+        boolean hasNullImageId = referencedImageIds.stream()
+                .anyMatch(this::isNullImageId);
+
+        if (hasNullImageId) {
+            throw invalidInput("referencedImageIds");
+        }
+    }
+
+    private boolean isNullImageId(Long imageId) {
+        return imageId == null;
+    }
+
+    private CIllegalArgumentException invalidInput(String field) {
+        return new CIllegalArgumentException(ErrorDetail.INVALID_INPUT_VALUE)
+                .addContext("field", field);
+    }
 }
