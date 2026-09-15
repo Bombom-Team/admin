@@ -99,13 +99,13 @@ public class NoticeService {
     }
 
     private void updateReferencedImages(Long noticeId, List<Long> referencedImageIds) {
+        validateReferencedImages(noticeId, referencedImageIds);
+
         List<NoticeImageAsset> noticeImages = noticeImageAssetRepository.findAllByNoticeId(noticeId);
         Map<Long, NoticeImageAsset> noticeImageMap = new LinkedHashMap<>();
         for (NoticeImageAsset noticeImage : noticeImages) {
             noticeImageMap.put(noticeImage.getId(), noticeImage);
         }
-
-        validateReferencedImages(noticeId, referencedImageIds, noticeImageMap);
 
         for (Long referencedImageId : referencedImageIds) {
             noticeImageMap.get(referencedImageId).attach();
@@ -125,11 +125,7 @@ public class NoticeService {
         }
     }
 
-    private void validateReferencedImages(
-            Long noticeId,
-            List<Long> referencedImageIds,
-            Map<Long, NoticeImageAsset> noticeImageMap
-    ) {
+    private void validateReferencedImages(Long noticeId, List<Long> referencedImageIds) {
         if (referencedImageIds.isEmpty()) {
             return;
         }
@@ -138,27 +134,17 @@ public class NoticeService {
         if (referencedImages.size() != referencedImageIds.size()) {
             throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                     .addContext(ErrorContextKeys.ENTITY_TYPE, "noticeImageAsset")
-                    .addContext(ErrorContextKeys.OPERATION, "updateNotice");
+                    .addContext(ErrorContextKeys.OPERATION, "findAllByIdIn");
         }
 
         boolean containsForeignImage = referencedImages.stream()
                 .anyMatch(image -> !image.getNoticeId().equals(noticeId));
 
         if (containsForeignImage) {
-            throw invalidInput("referencedImageIds");
+            throw new CIllegalArgumentException(ErrorDetail.NOTICE_IMAGE_NOT_REGISTERED)
+                    .addContext("field", "referencedImageIds")
+                    .addContext(ErrorContextKeys.NOTICE_ID, noticeId);
         }
-
-        boolean containsUnknownImage = referencedImageIds.stream()
-                .anyMatch(imageId -> !noticeImageMap.containsKey(imageId));
-
-        if (containsUnknownImage) {
-            throw invalidInput("referencedImageIds");
-        }
-    }
-
-    private CIllegalArgumentException invalidInput(String field) {
-        return new CIllegalArgumentException(ErrorDetail.INVALID_INPUT_VALUE)
-                .addContext("field", field);
     }
 
     @Transactional

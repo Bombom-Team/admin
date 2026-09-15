@@ -24,6 +24,7 @@ public enum ErrorDetail {
     CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "M011", "해당 카테고리에 속한 뉴스레터가 있어 삭제할 수 없습니다."),
     CHALLENGE_HAS_PARTICIPANTS(HttpStatus.BAD_REQUEST, "M012", "참여자가 있는 챌린지는 삭제할 수 없습니다."),
     RESOURCE_CONFLICT(HttpStatus.CONFLICT, "M013", "요청을 처리할 수 없는 상태입니다."),
+    NOTICE_IMAGE_NOT_REGISTERED(HttpStatus.BAD_REQUEST, "M014", "해당 공지사항에 등록되지 않은 이미지입니다."),
 
     /*
     * J : 인증
