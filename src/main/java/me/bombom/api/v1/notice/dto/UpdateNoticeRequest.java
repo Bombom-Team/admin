@@ -40,16 +40,12 @@ public record UpdateNoticeRequest(
                 .anyMatch(this::isNullImageId);
 
         if (hasNullImageId) {
-            throw invalidInput("referencedImageIds");
+            throw new CIllegalArgumentException(ErrorDetail.INVALID_INPUT_VALUE)
+                    .addContext("field", "referencedImageIds");
         }
     }
 
     private boolean isNullImageId(Long imageId) {
         return imageId == null;
-    }
-
-    private CIllegalArgumentException invalidInput(String field) {
-        return new CIllegalArgumentException(ErrorDetail.INVALID_INPUT_VALUE)
-                .addContext("field", field);
     }
 }
