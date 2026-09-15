@@ -8,6 +8,8 @@ import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
+import me.bombom.api.v1.notice.dto.UploadNoticeImageResponse;
+import me.bombom.api.v1.notice.service.NoticeImageService;
 import me.bombom.api.v1.notice.service.NoticeService;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -16,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -29,6 +32,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
@@ -38,6 +42,28 @@ class NoticeControllerTest extends ControllerTestSupport {
 
         @MockitoBean
         private NoticeService noticeService;
+
+        @MockitoBean
+        private NoticeImageService noticeImageService;
+
+        @Test
+        @DisplayName("공지사항 이미지를 업로드하면 201과 함께 이미지 id와 URL을 반환한다.")
+        void uploadNoticeImage() throws Exception {
+                // given
+                MockMultipartFile imageFile = new MockMultipartFile("imageFile", "notice.png", "image/png",
+                                "content".getBytes());
+                given(noticeImageService.uploadNoticeImage(1L, imageFile))
+                                .willReturn(new UploadNoticeImageResponse(10L, "https://cdn.bombom.me/notices/202609/notice.png"));
+
+                // when & then
+                mockMvc.perform(multipart("/admin/api/v1/notices/{noticeId}/images", 1L)
+                                .file(imageFile)
+                                .with(csrf()))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.imageId").value(10L))
+                                .andExpect(jsonPath("$.imageUrl")
+                                                .value("https://cdn.bombom.me/notices/202609/notice.png"));
+        }
 
         @Test
         @DisplayName("공지사항 초안을 생성하고 공지 id를 반환한다.")
@@ -58,7 +84,7 @@ class NoticeControllerTest extends ControllerTestSupport {
         void updateNotice() throws Exception {
                 // given
                 UpdateNoticeRequest updateNoticeRequest = new UpdateNoticeRequest("수정 제목", "수정 내용",
-                                NoticeCategory.UPDATE, NoticeVisibility.PUBLIC, true);
+                                NoticeCategory.UPDATE, NoticeVisibility.PUBLIC, true, null);
 
                 // when & then
                 mockMvc.perform(patch("/admin/api/v1/notices/1")
@@ -75,7 +101,7 @@ class NoticeControllerTest extends ControllerTestSupport {
         @DisplayName("공지사항을 일부만 수정한다.")
         void updateNotice_partial() throws Exception {
                 // given
-                UpdateNoticeRequest updateNoticeRequest = new UpdateNoticeRequest("수정 제목", null, null, null, null);
+                UpdateNoticeRequest updateNoticeRequest = new UpdateNoticeRequest("수정 제목", null, null, null, null, null);
 
                 // when & then
                 mockMvc.perform(patch("/admin/api/v1/notices/1")
