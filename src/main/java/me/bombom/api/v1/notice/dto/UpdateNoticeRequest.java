@@ -1,5 +1,6 @@
 package me.bombom.api.v1.notice.dto;
 
+import java.util.Objects;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
@@ -37,15 +38,11 @@ public record UpdateNoticeRequest(
         }
 
         boolean hasNullImageId = referencedImageIds.stream()
-                .anyMatch(this::isNullImageId);
+                .anyMatch(Objects::isNull);
 
         if (hasNullImageId) {
             throw new CIllegalArgumentException(ErrorDetail.INVALID_INPUT_VALUE)
                     .addContext("field", "referencedImageIds");
         }
-    }
-
-    private boolean isNullImageId(Long imageId) {
-        return imageId == null;
     }
 }
