@@ -136,7 +136,7 @@ class NoticeControllerTest extends ControllerTestSupport {
                                 NoticeCategory.NOTICE,
                                 NoticeVisibility.PUBLIC,
                                 true,
-                                java.time.LocalDate.of(2026, 8, 30));
+                                java.time.LocalDateTime.of(2026, 8, 30, 1, 23, 45));
                 PageImpl<GetNoticeResponse> result = new PageImpl<>(List.of(response), PageRequest.of(0, 10), 1);
 
                 given(noticeService.getNotices(any(GetNoticesRequest.class), any(Pageable.class)))
@@ -154,7 +154,7 @@ class NoticeControllerTest extends ControllerTestSupport {
                                 .andExpect(jsonPath("$.content[0].noticeCategory").value("NOTICE"))
                                 .andExpect(jsonPath("$.content[0].visibility").value("PUBLIC"))
                                 .andExpect(jsonPath("$.content[0].isRepresentative").value(true))
-                                .andExpect(jsonPath("$.content[0].createdAt").value("2026-08-30"));
+                                .andExpect(jsonPath("$.content[0].createdAt").value("2026-08-30T01:23:45"));
         }
 
         @Test
@@ -165,7 +165,7 @@ class NoticeControllerTest extends ControllerTestSupport {
                                 "제목",
                                 NoticeCategory.NOTICE,
                                 "내용",
-                                java.time.LocalDate.now());
+                                java.time.LocalDateTime.of(2026, 8, 30, 1, 23, 45));
 
                 given(noticeService.getNotice(1L)).willReturn(response);
 
@@ -175,7 +175,8 @@ class NoticeControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.title").value("제목"))
                                 .andExpect(jsonPath("$.noticeCategory").value("NOTICE"))
-                                .andExpect(jsonPath("$.content").value("내용"));
+                                .andExpect(jsonPath("$.content").value("내용"))
+                                .andExpect(jsonPath("$.createdAt").value("2026-08-30T01:23:45"));
         }
 
         @Test
