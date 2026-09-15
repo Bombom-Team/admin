@@ -70,10 +70,6 @@ public class NoticeService {
                         .addContext(ErrorContextKeys.OPERATION, "findById")
                         .addContext(ErrorContextKeys.NOTICE_ID, id));
 
-        if (request.isRepresentative() != null) {
-            applyRepresentative(id, request.isRepresentative());
-        }
-
         notice.update(
             request.title(),
             request.content(),
@@ -81,21 +77,48 @@ public class NoticeService {
             request.visibility()
         );
 
+        if (request.isRepresentative() != null) {
+            applyRepresentative(notice, request.isRepresentative());
+        }
+
+        clearRepresentativeIfNotPublic(notice);
+
         if (request.referencedImageIds() != null) {
             updateReferencedImages(id, request.distinctReferencedImageIds());
         }
     }
 
-    private void applyRepresentative(Long noticeId, boolean isRepresentative) {
-        if (isRepresentative) {
-            noticeRepresentativeRepository.findById(NoticeRepresentative.SINGLETON_ID)
-                    .ifPresentOrElse(
-                            representative -> representative.changeTo(noticeId),
-                            () -> noticeRepresentativeRepository.save(NoticeRepresentative.of(noticeId)));
+    private void applyRepresentative(Notice notice, boolean isRepresentative) {
+        Long noticeId = notice.getId();
+        if (!isRepresentative) {
+            noticeRepresentativeRepository.deleteByNoticeId(noticeId);
             return;
         }
 
-        noticeRepresentativeRepository.deleteByNoticeId(noticeId);
+        validateRepresentable(notice);
+
+        noticeRepresentativeRepository.findById(NoticeRepresentative.SINGLETON_ID)
+                .ifPresentOrElse(
+                        representative -> representative.changeTo(noticeId),
+                        () -> noticeRepresentativeRepository.save(NoticeRepresentative.of(noticeId)));
+    }
+
+    private void clearRepresentativeIfNotPublic(Notice notice) {
+        if (notice.getVisibility() == NoticeVisibility.PUBLIC) {
+            return;
+        }
+
+        noticeRepresentativeRepository.deleteByNoticeId(notice.getId());
+    }
+
+    private void validateRepresentable(Notice notice) {
+        if (notice.getVisibility() == NoticeVisibility.PUBLIC) {
+            return;
+        }
+
+        throw new CIllegalArgumentException(ErrorDetail.PRIVATE_NOTICE_NOT_REPRESENTABLE)
+                .addContext("field", "isRepresentative")
+                .addContext(ErrorContextKeys.NOTICE_ID, notice.getId());
     }
 
     private void updateReferencedImages(Long noticeId, List<Long> referencedImageIds) {

@@ -25,6 +25,7 @@ public enum ErrorDetail {
     CHALLENGE_HAS_PARTICIPANTS(HttpStatus.BAD_REQUEST, "M012", "참여자가 있는 챌린지는 삭제할 수 없습니다."),
     RESOURCE_CONFLICT(HttpStatus.CONFLICT, "M013", "요청을 처리할 수 없는 상태입니다."),
     NOTICE_IMAGE_NOT_REGISTERED(HttpStatus.BAD_REQUEST, "M014", "해당 공지사항에 등록되지 않은 이미지입니다."),
+    PRIVATE_NOTICE_NOT_REPRESENTABLE(HttpStatus.BAD_REQUEST, "M015", "비공개 공지사항은 대표 공지로 지정할 수 없습니다."),
 
     /*
     * J : 인증
