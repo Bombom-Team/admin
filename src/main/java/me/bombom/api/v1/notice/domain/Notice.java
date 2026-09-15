@@ -35,32 +35,26 @@ public class Notice extends BaseEntity {
     @Enumerated(value = EnumType.STRING)
     private NoticeVisibility visibility;
 
-    @Column(nullable = false)
-    private boolean isRepresentative;
-
     @Builder
     public Notice(
             Long id,
             String title,
             String content,
             NoticeCategory noticeCategory,
-            NoticeVisibility visibility,
-            Boolean isRepresentative
+            NoticeVisibility visibility
     ) {
         this.id = id;
         this.title = title;
         this.content = content;
         this.noticeCategory = noticeCategory;
         this.visibility = visibility != null ? visibility : NoticeVisibility.PRIVATE;
-        this.isRepresentative = isRepresentative != null && isRepresentative;
     }
 
     public void update(
             String title,
             String content,
             NoticeCategory noticeCategory,
-            NoticeVisibility visibility,
-            Boolean isRepresentative
+            NoticeVisibility visibility
     ) {
         if (title != null) {
             this.title = title;
@@ -74,12 +68,5 @@ public class Notice extends BaseEntity {
         if (visibility != null) {
             this.visibility = visibility;
         }
-        if (isRepresentative != null) {
-            this.isRepresentative = isRepresentative;
-        }
-    }
-
-    public void demoteFromRepresentative() {
-        this.isRepresentative = false;
     }
 }

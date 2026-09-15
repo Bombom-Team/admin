@@ -21,7 +21,6 @@ public class NoticeFixture {
                 .set(field(Notice::getContent), content)
                 .set(field(Notice::getNoticeCategory), category)
                 .set(field(Notice::getVisibility), NoticeVisibility.PUBLIC)
-                .set(field(Notice::isRepresentative), false)
                 .create();
     }
 }

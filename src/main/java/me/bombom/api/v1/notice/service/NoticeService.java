@@ -6,6 +6,7 @@ import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeImageAsset;
 import me.bombom.api.v1.notice.domain.NoticeImageAssetStatus;
+import me.bombom.api.v1.notice.domain.NoticeRepresentative;
 import me.bombom.api.v1.notice.domain.NoticeVisibility;
 import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
@@ -13,6 +14,7 @@ import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
 import me.bombom.api.v1.notice.repository.NoticeImageAssetRepository;
+import me.bombom.api.v1.notice.repository.NoticeRepresentativeRepository;
 import me.bombom.api.v1.notice.repository.NoticeRepository;
 
 import jakarta.validation.constraints.Positive;
@@ -36,6 +38,7 @@ public class NoticeService {
     private final Clock clock;
     private final NoticeRepository noticeRepository;
     private final NoticeImageAssetRepository noticeImageAssetRepository;
+    private final NoticeRepresentativeRepository noticeRepresentativeRepository;
 
     public Page<GetNoticeResponse> getNotices(GetNoticesRequest request, Pageable pageable) {
         return noticeRepository.findNotices(request, pageable);
@@ -67,21 +70,32 @@ public class NoticeService {
                         .addContext(ErrorContextKeys.OPERATION, "findById")
                         .addContext(ErrorContextKeys.NOTICE_ID, id));
 
-        if (Boolean.TRUE.equals(request.isRepresentative())) {
-            demoteOtherRepresentatives(id);
+        if (request.isRepresentative() != null) {
+            applyRepresentative(id, request.isRepresentative());
         }
 
         notice.update(
             request.title(),
             request.content(),
             request.noticeCategory(),
-            request.visibility(),
-            request.isRepresentative()
+            request.visibility()
         );
 
         if (request.referencedImageIds() != null) {
             updateReferencedImages(id, request.distinctReferencedImageIds());
         }
+    }
+
+    private void applyRepresentative(Long noticeId, boolean isRepresentative) {
+        if (isRepresentative) {
+            noticeRepresentativeRepository.findById(NoticeRepresentative.SINGLETON_ID)
+                    .ifPresentOrElse(
+                            representative -> representative.changeTo(noticeId),
+                            () -> noticeRepresentativeRepository.save(NoticeRepresentative.of(noticeId)));
+            return;
+        }
+
+        noticeRepresentativeRepository.deleteByNoticeId(noticeId);
     }
 
     private void updateReferencedImages(Long noticeId, List<Long> referencedImageIds) {
@@ -145,12 +159,6 @@ public class NoticeService {
     private CIllegalArgumentException invalidInput(String field) {
         return new CIllegalArgumentException(ErrorDetail.INVALID_INPUT_VALUE)
                 .addContext("field", field);
-    }
-
-    private void demoteOtherRepresentatives(Long representativeId) {
-        noticeRepository.findByIsRepresentativeTrue().stream()
-                .filter(notice -> !notice.getId().equals(representativeId))
-                .forEach(Notice::demoteFromRepresentative);
     }
 
     @Transactional
