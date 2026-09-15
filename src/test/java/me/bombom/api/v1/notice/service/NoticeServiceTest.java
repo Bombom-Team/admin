@@ -149,6 +149,68 @@ class NoticeServiceTest {
     }
 
     @Test
+    @DisplayName("비공개 공지를 대표로 지정하면 예외가 발생한다.")
+    void updateNotice_privateNoticeCannotBeRepresentative() {
+        // given
+        Long draftId = noticeService.createNotice().noticeId();
+
+        // when & then
+        assertThatThrownBy(() -> noticeService.updateNotice(draftId, representativeRequest(true)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .extracting("errorDetail")
+                .isEqualTo(ErrorDetail.PRIVATE_NOTICE_NOT_REPRESENTABLE);
+    }
+
+    @Test
+    @DisplayName("발행과 대표 지정을 한 번의 요청으로 함께 보내면 대표로 지정된다.")
+    void updateNotice_publishAndSetRepresentativeAtOnce() {
+        // given
+        Long draftId = noticeService.createNotice().noticeId();
+
+        UpdateNoticeRequest request = new UpdateNoticeRequest("제목", "내용", NoticeCategory.NOTICE,
+                NoticeVisibility.PUBLIC, true, null);
+
+        // when
+        noticeService.updateNotice(draftId, request);
+
+        // then
+        assertThat(representativeNoticeId()).isEqualTo(draftId);
+    }
+
+    @Test
+    @DisplayName("대표 공지를 비공개로 전환하면 대표 지정이 자동으로 해제된다.")
+    void updateNotice_privateTransitionClearsRepresentative() {
+        // given
+        Notice notice = noticeRepository.save(NoticeFixture.createNotice("대표", "내용", NoticeCategory.NOTICE));
+        noticeService.updateNotice(notice.getId(), representativeRequest(true));
+
+        UpdateNoticeRequest request = new UpdateNoticeRequest(null, null, null, NoticeVisibility.PRIVATE, null, null);
+
+        // when
+        noticeService.updateNotice(notice.getId(), request);
+
+        // then
+        assertThat(noticeRepresentativeRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("대표가 아닌 공지를 비공개로 전환해도 기존 대표 공지는 유지된다.")
+    void updateNotice_privateTransitionKeepsOtherRepresentative() {
+        // given
+        Notice representative = noticeRepository.save(NoticeFixture.createNotice("대표", "내용", NoticeCategory.NOTICE));
+        Notice other = noticeRepository.save(NoticeFixture.createNotice("일반", "내용", NoticeCategory.NOTICE));
+        noticeService.updateNotice(representative.getId(), representativeRequest(true));
+
+        UpdateNoticeRequest request = new UpdateNoticeRequest(null, null, null, NoticeVisibility.PRIVATE, null, null);
+
+        // when
+        noticeService.updateNotice(other.getId(), request);
+
+        // then
+        assertThat(representativeNoticeId()).isEqualTo(representative.getId());
+    }
+
+    @Test
     @DisplayName("대표 공지를 해제하면 대표 공지가 없는 상태가 된다.")
     void updateNotice_clearRepresentative() {
         // given
