@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import me.bombom.api.v1.common.config.QuerydslConfig;
+import me.bombom.api.v1.common.config.TimeConfig;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.inquiry.domain.InquiryMessage;
@@ -21,10 +22,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
 @DataJpaTest
-@Import({ InquiryMessageService.class, InquiryRoomService.class, QuerydslConfig.class })
+@Import({ InquiryMessageService.class, InquiryRoomService.class, QuerydslConfig.class, TimeConfig.class })
 class InquiryMessageServiceTest {
 
     @Autowired
@@ -35,6 +37,9 @@ class InquiryMessageServiceTest {
 
     @Autowired
     private InquiryMessageRepository inquiryMessageRepository;
+
+    @Autowired
+    private TestEntityManager testEntityManager;
 
     @Test
     @DisplayName("담당자 없는 방에 어드민이 처음 답변하면 담당자로 자동 배정되고 상태가 진행중으로 바뀐다.")
@@ -130,7 +135,7 @@ class InquiryMessageServiceTest {
     }
 
     @Test
-    @DisplayName("본인이 작성한 메시지를 삭제한다.")
+    @DisplayName("본인이 작성한 메시지를 삭제하면 물리적으로 삭제되지 않고 deletedAt만 채워진다.")
     void 본인_메시지_삭제_성공() {
         // given
         InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
@@ -139,9 +144,27 @@ class InquiryMessageServiceTest {
 
         // when
         inquiryMessageService.deleteMessage(room.getId(), message.getId(), 100L);
+        testEntityManager.flush();
+        testEntityManager.clear();
 
         // then
         assertThat(inquiryMessageRepository.findById(message.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("삭제된 메시지는 목록 조회에 나타나지 않는다.")
+    void 삭제된_메시지는_조회되지_않는다() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        InquiryMessage message = inquiryMessageRepository.save(
+                InquiryMessageFixture.createAdminMessage(room.getId(), 100L, "삭제될 메시지"));
+        inquiryMessageService.deleteMessage(room.getId(), message.getId(), 100L);
+
+        // when
+        var result = inquiryMessageService.getMessages(room.getId(), null, 20);
+
+        // then
+        assertThat(result.messages()).isEmpty();
     }
 
     @Test

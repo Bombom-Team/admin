@@ -1,5 +1,7 @@
 package me.bombom.api.v1.inquiry.service;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,7 @@ public class InquiryMessageService {
     private final InquiryRoomService inquiryRoomService;
     private final InquiryMessageRepository inquiryMessageRepository;
     private final InquiryMessageImageRepository inquiryMessageImageRepository;
+    private final Clock clock;
 
     @Transactional
     public InquiryMessageResponse sendMessage(Long roomId, Long adminId, SendAdminInquiryMessageRequest request) {
@@ -73,8 +76,7 @@ public class InquiryMessageService {
     @Transactional
     public void deleteMessage(Long roomId, Long messageId, Long adminId) {
         InquiryMessage message = getOwnedMessage(roomId, messageId, adminId);
-        inquiryMessageImageRepository.deleteByMessageId(message.getId());
-        inquiryMessageRepository.delete(message);
+        message.delete(LocalDateTime.now(clock));
     }
 
     private void validateRoomNotClosed(InquiryRoom room) {
