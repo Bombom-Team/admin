@@ -77,6 +77,7 @@ public class S3FileService {
             log.info("S3 Upload Success: {}", fileUrl);
             return new StoredFile(objectKey, fileUrl);
         } catch (IOException e) {
+            log.warn("S3 Upload Failed: bucket={}, key={}", targetBucketName, objectKey, e);
             throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
                     .addContext(ErrorContextKeys.OPERATION, "s3Upload");
         }
@@ -115,6 +116,7 @@ public class S3FileService {
         try {
             return s3Template.download(targetBucketName, objectKey).getURL().toString();
         } catch (IOException e) {
+            log.warn("S3 GetUrl Failed: bucket={}, key={}", targetBucketName, objectKey, e);
             throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
                     .addContext(ErrorContextKeys.OPERATION, "s3GetUrl");
         }
