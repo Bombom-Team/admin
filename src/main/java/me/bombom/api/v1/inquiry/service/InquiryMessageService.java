@@ -76,6 +76,7 @@ public class InquiryMessageService {
     @Transactional
     public void deleteMessage(Long roomId, Long messageId, Long adminId) {
         InquiryMessage message = getOwnedMessage(roomId, messageId, adminId);
+        inquiryMessageImageRepository.deleteByMessageId(message.getId());
         message.delete(LocalDateTime.now(clock));
     }
 
