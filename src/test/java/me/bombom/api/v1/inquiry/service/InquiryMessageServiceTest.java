@@ -10,6 +10,7 @@ import me.bombom.api.v1.common.config.TimeConfig;
 import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.inquiry.domain.InquiryMessage;
+import me.bombom.api.v1.inquiry.domain.InquiryMessageArrivalNotification;
 import me.bombom.api.v1.inquiry.domain.InquiryMessageImage;
 import me.bombom.api.v1.inquiry.domain.InquiryRoom;
 import me.bombom.api.v1.inquiry.domain.InquiryStatus;
@@ -18,6 +19,7 @@ import me.bombom.api.v1.inquiry.dto.request.UpdateAdminInquiryMessageRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryMessageResponse;
 import me.bombom.api.v1.inquiry.fixture.InquiryMessageFixture;
 import me.bombom.api.v1.inquiry.fixture.InquiryRoomFixture;
+import me.bombom.api.v1.inquiry.repository.InquiryMessageArrivalNotificationRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryMessageImageRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryMessageRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryRoomRepository;
@@ -29,7 +31,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
 @DataJpaTest
-@Import({ InquiryMessageService.class, InquiryRoomService.class, QuerydslConfig.class, TimeConfig.class })
+@Import({InquiryMessageService.class, InquiryRoomService.class, QuerydslConfig.class, TimeConfig.class})
 class InquiryMessageServiceTest {
 
     @Autowired
@@ -43,6 +45,9 @@ class InquiryMessageServiceTest {
 
     @Autowired
     private InquiryMessageImageRepository inquiryMessageImageRepository;
+
+    @Autowired
+    private InquiryMessageArrivalNotificationRepository inquiryMessageArrivalNotificationRepository;
 
     @Autowired
     private TestEntityManager testEntityManager;
@@ -79,6 +84,43 @@ class InquiryMessageServiceTest {
         // then
         InquiryRoom updated = inquiryRoomRepository.findById(room.getId()).orElseThrow();
         assertThat(updated.getAssigneeId()).isEqualTo(999L);
+    }
+
+    @Test
+    @DisplayName("회원 문의방에 어드민이 답변하면 알림 아웃박스가 PENDING 상태로 저장된다.")
+    void 회원_문의방_답변_시_알림_저장() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        String content = "가나다라마바사아자차카타파하가나다라마바사아자차카타파하";
+        SendAdminInquiryMessageRequest request = new SendAdminInquiryMessageRequest(content, null);
+
+        // when
+        inquiryMessageService.sendMessage(room.getId(), 100L, request);
+
+        // then
+        List<InquiryMessageArrivalNotification> notifications = inquiryMessageArrivalNotificationRepository.findAll();
+        assertSoftly(softly -> {
+            softly.assertThat(notifications).hasSize(1);
+            InquiryMessageArrivalNotification notification = notifications.get(0);
+            softly.assertThat(notification.getMemberId()).isEqualTo(1L);
+            softly.assertThat(notification.getRoomId()).isEqualTo(room.getId());
+            softly.assertThat(notification.getStatus()).isEqualTo("PENDING");
+            softly.assertThat(notification.getContent()).isEqualTo(content.substring(0, 20));
+        });
+    }
+
+    @Test
+    @DisplayName("게스트 문의방에 어드민이 답변해도 알림 아웃박스는 저장되지 않는다.")
+    void 게스트_문의방_답변_시_알림_저장되지_않는다() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createGuestRoom("guest-1", 10L));
+        SendAdminInquiryMessageRequest request = new SendAdminInquiryMessageRequest("답변입니다", null);
+
+        // when
+        inquiryMessageService.sendMessage(room.getId(), 100L, request);
+
+        // then
+        assertThat(inquiryMessageArrivalNotificationRepository.findAll()).isEmpty();
     }
 
     @Test

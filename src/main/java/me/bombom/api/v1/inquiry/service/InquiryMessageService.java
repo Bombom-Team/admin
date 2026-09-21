@@ -11,6 +11,7 @@ import me.bombom.api.v1.common.exception.CIllegalArgumentException;
 import me.bombom.api.v1.common.exception.ErrorContextKeys;
 import me.bombom.api.v1.common.exception.ErrorDetail;
 import me.bombom.api.v1.inquiry.domain.InquiryMessage;
+import me.bombom.api.v1.inquiry.domain.InquiryMessageArrivalNotification;
 import me.bombom.api.v1.inquiry.domain.InquiryMessageImage;
 import me.bombom.api.v1.inquiry.domain.InquiryRoom;
 import me.bombom.api.v1.inquiry.domain.InquiryStatus;
@@ -18,6 +19,7 @@ import me.bombom.api.v1.inquiry.dto.request.SendAdminInquiryMessageRequest;
 import me.bombom.api.v1.inquiry.dto.request.UpdateAdminInquiryMessageRequest;
 import me.bombom.api.v1.inquiry.dto.response.InquiryMessagePageResponse;
 import me.bombom.api.v1.inquiry.dto.response.InquiryMessageResponse;
+import me.bombom.api.v1.inquiry.repository.InquiryMessageArrivalNotificationRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryMessageImageRepository;
 import me.bombom.api.v1.inquiry.repository.InquiryMessageRepository;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class InquiryMessageService {
     private final InquiryRoomService inquiryRoomService;
     private final InquiryMessageRepository inquiryMessageRepository;
     private final InquiryMessageImageRepository inquiryMessageImageRepository;
+    private final InquiryMessageArrivalNotificationRepository inquiryMessageArrivalNotificationRepository;
     private final Clock clock;
 
     @Transactional
@@ -42,6 +45,7 @@ public class InquiryMessageService {
         InquiryMessage message = inquiryMessageRepository.save(
                 InquiryMessage.createAdminMessage(roomId, adminId, request.content()));
         List<InquiryMessageImage> images = saveImages(message.getId(), request.imageUrls());
+        notifyIfMember(room, request.content());
 
         return InquiryMessageResponse.of(message, images);
     }
@@ -109,6 +113,13 @@ public class InquiryMessageService {
                     .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryMessage");
         }
         return message;
+    }
+
+    private void notifyIfMember(InquiryRoom room, String content) {
+        if (room.getMemberId() != null) {
+            inquiryMessageArrivalNotificationRepository.save(
+                    new InquiryMessageArrivalNotification(room.getMemberId(), room.getId(), content));
+        }
     }
 
     private List<InquiryMessageImage> saveImages(Long messageId, List<String> imageUrls) {
