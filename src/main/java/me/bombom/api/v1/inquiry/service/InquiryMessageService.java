@@ -98,11 +98,14 @@ public class InquiryMessageService {
 
     private InquiryMessage getOwnedMessage(Long roomId, Long messageId, Long adminId) {
         InquiryMessage message = inquiryMessageRepository.findById(messageId)
-                .filter(found -> found.getRoomId().equals(roomId))
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryMessage"));
         if (!message.isWrittenByAdmin(adminId)) {
             throw new CIllegalArgumentException(ErrorDetail.FORBIDDEN_RESOURCE)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryMessage");
+        }
+        if (!message.getRoomId().equals(roomId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                     .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryMessage");
         }
         return message;
