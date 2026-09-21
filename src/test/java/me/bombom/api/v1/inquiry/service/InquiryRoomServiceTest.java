@@ -122,13 +122,26 @@ class InquiryRoomServiceTest {
     void 담당자_지정() {
         // given
         InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+        Member assignee = memberRepository.save(MemberFixture.createMember("담당자"));
 
         // when
-        inquiryRoomService.assignRoom(room.getId(), new AssignInquiryRoomRequest(100L));
+        inquiryRoomService.assignRoom(room.getId(), new AssignInquiryRoomRequest(assignee.getId()));
 
         // then
         InquiryRoom updated = inquiryRoomRepository.findById(room.getId()).orElseThrow();
-        assertThat(updated.getAssigneeId()).isEqualTo(100L);
+        assertThat(updated.getAssigneeId()).isEqualTo(assignee.getId());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 어드민을 담당자로 지정하려 하면 예외가 발생한다.")
+    void 존재하지_않는_담당자_지정_실패() {
+        // given
+        InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
+
+        // when & then
+        assertThatThrownBy(() -> inquiryRoomService.assignRoom(room.getId(), new AssignInquiryRoomRequest(999L)))
+                .isInstanceOf(CIllegalArgumentException.class)
+                .hasMessage(ErrorDetail.ENTITY_NOT_FOUND.getMessage());
     }
 
     @Test

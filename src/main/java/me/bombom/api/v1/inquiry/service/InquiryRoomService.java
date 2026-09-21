@@ -45,6 +45,7 @@ public class InquiryRoomService {
     @Transactional
     public void assignRoom(Long roomId, AssignInquiryRoomRequest request) {
         InquiryRoom room = getRoomById(roomId);
+        validateAssigneeExists(request.assigneeId());
         room.assign(request.assigneeId());
     }
 
@@ -144,6 +145,13 @@ public class InquiryRoomService {
         if (!inquiryCategoryRepository.existsById(categoryId)) {
             throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                     .addContext(ErrorContextKeys.ENTITY_TYPE, "inquiryCategory");
+        }
+    }
+
+    private void validateAssigneeExists(Long assigneeId) {
+        if (!memberRepository.existsById(assigneeId)) {
+            throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
+                    .addContext(ErrorContextKeys.ENTITY_TYPE, "member");
         }
     }
 }

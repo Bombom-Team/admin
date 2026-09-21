@@ -47,7 +47,7 @@ public interface InquiryRoomControllerApi {
     @Operation(summary = "담당자 지정/변경")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "지정 성공"),
-            @ApiResponse(responseCode = "404", description = "존재하지 않는 채팅방", content = @Content)
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 채팅방 또는 어드민", content = @Content)
     })
     void assignRoom(
             @Parameter(description = "채팅방 ID") @PathVariable @Positive Long roomId,
