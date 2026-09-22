@@ -26,8 +26,8 @@ public enum ErrorDetail {
     RESOURCE_CONFLICT(HttpStatus.CONFLICT, "M013", "요청을 처리할 수 없는 상태입니다."),
     NOTICE_IMAGE_NOT_REGISTERED(HttpStatus.BAD_REQUEST, "M014", "해당 공지사항에 등록되지 않은 이미지입니다."),
     PRIVATE_NOTICE_NOT_REPRESENTABLE(HttpStatus.BAD_REQUEST, "M015", "비공개 공지사항은 대표 공지로 지정할 수 없습니다."),
-    INQUIRY_CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "M014", "해당 카테고리를 사용 중인 문의가 있어 삭제할 수 없습니다."),
-    INQUIRY_ROOM_CLOSED(HttpStatus.BAD_REQUEST, "M015", "종료된 문의는 답변할 수 없습니다."),
+    INQUIRY_CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "M016", "해당 카테고리를 사용 중인 문의가 있어 삭제할 수 없습니다."),
+    INQUIRY_ROOM_CLOSED(HttpStatus.BAD_REQUEST, "M017", "종료된 문의는 답변할 수 없습니다."),
 
     /*
     * J : 인증
