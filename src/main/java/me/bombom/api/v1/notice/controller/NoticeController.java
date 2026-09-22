@@ -1,13 +1,14 @@
 package me.bombom.api.v1.notice.controller;
 
-import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
+import me.bombom.api.v1.notice.dto.UploadNoticeImageResponse;
+import me.bombom.api.v1.notice.service.NoticeImageService;
 import me.bombom.api.v1.notice.service.NoticeService;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,8 +26,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Validated
 @RestController
@@ -34,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class NoticeController implements NoticeControllerApi {
 
     private final NoticeService noticeService;
+    private final NoticeImageService noticeImageService;
 
     @Override
     @GetMapping
@@ -52,8 +57,8 @@ public class NoticeController implements NoticeControllerApi {
     @Override
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void createNotice(@Valid @RequestBody CreateNoticeRequest request) {
-        noticeService.createNotice(request);
+    public CreateNoticeResponse createNotice() {
+        return noticeService.createNotice();
     }
 
     @Override
@@ -62,6 +67,15 @@ public class NoticeController implements NoticeControllerApi {
             @PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long id,
             @RequestBody UpdateNoticeRequest request) {
         noticeService.updateNotice(id, request);
+    }
+
+    @Override
+    @PostMapping(value = "/{noticeId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public UploadNoticeImageResponse uploadNoticeImage(
+            @PathVariable @Positive(message = "id는 1 이상의 값이어야 합니다.") Long noticeId,
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile) {
+        return noticeImageService.uploadNoticeImage(noticeId, imageFile);
     }
 
     @Override
