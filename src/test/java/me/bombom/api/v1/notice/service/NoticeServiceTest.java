@@ -32,6 +32,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -384,6 +385,60 @@ class NoticeServiceTest {
         assertSoftly(softly -> {
             assertThat(updated.getStatus()).isEqualTo(NoticeImageAssetStatus.DELETE_PENDING);
             assertThat(updated.getDeleteRequestedAt()).isNotNull();
+        });
+    }
+
+    @Test
+    @DisplayName("상태가 섞여 있어도 요청한 이미지는 연결하고 참조가 끊긴 연결 이미지만 삭제 대기로 바꾼다.")
+    void 이미지_참조_수정시_상태별로_처리한다() {
+        // given
+        Notice notice = noticeRepository.save(Notice.builder()
+                .title("제목")
+                .content("내용")
+                .noticeCategory(NoticeCategory.NOTICE)
+                .visibility(NoticeVisibility.PRIVATE)
+                .build());
+        NoticeImageAsset newImage = noticeImageAssetRepository.save(
+                createNoticeImageAsset(notice.getId(), "notices/new.png", NoticeImageAssetStatus.UPLOADED));
+        NoticeImageAsset retainedImage = noticeImageAssetRepository.save(
+                createNoticeImageAsset(notice.getId(), "notices/retained.png", NoticeImageAssetStatus.ATTACHED));
+        NoticeImageAsset removedImage = noticeImageAssetRepository.save(
+                createNoticeImageAsset(notice.getId(), "notices/removed.png", NoticeImageAssetStatus.ATTACHED));
+        NoticeImageAsset unusedImage = noticeImageAssetRepository.save(
+                createNoticeImageAsset(notice.getId(), "notices/unused.png", NoticeImageAssetStatus.UPLOADED));
+        LocalDateTime previousDeleteRequestedAt = LocalDateTime.of(2026, 9, 1, 12, 0);
+        NoticeImageAsset pendingImage = createNoticeImageAsset(
+                notice.getId(), "notices/pending.png", NoticeImageAssetStatus.DELETE_PENDING);
+        pendingImage.markDeletePending(previousDeleteRequestedAt);
+        noticeImageAssetRepository.save(pendingImage);
+
+        UpdateNoticeRequest request = new UpdateNoticeRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(newImage.getId(), retainedImage.getId())
+        );
+
+        // when
+        noticeService.updateNotice(notice.getId(), request);
+        noticeImageAssetRepository.flush();
+
+        // then
+        assertSoftly(softly -> {
+            softly.assertThat(noticeImageAssetRepository.findById(newImage.getId()).orElseThrow().getStatus())
+                    .isEqualTo(NoticeImageAssetStatus.ATTACHED);
+            softly.assertThat(noticeImageAssetRepository.findById(retainedImage.getId()).orElseThrow().getStatus())
+                    .isEqualTo(NoticeImageAssetStatus.ATTACHED);
+            softly.assertThat(noticeImageAssetRepository.findById(removedImage.getId()).orElseThrow().getStatus())
+                    .isEqualTo(NoticeImageAssetStatus.DELETE_PENDING);
+            softly.assertThat(noticeImageAssetRepository.findById(unusedImage.getId()).orElseThrow().getStatus())
+                    .isEqualTo(NoticeImageAssetStatus.UPLOADED);
+            NoticeImageAsset savedPendingImage = noticeImageAssetRepository.findById(pendingImage.getId())
+                    .orElseThrow();
+            softly.assertThat(savedPendingImage.getStatus()).isEqualTo(NoticeImageAssetStatus.DELETE_PENDING);
+            softly.assertThat(savedPendingImage.getDeleteRequestedAt()).isEqualTo(previousDeleteRequestedAt);
         });
     }
 

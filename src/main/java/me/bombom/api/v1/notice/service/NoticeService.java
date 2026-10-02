@@ -26,9 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -122,35 +121,31 @@ public class NoticeService {
     }
 
     private void updateReferencedImages(Long noticeId, List<Long> referencedImageIds) {
-        validateReferencedImages(noticeId, referencedImageIds);
+        List<NoticeImageAsset> referencedImages = findValidatedReferencedImages(noticeId, referencedImageIds);
+        List<NoticeImageAsset> attachedImages = noticeImageAssetRepository.findAllByNoticeIdAndStatus(
+                noticeId,
+                NoticeImageAssetStatus.ATTACHED
+        );
 
-        List<NoticeImageAsset> noticeImages = noticeImageAssetRepository.findAllByNoticeId(noticeId);
-        Map<Long, NoticeImageAsset> noticeImageMap = new LinkedHashMap<>();
-        for (NoticeImageAsset noticeImage : noticeImages) {
-            noticeImageMap.put(noticeImage.getId(), noticeImage);
+        for (NoticeImageAsset referencedImage : referencedImages) {
+            referencedImage.attach();
         }
 
-        for (Long referencedImageId : referencedImageIds) {
-            noticeImageMap.get(referencedImageId).attach();
-        }
-
+        Set<Long> referencedImageIdSet = Set.copyOf(referencedImageIds);
         LocalDateTime deleteRequestedAt = LocalDateTime.now(clock);
-        for (NoticeImageAsset noticeImage : noticeImages) {
-            boolean isReferencedImage = referencedImageIds.contains(noticeImage.getId());
+        for (NoticeImageAsset attachedImage : attachedImages) {
+            boolean isReferencedImage = referencedImageIdSet.contains(attachedImage.getId());
             if (isReferencedImage) {
                 continue;
             }
 
-            boolean isAttachedImage = noticeImage.getStatus() == NoticeImageAssetStatus.ATTACHED;
-            if (isAttachedImage) {
-                noticeImage.markDeletePending(deleteRequestedAt);
-            }
+            attachedImage.markDeletePending(deleteRequestedAt);
         }
     }
 
-    private void validateReferencedImages(Long noticeId, List<Long> referencedImageIds) {
+    private List<NoticeImageAsset> findValidatedReferencedImages(Long noticeId, List<Long> referencedImageIds) {
         if (referencedImageIds.isEmpty()) {
-            return;
+            return List.of();
         }
 
         List<NoticeImageAsset> referencedImages = noticeImageAssetRepository.findAllByIdIn(referencedImageIds);
@@ -168,6 +163,8 @@ public class NoticeService {
                     .addContext("field", "referencedImageIds")
                     .addContext(ErrorContextKeys.NOTICE_ID, noticeId);
         }
+
+        return referencedImages;
     }
 
     @Transactional
