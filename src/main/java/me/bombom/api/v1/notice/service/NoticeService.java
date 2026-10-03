@@ -28,6 +28,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +49,8 @@ public class NoticeService {
                 .map(GetNoticeDetailResponse::from)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "notice")
-                        .addContext(ErrorContextKeys.OPERATION, "getNotice"));
+                        .addContext(ErrorContextKeys.NOTICE_ID, id)
+                        .addContext(ErrorContextKeys.OPERATION, "NoticeService#getNotice - findById"));
     }
 
     @Transactional
@@ -66,7 +68,7 @@ public class NoticeService {
         Notice notice = noticeRepository.findById(id)
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext(ErrorContextKeys.ENTITY_TYPE, "notice")
-                        .addContext(ErrorContextKeys.OPERATION, "findById")
+                        .addContext(ErrorContextKeys.OPERATION, "NoticeService#updateNotice - findById")
                         .addContext(ErrorContextKeys.NOTICE_ID, id));
 
         notice.update(
@@ -152,7 +154,11 @@ public class NoticeService {
         if (referencedImages.size() != referencedImageIds.size()) {
             throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                     .addContext(ErrorContextKeys.ENTITY_TYPE, "noticeImageAsset")
-                    .addContext(ErrorContextKeys.OPERATION, "findAllByIdIn");
+                    .addContext(ErrorContextKeys.NOTICE_ID, referencedImageIds.stream()
+                            .map(String::valueOf)
+                            .collect(Collectors.joining(",")))
+                    .addContext(ErrorContextKeys.OPERATION,
+                            "NoticeService#findValidatedReferencedImages - findAllByIdIn");
         }
 
         boolean containsForeignImage = referencedImages.stream()
@@ -172,7 +178,8 @@ public class NoticeService {
         if (!noticeRepository.existsById(id)) {
             throw new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                     .addContext(ErrorContextKeys.ENTITY_TYPE, "notice")
-                    .addContext(ErrorContextKeys.OPERATION, "deleteNotice");
+                    .addContext(ErrorContextKeys.NOTICE_ID, id)
+                    .addContext(ErrorContextKeys.OPERATION, "NoticeService#deleteNotice - existsById");
         }
 
         // TODO: S3 delete 지원이 추가되면 DELETE_PENDING 자산의 실제 객체 삭제 수행
