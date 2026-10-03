@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,9 @@ class NoticeServiceTest {
 
     @Autowired
     private NoticeImageAssetRepository noticeImageAssetRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Test
     @DisplayName("공지사항 초안을 생성하면 비공개 상태의 빈 공지가 저장되고 id가 반환된다.")
@@ -247,7 +251,52 @@ class NoticeServiceTest {
     private Long representativeNoticeId() {
         return noticeRepresentativeRepository.findById(NoticeRepresentative.SINGLETON_ID)
                 .orElseThrow()
-                .getNoticeId();
+                .getNotice()
+                .getId();
+    }
+
+    @Test
+    void 대표_공지를_삭제하면_대표_지정도_삭제된다() {
+        // given
+        Notice notice = noticeRepository.save(Notice.builder()
+                .title("대표 공지")
+                .content("내용")
+                .noticeCategory(NoticeCategory.NOTICE)
+                .visibility(NoticeVisibility.PUBLIC)
+                .build());
+        noticeService.updateNotice(notice.getId(), representativeRequest(true));
+        entityManager.flush();
+        entityManager.clear();
+
+        // when
+        noticeService.deleteNotice(notice.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        // then
+        assertThat(noticeRepresentativeRepository.findById(NoticeRepresentative.SINGLETON_ID)).isEmpty();
+    }
+
+    @Test
+    void 대표_지정을_해제해도_공지는_삭제되지_않는다() {
+        // given
+        Notice notice = noticeRepository.save(Notice.builder()
+                .title("대표 공지")
+                .content("내용")
+                .noticeCategory(NoticeCategory.NOTICE)
+                .visibility(NoticeVisibility.PUBLIC)
+                .build());
+        noticeService.updateNotice(notice.getId(), representativeRequest(true));
+        entityManager.flush();
+        entityManager.clear();
+
+        // when
+        noticeService.updateNotice(notice.getId(), representativeRequest(false));
+        entityManager.flush();
+        entityManager.clear();
+
+        // then
+        assertThat(noticeRepository.findById(notice.getId())).isPresent();
     }
 
     @Test

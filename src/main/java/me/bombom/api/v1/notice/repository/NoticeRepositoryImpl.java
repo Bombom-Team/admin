@@ -41,10 +41,11 @@ public class NoticeRepositoryImpl implements CustomNoticeRepository {
                                 notice.title,
                                 notice.noticeCategory,
                                 notice.visibility,
-                                noticeRepresentative.noticeId.isNotNull(),
+                                noticeRepresentative.id.isNotNull(),
                                 notice.createdAt))
                 .from(notice)
-                .leftJoin(noticeRepresentative).on(noticeRepresentative.noticeId.eq(notice.id))
+                .leftJoin(noticeRepresentative)
+                .on(noticeRepresentative.notice.eq(notice))
                 .where(
                         titleOrContentContains(request.keyword()),
                         categoryEq(request.category()))

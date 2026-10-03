@@ -90,9 +90,8 @@ public class NoticeService {
     }
 
     private void applyRepresentative(Notice notice, boolean isRepresentative) {
-        Long noticeId = notice.getId();
         if (!isRepresentative) {
-            noticeRepresentativeRepository.deleteByNoticeId(noticeId);
+            noticeRepresentativeRepository.deleteByNotice_Id(notice.getId());
             return;
         }
 
@@ -100,8 +99,8 @@ public class NoticeService {
 
         noticeRepresentativeRepository.findById(NoticeRepresentative.SINGLETON_ID)
                 .ifPresentOrElse(
-                        representative -> representative.changeTo(noticeId),
-                        () -> noticeRepresentativeRepository.save(NoticeRepresentative.of(noticeId)));
+                        representative -> representative.changeTo(notice),
+                        () -> noticeRepresentativeRepository.save(NoticeRepresentative.of(notice)));
     }
 
     private void clearRepresentativeIfNotPublic(Notice notice) {
@@ -109,7 +108,7 @@ public class NoticeService {
             return;
         }
 
-        noticeRepresentativeRepository.deleteByNoticeId(notice.getId());
+        noticeRepresentativeRepository.deleteByNotice_Id(notice.getId());
     }
 
     private void validateRepresentable(Notice notice) {

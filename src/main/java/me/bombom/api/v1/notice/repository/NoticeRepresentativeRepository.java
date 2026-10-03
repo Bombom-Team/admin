@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NoticeRepresentativeRepository extends JpaRepository<NoticeRepresentative, Byte> {
 
-    void deleteByNoticeId(Long noticeId);
+    void deleteByNotice_Id(Long noticeId);
 }
