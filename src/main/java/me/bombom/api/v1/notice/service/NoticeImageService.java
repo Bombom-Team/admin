@@ -34,8 +34,8 @@ public class NoticeImageService {
 
     @Transactional
     public UploadNoticeImageResponse uploadNoticeImage(Long noticeId, MultipartFile imageFile) {
-        Notice notice = getNotice(noticeId);
         validateImageFile(imageFile);
+        Notice notice = getNotice(noticeId);
 
         StoredFile storedFile = s3FileService.uploadToBucketWithS3Url(
                 imageFile,
