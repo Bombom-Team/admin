@@ -21,11 +21,9 @@ import me.bombom.api.v1.newsletterrequest.dto.request.UpdateNewsletterRequestDra
 import me.bombom.api.v1.newsletterrequest.dto.response.ApproveNewsletterRequestResponse;
 import me.bombom.api.v1.newsletterrequest.dto.response.NewsletterRequestDetailResponse;
 import me.bombom.api.v1.newsletterrequest.dto.response.NewsletterRequestDraftResponse;
-import me.bombom.api.v1.newsletterrequest.dto.response.NewsletterRequestReasonResponse;
 import me.bombom.api.v1.newsletterrequest.dto.response.NewsletterRequestSummaryResponse;
 import me.bombom.api.v1.newsletterrequest.repository.NewsletterRequestDraftRepository;
 import me.bombom.api.v1.newsletterrequest.repository.NewsletterRequestRepository;
-import me.bombom.api.v1.newsletterrequest.repository.NewsletterRequestSupporterRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +34,6 @@ public class NewsletterRequestService {
 
     private final NewsletterRequestRepository newsletterRequestRepository;
     private final NewsletterRequestDraftRepository newsletterRequestDraftRepository;
-    private final NewsletterRequestSupporterRepository newsletterRequestSupporterRepository;
     private final CategoryRepository categoryRepository;
     private final NewsletterService newsletterService;
 
@@ -55,17 +52,9 @@ public class NewsletterRequestService {
     }
 
     public NewsletterRequestDetailResponse getNewsletterRequest(Long id) {
-        NewsletterRequest newsletterRequest = findNewsletterRequest(id);
-        List<NewsletterRequestReasonResponse> reasons = newsletterRequestSupporterRepository
-                .findAllByNewsletterRequestIdOrderById(id)
-                .stream()
-                .filter(supporter -> supporter.getReason() != null)
-                .map(NewsletterRequestReasonResponse::from)
-                .toList();
         return NewsletterRequestDetailResponse.of(
-                newsletterRequest,
-                NewsletterRequestDraftResponse.from(findDraft(id)),
-                reasons
+                findNewsletterRequest(id),
+                NewsletterRequestDraftResponse.from(findDraft(id))
         );
     }
 

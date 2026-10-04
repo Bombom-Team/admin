@@ -1,7 +1,6 @@
 package me.bombom.api.v1.newsletterrequest.dto.response;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import me.bombom.api.v1.newsletterrequest.domain.NewsletterRequest;
 import me.bombom.api.v1.newsletterrequest.domain.NewsletterRequestStatus;
 
@@ -11,18 +10,17 @@ public record NewsletterRequestDetailResponse(
         String requestedUrl,
         Long requesterMemberId,
         NewsletterRequestStatus status,
-        int supporterCount,
+        String reason,
+        int likeCount,
         Long newsletterId,
         String rejectReason,
         LocalDateTime createdAt,
-        NewsletterRequestDraftResponse draft,
-        List<NewsletterRequestReasonResponse> reasons
+        NewsletterRequestDraftResponse draft
 ) {
 
     public static NewsletterRequestDetailResponse of(
             NewsletterRequest newsletterRequest,
-            NewsletterRequestDraftResponse draft,
-            List<NewsletterRequestReasonResponse> reasons
+            NewsletterRequestDraftResponse draft
     ) {
         return new NewsletterRequestDetailResponse(
                 newsletterRequest.getId(),
@@ -30,12 +28,12 @@ public record NewsletterRequestDetailResponse(
                 newsletterRequest.getRequestedUrl(),
                 newsletterRequest.getRequesterMemberId(),
                 newsletterRequest.getStatus(),
-                newsletterRequest.getSupporterCount(),
+                newsletterRequest.getReason(),
+                newsletterRequest.getLikeCount(),
                 newsletterRequest.getNewsletterId(),
                 newsletterRequest.getRejectReason(),
                 newsletterRequest.getCreatedAt(),
-                draft,
-                reasons
+                draft
         );
     }
 }

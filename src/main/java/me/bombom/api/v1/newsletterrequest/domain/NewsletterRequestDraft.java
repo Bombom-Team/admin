@@ -39,7 +39,7 @@ public class NewsletterRequestDraft extends BaseEntity {
     @Column(nullable = false)
     private Long newsletterRequestId;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private DraftCollectStatus collectStatus;
 

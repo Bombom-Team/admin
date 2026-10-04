@@ -19,7 +19,6 @@ import me.bombom.api.v1.newsletterrequest.domain.DraftContent;
 import me.bombom.api.v1.newsletterrequest.domain.NewsletterRequest;
 import me.bombom.api.v1.newsletterrequest.domain.NewsletterRequestDraft;
 import me.bombom.api.v1.newsletterrequest.domain.NewsletterRequestStatus;
-import me.bombom.api.v1.newsletterrequest.domain.NewsletterRequestSupporter;
 import me.bombom.api.v1.newsletterrequest.dto.request.RejectNewsletterRequestRequest;
 import me.bombom.api.v1.newsletterrequest.dto.request.UpdateNewsletterRequestDraftRequest;
 import me.bombom.api.v1.newsletterrequest.dto.response.ApproveNewsletterRequestResponse;
@@ -27,7 +26,6 @@ import me.bombom.api.v1.newsletterrequest.dto.response.NewsletterRequestDetailRe
 import me.bombom.api.v1.newsletterrequest.dto.response.NewsletterRequestSummaryResponse;
 import me.bombom.api.v1.newsletterrequest.repository.NewsletterRequestDraftRepository;
 import me.bombom.api.v1.newsletterrequest.repository.NewsletterRequestRepository;
-import me.bombom.api.v1.newsletterrequest.repository.NewsletterRequestSupporterRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -45,9 +43,6 @@ class NewsletterRequestServiceTest {
 
     @Autowired
     private NewsletterRequestDraftRepository newsletterRequestDraftRepository;
-
-    @Autowired
-    private NewsletterRequestSupporterRepository newsletterRequestSupporterRepository;
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -202,20 +197,18 @@ class NewsletterRequestServiceTest {
     }
 
     @Test
-    void 상세_조회는_추천_이유가_있는_공감만_보여준다() {
+    void 상세_조회는_신청자의_추천_이유와_초안을_함께_보여준다() {
         // given
-        NewsletterRequest newsletterRequest = saveRequest("weeklydev.stibee.com", NewsletterRequestStatus.RECEIVED);
+        NewsletterRequest newsletterRequest = newsletterRequestRepository.save(NewsletterRequest.builder()
+                .requestedName("주간 개발 노트")
+                .requestedUrl("https://weeklydev.stibee.com")
+                .normalizedUrl("weeklydev.stibee.com")
+                .requesterMemberId(1L)
+                .reason("출근길에 읽기 좋아요")
+                .likeCount(3)
+                .build());
         newsletterRequestDraftRepository.save(NewsletterRequestDraft.builder()
                 .newsletterRequestId(newsletterRequest.getId())
-                .build());
-        newsletterRequestSupporterRepository.save(NewsletterRequestSupporter.builder()
-                .newsletterRequestId(newsletterRequest.getId())
-                .memberId(1L)
-                .reason("출근길에 읽기 좋아요")
-                .build());
-        newsletterRequestSupporterRepository.save(NewsletterRequestSupporter.builder()
-                .newsletterRequestId(newsletterRequest.getId())
-                .memberId(2L)
                 .build());
 
         // when
@@ -223,7 +216,8 @@ class NewsletterRequestServiceTest {
 
         // then
         assertSoftly(softly -> {
-            softly.assertThat(response.reasons()).extracting("reason").containsExactly("출근길에 읽기 좋아요");
+            softly.assertThat(response.reason()).isEqualTo("출근길에 읽기 좋아요");
+            softly.assertThat(response.likeCount()).isEqualTo(3);
             softly.assertThat(response.draft().collectStatus()).isEqualTo(DraftCollectStatus.PENDING);
             softly.assertThat(response.draft().missingFields()).contains("name", "email", "categoryId");
         });

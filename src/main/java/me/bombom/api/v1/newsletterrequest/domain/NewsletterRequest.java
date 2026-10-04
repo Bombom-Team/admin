@@ -46,12 +46,18 @@ public class NewsletterRequest extends BaseEntity {
     @Column(nullable = false)
     private Long requesterMemberId;
 
-    @Column(nullable = false, length = 20)
+    @Column(length = 200)
+    private String reason;
+
+    @Column(nullable = false)
+    private boolean isNotificationEnabled = true;
+
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private NewsletterRequestStatus status;
 
     @Column(nullable = false)
-    private int supporterCount;
+    private int likeCount;
 
     private Long newsletterId;
 
@@ -64,16 +70,20 @@ public class NewsletterRequest extends BaseEntity {
             @NonNull String requestedUrl,
             @NonNull String normalizedUrl,
             @NonNull Long requesterMemberId,
+            String reason,
+            boolean isNotificationEnabled,
             NewsletterRequestStatus status,
-            int supporterCount
+            int likeCount
     ) {
         this.id = id;
         this.requestedName = requestedName;
         this.requestedUrl = requestedUrl;
         this.normalizedUrl = normalizedUrl;
         this.requesterMemberId = requesterMemberId;
+        this.reason = reason;
+        this.isNotificationEnabled = isNotificationEnabled;
         this.status = status != null ? status : NewsletterRequestStatus.RECEIVED;
-        this.supporterCount = supporterCount > 0 ? supporterCount : 1;
+        this.likeCount = likeCount;
     }
 
     public void markReviewing() {
