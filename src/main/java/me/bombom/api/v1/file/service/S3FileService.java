@@ -83,6 +83,28 @@ public class S3FileService {
         }
     }
 
+    /**
+     * 외부에서 내려받은 이미지 바이트를 올린다. 리사이즈할 수 없는 형식(svg, ico 등)은 원본 그대로 올린다.
+     */
+    public StoredFile uploadImageBytesToBucketWithMetadata(
+            byte[] content,
+            String contentType,
+            String targetBucketName,
+            String prefix
+    ) {
+        String objectKey = createStoreFileName(prefix, getExtensionFromContentType(contentType));
+        try (InputStream uploadStream = resizeOrOriginal(content)) {
+            s3Template.upload(targetBucketName, objectKey, uploadStream);
+            String fileUrl = getFileUrl(targetBucketName, objectKey, cloudFrontDomain);
+            log.info("S3 Upload Success: {}", fileUrl);
+            return new StoredFile(objectKey, fileUrl);
+        } catch (IOException e) {
+            log.warn("S3 Upload Failed: bucket={}, key={}", targetBucketName, objectKey, e);
+            throw new CServerErrorException(ErrorDetail.EXTERNAL_API_ERROR)
+                    .addContext(ErrorContextKeys.OPERATION, "s3Upload");
+        }
+    }
+
     public List<String> listChallengeImages() {
         return s3Template.listObjects(challengeBucketName, "").stream()
                 .map(resource -> "https://" + challengeBucketName + ".s3." + region + ".amazonaws.com/" + resource.getFilename())
@@ -131,13 +153,24 @@ public class S3FileService {
         return new ByteArrayInputStream(outputStream.toByteArray());
     }
 
+    private InputStream resizeOrOriginal(byte[] content) {
+        try {
+            return resizeImage(new ByteArrayInputStream(content));
+        } catch (IOException e) {
+            return new ByteArrayInputStream(content);
+        }
+    }
+
     private boolean isImage(MultipartFile file) {
         String contentType = file.getContentType();
         return contentType != null && contentType.startsWith("image/");
     }
 
     private String createStoreFileName(MultipartFile file, String prefix) {
-        String ext = extractExt(file);
+        return createStoreFileName(prefix, extractExt(file));
+    }
+
+    private String createStoreFileName(String prefix, String ext) {
         String uuid = UUID.randomUUID().toString();
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
         return prefix + "/" + datePath + "/" + uuid + "." + ext;
@@ -167,6 +200,12 @@ public class S3FileService {
         }
         if (contentType.contains("jpeg")) {
             return "jpg";
+        }
+        if (contentType.contains("svg")) {
+            return "svg";
+        }
+        if (contentType.contains("icon")) {
+            return "ico";
         }
 
         return "jpg";

@@ -43,7 +43,7 @@ public class NewsletterService {
     private final CategoryRepository categoryRepository;
 
     @Transactional
-    public void create(CreateNewsletterRequest request) {
+    public Long create(CreateNewsletterRequest request) {
         Category category = categoryRepository.findByName(request.category())
                 .orElseThrow(() -> new CIllegalArgumentException(ErrorDetail.ENTITY_NOT_FOUND)
                         .addContext("category", request.category()));
@@ -52,6 +52,7 @@ public class NewsletterService {
         Newsletter newsletter = newsletterRepository.save(request.toNewsletterEntity(newsletterDetail.getId(), category.getId()));
         newsletterPreviousPolicyRepository.save(request.toNewsletterPreviousPolicy(newsletter.getId()));
         newsletterSubscriptionCountRepository.save(NewsletterSubscriptionCount.from(newsletter.getId()));
+        return newsletter.getId();
     }
 
     public List<GetNewsletterSummaryResponse> getNewsletters(GetNewslettersRequest request) {

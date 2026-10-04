@@ -108,6 +108,7 @@ dependencies {
 
     // html parsing
     implementation("org.jsoup:jsoup:1.21.2")
+    implementation("com.anthropic:anthropic-java:2.34.0")
 }
 
 // Querydsl 생성된 파일 정리

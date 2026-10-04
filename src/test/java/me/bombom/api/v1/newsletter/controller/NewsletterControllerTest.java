@@ -16,6 +16,7 @@ import me.bombom.api.v1.newsletter.service.NewsletterService;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -62,7 +63,7 @@ class NewsletterControllerTest extends ControllerTestSupport {
                 0
         );
 
-        doNothing().when(newsletterService).create(any(CreateNewsletterRequest.class));
+        doReturn(1L).when(newsletterService).create(any(CreateNewsletterRequest.class));
 
         // when & then
         mockMvc.perform(post("/admin/api/v1/newsletters")
