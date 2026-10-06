@@ -19,7 +19,6 @@ public enum ErrorContextKeys {
     MEMBER_ID("memberId"),
     ARTICLE_ID("articleId"),
     NEWSLETTER_ID("newsletterId"),
-    NOTICE_ID("noticeId"),
     ENTITY_TYPE("entityType"),
     ACTUAL_OWNER_ID("actualOwnerId"),
     OPERATION("operation"),
