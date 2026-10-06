@@ -2,7 +2,6 @@ package me.bombom.api.v1.notice.fixture;
 
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
-import me.bombom.api.v1.notice.domain.NoticeVisibility;
 
 import static org.instancio.Select.field;
 
@@ -20,7 +19,6 @@ public class NoticeFixture {
                 .set(field(Notice::getTitle), title)
                 .set(field(Notice::getContent), content)
                 .set(field(Notice::getNoticeCategory), category)
-                .set(field(Notice::getVisibility), NoticeVisibility.PUBLIC)
                 .create();
     }
 }

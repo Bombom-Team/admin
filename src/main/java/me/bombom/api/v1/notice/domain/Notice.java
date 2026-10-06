@@ -13,6 +13,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 @Entity
 @Getter
@@ -23,39 +24,30 @@ public class Notice extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "mediumtext")
+    @Column(nullable = false, columnDefinition = "mediumtext")
     private String content;
-
-    @Enumerated(value = EnumType.STRING)
-    private NoticeCategory noticeCategory;
 
     @Column(nullable = false)
     @Enumerated(value = EnumType.STRING)
-    private NoticeVisibility visibility;
+    private NoticeCategory noticeCategory;
 
     @Builder
     public Notice(
             Long id,
-            String title,
-            String content,
-            NoticeCategory noticeCategory,
-            NoticeVisibility visibility
+            @NonNull String title,
+            @NonNull String content,
+            @NonNull NoticeCategory noticeCategory
     ) {
         this.id = id;
         this.title = title;
         this.content = content;
         this.noticeCategory = noticeCategory;
-        this.visibility = visibility != null ? visibility : NoticeVisibility.PRIVATE;
     }
 
-    public void update(
-            String title,
-            String content,
-            NoticeCategory noticeCategory,
-            NoticeVisibility visibility
-    ) {
+    public void update(String title, String content, NoticeCategory noticeCategory) {
         if (title != null) {
             this.title = title;
         }
@@ -64,9 +56,6 @@ public class Notice extends BaseEntity {
         }
         if (noticeCategory != null) {
             this.noticeCategory = noticeCategory;
-        }
-        if (visibility != null) {
-            this.visibility = visibility;
         }
     }
 }

@@ -6,7 +6,6 @@ import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.QGetNoticeResponse;
 
 import static me.bombom.api.v1.notice.domain.QNotice.notice;
-import static me.bombom.api.v1.notice.domain.QNoticeRepresentative.noticeRepresentative;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -39,13 +38,9 @@ public class NoticeRepositoryImpl implements CustomNoticeRepository {
                         new QGetNoticeResponse(
                                 notice.id,
                                 notice.title,
-                                notice.noticeCategory,
-                                notice.visibility,
-                                noticeRepresentative.id.isNotNull(),
+                                notice.noticeCategory.stringValue(),
                                 notice.createdAt))
                 .from(notice)
-                .leftJoin(noticeRepresentative)
-                .on(noticeRepresentative.notice.eq(notice))
                 .where(
                         titleOrContentContains(request.keyword()),
                         categoryEq(request.category()))

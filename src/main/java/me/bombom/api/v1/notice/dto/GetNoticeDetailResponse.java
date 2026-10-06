@@ -1,6 +1,6 @@
 package me.bombom.api.v1.notice.dto;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import me.bombom.api.v1.notice.domain.Notice;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
 
@@ -8,7 +8,7 @@ public record GetNoticeDetailResponse(
         String title,
         NoticeCategory noticeCategory,
         String content,
-        LocalDateTime createdAt
+        LocalDate createdAt
 ) {
 
     public static GetNoticeDetailResponse from(Notice notice) {
@@ -16,6 +16,6 @@ public record GetNoticeDetailResponse(
                 notice.getTitle(),
                 notice.getNoticeCategory(),
                 notice.getContent(),
-                notice.getCreatedAt());
+                notice.getCreatedAt().toLocalDate());
     }
 }
