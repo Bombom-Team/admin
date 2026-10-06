@@ -45,7 +45,7 @@ public class InquiryMessageService {
         InquiryMessage message = inquiryMessageRepository.save(
                 InquiryMessage.createAdminMessage(roomId, adminId, request.content()));
         List<InquiryMessageImage> images = saveImages(message.getId(), request.imageUrls());
-        notifyIfMember(room, request.content());
+        notifyIfMember(room.getMemberId(), message.getId());
 
         return InquiryMessageResponse.of(message, images);
     }
@@ -115,10 +115,10 @@ public class InquiryMessageService {
         return message;
     }
 
-    private void notifyIfMember(InquiryRoom room, String content) {
-        if (room.getMemberId() != null) {
+    private void notifyIfMember(Long memberId, Long messageId) {
+        if (memberId != null) {
             inquiryMessageArrivalNotificationRepository.save(
-                    new InquiryMessageArrivalNotification(room.getMemberId(), room.getId(), content));
+                    new InquiryMessageArrivalNotification(memberId, messageId));
         }
     }
 

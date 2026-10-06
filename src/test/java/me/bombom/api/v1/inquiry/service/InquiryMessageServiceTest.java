@@ -91,11 +91,10 @@ class InquiryMessageServiceTest {
     void 회원_문의방_답변_시_알림_저장() {
         // given
         InquiryRoom room = inquiryRoomRepository.save(InquiryRoomFixture.createMemberRoom(1L, 10L));
-        String content = "가나다라마바사아자차카타파하가나다라마바사아자차카타파하";
-        SendAdminInquiryMessageRequest request = new SendAdminInquiryMessageRequest(content, null);
+        SendAdminInquiryMessageRequest request = new SendAdminInquiryMessageRequest("답변입니다", null);
 
         // when
-        inquiryMessageService.sendMessage(room.getId(), 100L, request);
+        InquiryMessageResponse response = inquiryMessageService.sendMessage(room.getId(), 100L, request);
 
         // then
         List<InquiryMessageArrivalNotification> notifications = inquiryMessageArrivalNotificationRepository.findAll();
@@ -103,9 +102,8 @@ class InquiryMessageServiceTest {
             softly.assertThat(notifications).hasSize(1);
             InquiryMessageArrivalNotification notification = notifications.get(0);
             softly.assertThat(notification.getMemberId()).isEqualTo(1L);
-            softly.assertThat(notification.getRoomId()).isEqualTo(room.getId());
             softly.assertThat(notification.getStatus()).isEqualTo("PENDING");
-            softly.assertThat(notification.getContent()).isEqualTo(content.substring(0, 20));
+            softly.assertThat(notification.getMessageId()).isEqualTo(response.id());
         });
     }
 

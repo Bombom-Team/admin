@@ -17,7 +17,6 @@ import me.bombom.api.v1.common.BaseEntity;
 public class InquiryMessageArrivalNotification extends BaseEntity {
 
     private static final String STATUS_PENDING = "PENDING";
-    private static final int CONTENT_MAX_LENGTH = 20;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,23 +36,12 @@ public class InquiryMessageArrivalNotification extends BaseEntity {
     private String lastError;
 
     @Column(nullable = false)
-    private Long roomId;
+    private Long messageId;
 
-    @Column(nullable = false, length = CONTENT_MAX_LENGTH)
-    private String content;
-
-    public InquiryMessageArrivalNotification(Long memberId, Long roomId, String content) {
+    public InquiryMessageArrivalNotification(Long memberId, Long messageId) {
         this.memberId = memberId;
-        this.roomId = roomId;
-        this.content = truncate(content);
+        this.messageId = messageId;
         this.status = STATUS_PENDING;
         this.attempts = 0;
-    }
-
-    private static String truncate(String content) {
-        if (content == null || content.length() <= CONTENT_MAX_LENGTH) {
-            return content;
-        }
-        return content.substring(0, CONTENT_MAX_LENGTH);
     }
 }
