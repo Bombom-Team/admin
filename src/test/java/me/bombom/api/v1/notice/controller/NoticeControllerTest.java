@@ -2,11 +2,14 @@ package me.bombom.api.v1.notice.controller;
 
 import me.bombom.api.v1.common.support.ControllerTestSupport;
 import me.bombom.api.v1.notice.domain.NoticeCategory;
-import me.bombom.api.v1.notice.dto.CreateNoticeRequest;
+import me.bombom.api.v1.notice.domain.NoticeVisibility;
+import me.bombom.api.v1.notice.dto.CreateNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeDetailResponse;
 import me.bombom.api.v1.notice.dto.GetNoticeResponse;
 import me.bombom.api.v1.notice.dto.GetNoticesRequest;
 import me.bombom.api.v1.notice.dto.UpdateNoticeRequest;
+import me.bombom.api.v1.notice.dto.UploadNoticeImageResponse;
+import me.bombom.api.v1.notice.service.NoticeImageService;
 import me.bombom.api.v1.notice.service.NoticeService;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -15,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -28,6 +32,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
@@ -38,26 +43,40 @@ class NoticeControllerTest extends ControllerTestSupport {
         @MockitoBean
         private NoticeService noticeService;
 
+        @MockitoBean
+        private NoticeImageService noticeImageService;
+
         @Test
-        @DisplayName("공지사항을 등록한다.")
-        void createNotice() throws Exception {
+        @DisplayName("공지사항 이미지를 업로드하면 201과 함께 이미지 id와 URL을 반환한다.")
+        void uploadNoticeImage() throws Exception {
                 // given
-                // noticeCategory Enum 바인딩 확인을 위해 String으로 요청 바디를 작성
-                String requestBody = """
-                                {
-                                    "title": "제목",
-                                    "content": "내용",
-                                    "noticeCategory": "NOTICE"
-                                }
-                                """;
+                MockMultipartFile imageFile = new MockMultipartFile("imageFile", "notice.png", "image/png",
+                                "content".getBytes());
+                given(noticeImageService.uploadNoticeImage(1L, imageFile))
+                                .willReturn(new UploadNoticeImageResponse(10L, "https://cdn.bombom.me/notices/202609/notice.png"));
 
                 // when & then
-                mockMvc.perform(post("/admin/api/v1/notices")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody))
-                                .andExpect(status().isCreated());
+                mockMvc.perform(multipart("/admin/api/v1/notices/{noticeId}/images", 1L)
+                                .file(imageFile)
+                                .with(csrf()))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.imageId").value(10L))
+                                .andExpect(jsonPath("$.imageUrl")
+                                                .value("https://cdn.bombom.me/notices/202609/notice.png"));
+        }
 
-                verify(noticeService).createNotice(any(CreateNoticeRequest.class));
+        @Test
+        @DisplayName("공지사항 초안을 생성하고 공지 id를 반환한다.")
+        void createNotice() throws Exception {
+                // given
+                given(noticeService.createNotice()).willReturn(new CreateNoticeResponse(1L));
+
+                // when & then
+                mockMvc.perform(post("/admin/api/v1/notices"))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.noticeId").value(1L));
+
+                verify(noticeService).createNotice();
         }
 
         @Test
@@ -65,7 +84,7 @@ class NoticeControllerTest extends ControllerTestSupport {
         void updateNotice() throws Exception {
                 // given
                 UpdateNoticeRequest updateNoticeRequest = new UpdateNoticeRequest("수정 제목", "수정 내용",
-                                NoticeCategory.UPDATE);
+                                NoticeCategory.UPDATE, NoticeVisibility.PUBLIC, true, null);
 
                 // when & then
                 mockMvc.perform(patch("/admin/api/v1/notices/1")
@@ -82,7 +101,7 @@ class NoticeControllerTest extends ControllerTestSupport {
         @DisplayName("공지사항을 일부만 수정한다.")
         void updateNotice_partial() throws Exception {
                 // given
-                UpdateNoticeRequest updateNoticeRequest = new UpdateNoticeRequest("수정 제목", null, null);
+                UpdateNoticeRequest updateNoticeRequest = new UpdateNoticeRequest("수정 제목", null, null, null, null, null);
 
                 // when & then
                 mockMvc.perform(patch("/admin/api/v1/notices/1")
@@ -111,7 +130,13 @@ class NoticeControllerTest extends ControllerTestSupport {
         @DisplayName("공지사항 목록을 조회한다.")
         void getNotices() throws Exception {
                 // given
-                GetNoticeResponse response = new GetNoticeResponse(1L, "제목", "NOTICE", java.time.LocalDate.now());
+                GetNoticeResponse response = new GetNoticeResponse(
+                                1L,
+                                "제목",
+                                NoticeCategory.NOTICE,
+                                NoticeVisibility.PUBLIC,
+                                true,
+                                java.time.LocalDateTime.of(2026, 8, 30, 1, 23, 45));
                 PageImpl<GetNoticeResponse> result = new PageImpl<>(List.of(response), PageRequest.of(0, 10), 1);
 
                 given(noticeService.getNotices(any(GetNoticesRequest.class), any(Pageable.class)))
@@ -124,7 +149,12 @@ class NoticeControllerTest extends ControllerTestSupport {
                                 .param("size", "10"))
                                 .andDo(print())
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.content[0].title").value("제목"));
+                                .andExpect(jsonPath("$.content[0].id").value(1L))
+                                .andExpect(jsonPath("$.content[0].title").value("제목"))
+                                .andExpect(jsonPath("$.content[0].noticeCategory").value("NOTICE"))
+                                .andExpect(jsonPath("$.content[0].visibility").value("PUBLIC"))
+                                .andExpect(jsonPath("$.content[0].isRepresentative").value(true))
+                                .andExpect(jsonPath("$.content[0].createdAt").value("2026-08-30T01:23:45"));
         }
 
         @Test
@@ -135,7 +165,7 @@ class NoticeControllerTest extends ControllerTestSupport {
                                 "제목",
                                 NoticeCategory.NOTICE,
                                 "내용",
-                                java.time.LocalDate.now());
+                                java.time.LocalDateTime.of(2026, 8, 30, 1, 23, 45));
 
                 given(noticeService.getNotice(1L)).willReturn(response);
 
@@ -145,7 +175,8 @@ class NoticeControllerTest extends ControllerTestSupport {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.title").value("제목"))
                                 .andExpect(jsonPath("$.noticeCategory").value("NOTICE"))
-                                .andExpect(jsonPath("$.content").value("내용"));
+                                .andExpect(jsonPath("$.content").value("내용"))
+                                .andExpect(jsonPath("$.createdAt").value("2026-08-30T01:23:45"));
         }
 
         @Test
