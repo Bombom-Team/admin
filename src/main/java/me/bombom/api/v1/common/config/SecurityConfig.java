@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.session.web.http.CookieSerializer;
@@ -20,23 +19,11 @@ import java.time.Duration;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${spring.profiles.active}")
-    private String activeProfile;
-
     @Value("${server.servlet.session.cookie.name}")
     private String cookieName;
 
     @Value("${server.servlet.session.cookie.domain}")
     private String cookieDomain;
-
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return web -> web.ignoring()
-                .requestMatchers(
-                        "/swagger-ui/**", "/v3/api-docs/**", "/actuator/health",
-                        "/admin/v3/api-docs/**", "/admin/swagger-ui/**", "/admin/swagger-ui.html",
-                        "/admin/api-docs/**");
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -45,15 +32,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> {
-                    if ("local".equalsIgnoreCase(activeProfile)) {
-                        auth.requestMatchers("/admin/**").permitAll();
-                    } else {
-                        // ROLE_2로 넘어옴 hasAnyRole("2"). Spring Security가 알아서 ROLE_을 붙여서 검사함.
-                        auth.requestMatchers("/admin/**").hasAnyRole("2");
-                    }
-                    auth.anyRequest().authenticated();
-                });
+                .logout(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest()
+                        .hasRole("2"));
         return http.build();
     }
 
