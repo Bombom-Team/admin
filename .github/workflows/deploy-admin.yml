@@ -6,130 +6,122 @@ on:
       - server
     paths-ignore:
       - 'src/main/resources/lambda-playwright/**'
+  workflow_dispatch:
+    inputs:
+      rollback_sha:
+        description: "롤백할 커밋 SHA (40자리). 비우면 선택한 브랜치 최신 커밋을 빌드·배포"
+        required: false
+        type: string
+
+concurrency:
+  group: admin-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  TARGET_SHA: ${{ inputs.rollback_sha || github.sha }}
+  DOCKER_IMAGE_TAG: admin-${{ inputs.rollback_sha || github.sha }}
+  ECR_IMAGE: ${{ secrets.ECR_IMAGE }}
+  ECR_REGION: ap-northeast-2
 
 jobs:
-  build:
+  docker-image:
     runs-on: ubuntu-latest
 
     steps:
       - name: 코드 체크아웃
+        if: ${{ !inputs.rollback_sha }}
         uses: actions/checkout@v4
 
       - name: JDK 21 설정
+        if: ${{ !inputs.rollback_sha }}
         uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: temurin
           cache: gradle
 
-      - name: application.yml 생성
+      - name: application.yml 생성 (Test)
+        if: ${{ !inputs.rollback_sha }}
         shell: bash
         env:
-          APPLICATION_PROD_PROPERTIES: ${{ secrets.APPLICATION_ADMIN_PROPERTIES }}
           APPLICATION_TEST_PROPERTIES: ${{ secrets.APPLICATION_ADMIN_TEST_PROPERTIES }}
         run: |
-          mkdir -p src/main/resources src/test/resources
-          # Admin은 보통 Prod 프로필을 사용하므로 해당 시크릿을 주입
-          printf '%s' "${APPLICATION_PROD_PROPERTIES:-}" > src/main/resources/application.yml
+          mkdir -p src/test/resources
           printf '%s' "${APPLICATION_TEST_PROPERTIES:-}" > src/test/resources/application.yml
 
       - name: 빌드 (테스트 포함)
+        if: ${{ !inputs.rollback_sha }}
         shell: bash
         env:
           SPRING_PROFILES_ACTIVE: test
-          # 테스트 시 필요한 경우 추가
         run: |
           ./gradlew clean build --no-daemon
 
       - name: Docker Buildx 설정
+        if: ${{ !inputs.rollback_sha }}
         uses: docker/setup-buildx-action@v3
 
-      - name: DockerHub 로그인
-        uses: docker/login-action@v3
+      - name: AWS 인증
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.ECR_REGION }}
+
+      - name: ECR 로그인
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Docker 이미지 빌드 및 푸시
+        if: ${{ !inputs.rollback_sha }}
         run: |
-          if ! docker buildx inspect ci-builder &>/dev/null; then
-            docker buildx create --use --name ci-builder
-          else
-            docker buildx use ci-builder
-          fi
-          
-          # 캐시 효율을 위해 bombom-admin:buildcache 태그 활용
           docker buildx build \
             --platform linux/arm64,linux/amd64 \
-            --cache-from=type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/bom-bom:admin-buildcache \
-            --cache-to=type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/bom-bom:admin-buildcache,mode=max \
-            -t ${{ secrets.DOCKERHUB_USERNAME }}/bom-bom:admin \
+            --cache-from=type=gha,scope=admin \
+            --cache-to=type=gha,scope=admin,mode=max \
+            -t ${{ env.ECR_IMAGE }}:${{ env.DOCKER_IMAGE_TAG }} \
             --push .
+          echo "✅ Docker 이미지 푸시 완료"
+
+      - name: 롤백 대상 확인
+        if: ${{ inputs.rollback_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${TARGET_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "❌ rollback_sha는 40자리 커밋 SHA여야 합니다: ${TARGET_SHA}"
+            exit 1
+          fi
+          docker manifest inspect "${{ env.ECR_IMAGE }}:${{ env.DOCKER_IMAGE_TAG }}" > /dev/null
+          echo "✅ 롤백 대상 이미지 확인 완료: ${TARGET_SHA}"
 
   deploy:
-    needs: build
+    needs: docker-image
     runs-on: [ self-hosted, admin ]
 
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: Docker 이미지 Pull
-        run: |
-          IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bom-bom:admin
-          docker pull "$IMAGE"
-
-      - name: 이미지 변경 여부 확인
-        id: compare_digest
-        run: |
-          IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/bom-bom:admin
-          NEW=$(docker inspect --format='{{.Id}}' "$IMAGE")
-          
-          # 실행 중인 컨테이너 이름: bombom-admin (docker-compose-admin.yml 기준)
-          if docker inspect bombom-admin &>/dev/null; then
-            CURRENT=$(docker inspect --format='{{.Image}}' bombom-admin)
-          else
-            CURRENT="not_found"
-          fi
-          
-          echo "new_image_id=$NEW" >> $GITHUB_OUTPUT
-          echo "current_image_id=$CURRENT" >> $GITHUB_OUTPUT
-          
-          if [ "$NEW" = "$CURRENT" ]; then
-            echo "Image unchanged. Skipping deployment."
-            echo "skip_deploy=true" >> $GITHUB_ENV
-          else
-            echo "skip_deploy=false" >> $GITHUB_ENV
-          fi
-
-      - name: .env 파일 생성
-        if: env.skip_deploy == 'false'
-        env:
-          MAIL_SERVER_INTERNAL_API_KEY: ${{ secrets.MAIL_SERVER_INTERNAL_API_KEY }}
-        run: |
-          # docker-compose-admin.yml에서 사용하는 환경변수 매핑
-          echo "RDS_ENDPOINT=${{ secrets.PROD_RDS_ENDPOINT }}" >> .env
-          echo "DATABASE=${{ secrets.PROD_DATABASE }}" >> .env
-          echo "MYSQL_USER=${{ secrets.PROD_MYSQL_USER }}" >> .env
-          echo "MYSQL_PASSWORD=${{ secrets.PROD_MYSQL_PASSWORD }}" >> .env
-          echo "PERSONAL_ACCESS_TOKEN=${{ secrets.PERSONAL_ACCESS_TOKEN }}" >> .env
-          printf 'MAIL_SERVER_INTERNAL_API_KEY=%s\n' "$MAIL_SERVER_INTERNAL_API_KEY" >> .env
+      - name: AWS 인증
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.ECR_REGION }}
 
       - name: 컨테이너 재배포
-        if: env.skip_deploy == 'false'
         shell: bash
-        run: |
-          set -euo pipefail
-          
-          # 안전하게 내리고 올리기
-          docker compose --env-file .env -f docker-compose-admin.yml down || true
-          
-          docker compose --env-file .env -f docker-compose-admin.yml up -d
-          
+        env:
+          DOCKER_IMAGE: ${{ env.ECR_IMAGE }}:${{ env.DOCKER_IMAGE_TAG }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          MAIL_SERVER_INTERNAL_API_KEY: ${{ secrets.MAIL_SERVER_INTERNAL_API_KEY }}
+        run: bash scripts/deploy/start.sh
+
       - name: Docker 리소스 정리
-        if: env.skip_deploy == 'false'
         run: |
           echo "Docker 리소스 정리 시작"
           docker container prune -f --filter "until=24h"
-          docker image prune -f --filter "until=24h"
+          docker image prune -a -f --filter "until=72h"
           echo "리소스 정리 완료"
