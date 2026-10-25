@@ -11,9 +11,9 @@ on:
           - remove
         required: true
       ip:
-        description: 공인 IPv4 주소 (등록할 때만 입력)
+        description: 등록하거나 삭제할 공인 IPv4 주소
         type: string
-        required: false
+        required: true
 
 permissions: {}
 
@@ -28,7 +28,7 @@ jobs:
     runs-on: [self-hosted, linux, dev-ip]
     timeout-minutes: 5
     steps:
-      - name: 내 IP 등록 또는 삭제
+      - name: 지정한 IP 등록 또는 삭제
         shell: bash
         env:
           ACTION: ${{ inputs.action }}
@@ -45,21 +45,16 @@ jobs:
           action = os.environ['ACTION']
           if action not in ('register', 'remove'):
               sys.exit('register 또는 remove 작업만 허용합니다.')
-          if action == 'register':
-              try:
-                  address = ipaddress.IPv4Address(os.environ['DEV_IP'].strip())
-              except ipaddress.AddressValueError:
-                  sys.exit('등록할 공인 IPv4 주소를 입력하세요.')
-              if not address.is_global or address.is_multicast:
-                  sys.exit('사설·예약 주소가 아닌 공인 IPv4 주소를 입력하세요.')
+          try:
+              address = ipaddress.IPv4Address(os.environ['DEV_IP'].strip())
+          except ipaddress.AddressValueError:
+              sys.exit('등록하거나 삭제할 공인 IPv4 주소를 입력하세요.')
+          if not address.is_global or address.is_multicast:
+              sys.exit('사설·예약 주소가 아닌 공인 IPv4 주소를 입력하세요.')
           PY
 
-          if [[ "$ACTION" == register ]]; then
-            DEV_IP="$(printf '%s' "$DEV_IP" | tr -d '[:space:]')"
-            printf '::add-mask::%s\n' "$DEV_IP"
-          else
-            DEV_IP=''
-          fi
+          DEV_IP="$(printf '%s' "$DEV_IP" | tr -d '[:space:]')"
+          printf '::add-mask::%s\n' "$DEV_IP"
 
           if [[ ! -x /usr/local/sbin/bombom-dev-ip ]]; then
             echo '서버에 /usr/local/sbin/bombom-dev-ip 등록·삭제 스크립트를 먼저 설치하세요.' >&2
