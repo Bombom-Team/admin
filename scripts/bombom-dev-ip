@@ -44,25 +44,30 @@ def run(command):
 
 
 def registered_addresses(old_map):
-    addresses = set()
+    addresses = {}
     for line in old_map.decode().splitlines():
-        entry = line.split('#', 1)[0].strip()
+        entry, _, comment = line.partition('#')
+        entry = entry.strip()
         if not entry:
             continue
         match = re.fullmatch(r'(\S+)\s+"samesite=none"\s*;', entry)
         if match is None:
             raise ValueError('Unexpected map syntax; original file was not changed')
-        addresses.add(public_ipv4(match.group(1)))
+        addresses[public_ipv4(match.group(1))] = comment.strip()
     return addresses
 
 
-def manage(action, actor, address):
+def manage(action, actor, address, location=''):
     actor = actor.lower()
     if action not in ('register', 'remove'):
         raise ValueError('Expected register or remove')
     if not 1 <= len(actor) <= 39 or USERNAME.fullmatch(actor) is None:
         raise ValueError('Invalid GitHub username')
     address = public_ipv4(address)
+    if action == 'register':
+        if not location.isprintable() or not 1 <= len(location.strip()) <= 80:
+            raise ValueError('A single-line location of 1 to 80 characters is required')
+        location = location.strip()
     if os.geteuid() != 0:
         raise PermissionError('Run using the configured sudo command')
     STATE_DIRECTORY.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -71,10 +76,11 @@ def manage(action, actor, address):
         old_map = MAP_FILE.read_bytes()
         addresses = registered_addresses(old_map)
         if action == 'register':
-            addresses.add(address)
+            addresses[address] = location
         else:
-            addresses.discard(address)
-        new_map = ''.join(f'{ip} "samesite=none";\n'
+            addresses.pop(address, None)
+        new_map = ''.join(f'{ip} "samesite=none";'
+                          + (f' # {addresses[ip]}' if addresses[ip] else '') + '\n'
                           for ip in sorted(addresses, key=ipaddress.IPv4Address)).encode()
         reload_attempted = False
         try:
@@ -92,8 +98,8 @@ def manage(action, actor, address):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 4:
-        sys.exit('Usage: bombom-dev-ip register|remove github-user public-ipv4')
+    if len(sys.argv) not in (4, 5):
+        sys.exit('Usage: bombom-dev-ip register|remove github-user public-ipv4 [location]')
     try:
         manage(*sys.argv[1:])
     except (ValueError, OSError, subprocess.SubprocessError) as error:

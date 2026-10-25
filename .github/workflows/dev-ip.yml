@@ -14,6 +14,10 @@ on:
         description: 등록하거나 삭제할 공인 IPv4 주소
         type: string
         required: true
+      location:
+        description: '장소 (등록 시 필수, 예: 모루 집 / 사무실)'
+        type: string
+        required: false
 
 permissions: {}
 
@@ -34,6 +38,7 @@ jobs:
           ACTION: ${{ inputs.action }}
           DEV_IP: ${{ inputs.ip }}
           ACTOR: ${{ github.actor }}
+          LOCATION: ${{ inputs.location }}
         run: |
           set -euo pipefail
 
@@ -51,6 +56,10 @@ jobs:
               sys.exit('등록하거나 삭제할 공인 IPv4 주소를 입력하세요.')
           if not address.is_global or address.is_multicast:
               sys.exit('사설·예약 주소가 아닌 공인 IPv4 주소를 입력하세요.')
+          if action == 'register':
+              location = os.environ['LOCATION']
+              if not location.isprintable() or not 1 <= len(location.strip()) <= 80:
+                  sys.exit('장소를 줄바꿈 없이 1~80자로 입력하세요.')
           PY
 
           DEV_IP="$(printf '%s' "$DEV_IP" | tr -d '[:space:]')"
@@ -62,4 +71,4 @@ jobs:
           fi
 
           # 설정 파일 변경 권한은 서버에 설치한 고정 스크립트에만 부여한다.
-          sudo -n -- /usr/local/sbin/bombom-dev-ip "$ACTION" "$ACTOR" "$DEV_IP"
+          sudo -n -- /usr/local/sbin/bombom-dev-ip "$ACTION" "$ACTOR" "$DEV_IP" "$LOCATION"
