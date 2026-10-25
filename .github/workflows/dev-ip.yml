@@ -1,0 +1,70 @@
+name: Dev IP 관리
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 작업
+        type: choice
+        options:
+          - register
+          - remove
+        required: true
+      ip:
+        description: 공인 IPv4 주소 (등록할 때만 입력)
+        type: string
+        required: false
+
+permissions: {}
+
+jobs:
+  manage:
+    # DEV_IP_ALLOWED_USERS에는 허용할 GitHub ID를 공백 없이 쉼표로 구분해 등록한다.
+    # 목록 미설정·비허용 계정·기본 브랜치 외 실행은 runner에 작업을 전달하지 않는다.
+    if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      contains(format(',{0},', vars.DEV_IP_ALLOWED_USERS), format(',{0},', github.actor)) &&
+      contains(format(',{0},', vars.DEV_IP_ALLOWED_USERS), format(',{0},', github.triggering_actor))
+    runs-on: [self-hosted, linux, dev-ip]
+    timeout-minutes: 5
+    steps:
+      - name: 내 IP 등록 또는 삭제
+        shell: bash
+        env:
+          ACTION: ${{ inputs.action }}
+          DEV_IP: ${{ inputs.ip }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import ipaddress
+          import os
+          import sys
+
+          action = os.environ['ACTION']
+          if action not in ('register', 'remove'):
+              sys.exit('register 또는 remove 작업만 허용합니다.')
+          if action == 'register':
+              try:
+                  address = ipaddress.IPv4Address(os.environ['DEV_IP'].strip())
+              except ipaddress.AddressValueError:
+                  sys.exit('등록할 공인 IPv4 주소를 입력하세요.')
+              if not address.is_global or address.is_multicast:
+                  sys.exit('사설·예약 주소가 아닌 공인 IPv4 주소를 입력하세요.')
+          PY
+
+          if [[ "$ACTION" == register ]]; then
+            DEV_IP="$(printf '%s' "$DEV_IP" | tr -d '[:space:]')"
+            printf '::add-mask::%s\n' "$DEV_IP"
+          else
+            DEV_IP=''
+          fi
+
+          if [[ ! -x /usr/local/sbin/bombom-dev-ip ]]; then
+            echo '서버에 /usr/local/sbin/bombom-dev-ip 등록·삭제 스크립트를 먼저 설치하세요.' >&2
+            exit 1
+          fi
+
+          # 설정 파일 변경 권한은 서버에 설치한 고정 스크립트에만 부여한다.
+          sudo -n -- /usr/local/sbin/bombom-dev-ip "$ACTION" "$ACTOR" "$DEV_IP"

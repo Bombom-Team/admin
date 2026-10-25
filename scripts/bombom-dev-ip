@@ -1,0 +1,125 @@
+#!/usr/bin/python3 -I
+"""Manage the dev Nginx SameSite exceptions. Install root-owned; no AWS credentials."""
+
+import fcntl
+import ipaddress
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+MAP_FILE = Path('/etc/nginx/dev-samesite-ips.map')
+STATE_DIRECTORY = Path('/var/lib/bombom-dev-ip')
+STATE_FILE = STATE_DIRECTORY / 'users.json'
+NGINX = '/usr/sbin/nginx'
+SYSTEMCTL = '/usr/bin/systemctl'
+USERNAME = re.compile(r'[a-z0-9]+(?:-[a-z0-9]+)*', re.ASCII)
+
+
+def public_ipv4(value):
+    address = ipaddress.IPv4Address(value.strip())
+    if not address.is_global or address.is_multicast:
+        raise ValueError('A public IPv4 address is required')
+    return str(address)
+
+
+def atomic_write(path, content, mode):
+    descriptor, temporary = tempfile.mkstemp(prefix='.' + path.name, dir=path.parent)
+    try:
+        with os.fdopen(descriptor, 'wb') as output:
+            os.fchmod(output.fileno(), mode)
+            output.write(content)
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def run(command):
+    subprocess.run(command, check=True, timeout=30,
+                   env={'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C'})
+
+
+def registrations(old_map, old_state):
+    if old_state is not None:
+        users = json.loads(old_state)
+        if not isinstance(users, dict):
+            raise ValueError('Invalid registration state')
+        for owner, address in users.items():
+            if not owner.startswith('legacy:') and (
+                    len(owner) > 39 or USERNAME.fullmatch(owner) is None):
+                raise ValueError('Invalid registration owner')
+            public_ipv4(address)
+        return users
+    # Preserve manual entries on first use. Registering that same IP adopts it.
+    users = {}
+    for line in old_map.decode().splitlines():
+        entry = line.split('#', 1)[0].strip()
+        if not entry:
+            continue
+        match = re.fullmatch(r'(\S+)\s+"samesite=none"\s*;', entry)
+        if match is None:
+            raise ValueError('Unexpected map syntax; original file was not changed')
+        address = public_ipv4(match.group(1))
+        users['legacy:' + address] = address
+    return users
+
+
+def manage(action, actor, address):
+    actor = actor.lower()
+    if action not in ('register', 'remove'):
+        raise ValueError('Expected register or remove')
+    if not 1 <= len(actor) <= 39 or USERNAME.fullmatch(actor) is None:
+        raise ValueError('Invalid GitHub username')
+    if action == 'register':
+        address = public_ipv4(address)
+    elif address:
+        raise ValueError('remove does not accept an IP address')
+    if os.geteuid() != 0:
+        raise PermissionError('Run using the configured sudo command')
+    STATE_DIRECTORY.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with (STATE_DIRECTORY / 'lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        old_map = MAP_FILE.read_bytes()
+        old_state = STATE_FILE.read_bytes() if STATE_FILE.exists() else None
+        users = registrations(old_map, old_state)
+        if action == 'register':
+            users.pop('legacy:' + address, None)
+            users[actor] = address
+        else:
+            users.pop(actor, None)
+        addresses = sorted(set(users.values()), key=ipaddress.IPv4Address)
+        new_map = ''.join(f'{ip} "samesite=none";\n' for ip in addresses).encode()
+        new_state = (json.dumps(users, sort_keys=True, indent=2) + '\n').encode()
+        reload_attempted = False
+        try:
+            atomic_write(STATE_FILE, new_state, 0o600)
+            atomic_write(MAP_FILE, new_map, 0o644)
+            run([NGINX, '-t'])
+            reload_attempted = True
+            run([SYSTEMCTL, 'reload', 'nginx'])
+        except BaseException:
+            atomic_write(MAP_FILE, old_map, 0o644)
+            if old_state is None:
+                STATE_FILE.unlink(missing_ok=True)
+            else:
+                atomic_write(STATE_FILE, old_state, 0o600)
+            if reload_attempted:
+                run([NGINX, '-t'])
+                run([SYSTEMCTL, 'reload', 'nginx'])
+            raise
+    print(f'{action} completed for {actor}')
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 4:
+        sys.exit('Usage: bombom-dev-ip register|remove github-user ip-or-empty')
+    try:
+        manage(*sys.argv[1:])
+    except (ValueError, OSError, subprocess.SubprocessError) as error:
+        sys.exit(f'IP update failed: {type(error).__name__}; check server configuration')
