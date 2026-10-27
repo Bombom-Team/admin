@@ -3,8 +3,10 @@ package me.bombom.api.v1.common.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 
+import jakarta.servlet.http.HttpSession;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +71,24 @@ class SecurityConfigTest {
 
             // when & then
             assertAccess(mockMvc, routes, user("admin").roles("2"), 200);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"local", "prod,admin"})
+    void 비로그인_요청을_차단할_때_세션을_만들지_않는다(String profile) throws Exception {
+        // given
+        try (var context = createContext(profile)) {
+            MockMvc mockMvc = createMockMvc(context);
+
+            // when
+            var result = mockMvc.perform(get("/").header("User-Agent", "ELB-HealthChecker/2.0"))
+                    .andReturn();
+            HttpSession session = result.getRequest().getSession(false);
+
+            // then
+            assertThat(result.getResponse().getStatus()).isEqualTo(403);
+            assertThat(session).isNull();
         }
     }
 
